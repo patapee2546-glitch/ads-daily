@@ -594,6 +594,14 @@ tbody tr:active{background:var(--accent-tint-2)}
 .pinput,.ptarea{width:100%;border:1px solid var(--line-2);border-radius:12px;background:var(--tint);color:var(--text);padding:9px 12px;font:inherit}
 .ptarea{min-height:260px;resize:vertical;line-height:1.6}
 .prow .btn-primary{height:auto;white-space:nowrap}
+.pdrop{display:flex;flex-direction:column;gap:2px;padding:14px;border:1.5px dashed var(--line-2);border-radius:12px;cursor:pointer;background:var(--tint)}
+.pdrop:hover{border-color:var(--accent)}.pdrop span{font-weight:600;color:var(--accent)}.pdrop small{font-size:11px}
+.mgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
+.mf{margin:0;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--tint)}
+.mf.block{border-color:var(--bad)}.mf.fix{border-color:var(--warn)}
+.mf img{width:100%;aspect-ratio:1;object-fit:cover;display:block}
+.mf figcaption{font-size:10.5px;padding:5px 6px;display:flex;flex-wrap:wrap;gap:3px;color:var(--text-2)}
+.mbusy{margin-top:10px;font-size:12px;color:var(--accent)}
 .pad-ad{display:flex;gap:12px;align-items:center;margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:12px}
 .pad-ad img{width:64px;height:64px;object-fit:cover;border-radius:8px}.pad-ad small{display:block;font-size:11px}
 .pv{display:flex;flex-direction:column;gap:2px;padding:14px 16px;border-radius:14px;border:1px solid}
@@ -1334,28 +1342,37 @@ function policyScan(text){
 }
 console.assert(policyScan('โบท็อกซ์ ลดริ้วรอย 100% อันดับ 1').verdict === 'block' && policyScan('ปรึกษาแพทย์ฟรี ทักแชทได้เลย ฆสพ. 123').verdict === 'pass'
   && policyScan('คุณมีสิวใช่ไหม').hits.some(h => h.r.id === 'A1') && !/โบท็อก/.test(policyScan('โปรโบท็อกซ์ 50u').safe), 'policy rules');
-let pol = {url: '', text: '', ad: null, busy: false, err: ''};
+let pol = {url: '', text: '', ad: null, busy: false, err: '', media: [], ocr: '', mBusy: ''};
 function policyResultHTML(){
-  const {hits, verdict, safe} = policyScan(pol.text);
-  if (!pol.text.trim()) return '<div class="muted pad">วางลิงก์แอด หรือพิมพ์/วางข้อความแอดด้านซ้าย ระบบจะตรวจทันที</div>';
+  const all = pol.text + (pol.ocr ? '\n\n[ตัวหนังสือในรูป/คลิป]\n' + pol.ocr : '');
+  let {hits, verdict, safe} = policyScan(all);
+  const vis = pol.media.flatMap(m => m.vis.map(v => ({...v, m})));
+  if (vis.some(v => v.sev === 'block')) verdict = 'block'; else if (verdict === 'pass' && vis.some(v => v.sev === 'fix')) verdict = 'fix';
+  if (!all.trim() && !pol.media.length) return '<div class="muted pad">วางลิงก์แอด หรือพิมพ์/วางข้อความแอดด้านซ้าย ระบบจะตรวจทันที</div>';
   const V = {block: ['BLOCK', 'ผิดกฎชัดเจน แอดแทบจะโดนปฏิเสธแน่ อย่ายิงจนกว่าจะแก้', 'bad'], fix: ['FIX REQUIRED', 'มีคำเสี่ยง อาจโดนปฏิเสธหรือแสดงผลน้อย ควรแก้ก่อนยิง', 'warn'], pass: ['PASS', 'ไม่พบคำต้องห้าม (ยังต้องตรวจรูป/วิดีโอเอง)', 'ok']}[verdict];
   // risk score as in the skill: count of Block + Fix Required issues
-  const nb = new Set(hits.filter(h => h.r.sev === 'block').map(h => h.r)).size, nf = new Set(hits.filter(h => h.r.sev === 'fix').map(h => h.r)).size;
+  const nb = new Set(hits.filter(h => h.r.sev === 'block').map(h => h.r)).size + new Set(vis.filter(v => v.sev === 'block').map(v => v.id)).size,
+    nf = new Set(hits.filter(h => h.r.sev === 'fix').map(h => h.r)).size + new Set(vis.filter(v => v.sev === 'fix').map(v => v.id)).size;
   const risk = nb >= 2 || (nb && nf) ? 'High' : nb || nf >= 2 ? 'Medium' : 'Low';
   let marked = '', k = 0;
   for (const h of hits.filter(h => h.at >= 0).sort((a, b) => a.at - b.at)) { if (h.at < k) continue;
-    marked += esc(pol.text.slice(k, h.at)) + `<mark class="pm ${h.r.sev}" title="${esc(h.r.id + ' ' + h.r.name)}">${esc(h.word)}</mark>`; k = h.end; }
-  marked += esc(pol.text.slice(k));
+    marked += esc(all.slice(k, h.at)) + `<mark class="pm ${h.r.sev}" title="${esc(h.r.id + ' ' + h.r.name)}">${esc(h.word)}</mark>`; k = h.end; }
+  marked += esc(all.slice(k));
   const groups = [...new Map(hits.map(h => [h.r.id + h.r.name, {r: h.r, words: [...new Set(hits.filter(x => x.r === h.r).map(x => x.word).filter(Boolean))]}])).values()]
     .sort((a, b) => ['block', 'fix', 'caution'].indexOf(a.r.sev) - ['block', 'fix', 'caution'].indexOf(b.r.sev));
   return `<div class="pv ${V[2]}"><b>VERDICT: ${V[0]}</b><span>${V[1]} · RISK SCORE: ${risk}</span></div>
+    ${pol.media.length ? `<h3 class="ph3">ภาพ/คลิป (${pol.media.length} ภาพที่ตรวจ)</h3>
+      <div class="mgrid">${pol.media.map(m => `<figure class="mf ${m.vis.some(v => v.sev === 'block') ? 'block' : m.vis.length ? 'fix' : ''}"><img src="${m.src}" alt="${esc(m.label)}">
+        <figcaption>${esc(m.label)}${m.vis.map(v => `<span class="ptag ${v.sev}">${esc(v.name)} ${Math.round(v.score * 100)}%</span>`).join('') || '<span class="muted">ไม่เจอภาพเสี่ยง</span>'}</figcaption></figure>`).join('')}</div>
+      ${vis.length ? [...new Map(vis.map(v => [v.id, v])).values()].map(v => `<div class="pi ${v.sev}"><div><span class="ptag ${v.sev}">${SEV[v.sev][0]}</span> <b>${esc(v.name)}</b> <small class="muted">${v.id}</small></div><div class="ppol">Policy: <a href="${POLICY_INDEX}" target="_blank" rel="noopener">${esc(v.pol)}</a></div><div class="pwhy">${esc(v.why)}</div><div class="pfix">แก้: ${esc(v.fix)}</div></div>`).join('') : ''}` : ''}
+    ${pol.mBusy ? `<div class="mbusy">${esc(pol.mBusy)}</div>` : ''}
     <h3 class="ph3">ข้อที่เจอ (${groups.length})</h3>
     ${groups.map(g => `<div class="pi ${g.r.sev}"><div><span class="ptag ${g.r.sev}">${SEV[g.r.sev][0]}</span> <b>${esc(g.r.name)}</b> <small class="muted">${g.r.id}</small></div>
       <div class="ppol">Policy: ${/กฎหมาย/.test(g.r.pol) ? esc(g.r.pol) : `<a href="${POLICY_INDEX}" target="_blank" rel="noopener">${esc(g.r.pol)}</a>`}</div>
       ${g.words.length ? `<div class="pw">${g.words.map(w => `<mark class="pm ${g.r.sev}">${esc(w)}</mark>`).join(' ')}</div>` : ''}
       <div class="pwhy">${esc(g.r.why)}</div><div class="pfix">แก้: ${esc(g.r.fix)}</div></div>`).join('') || '<div class="muted">ไม่พบ</div>'}
     <h3 class="ph3">ข้อความที่ไฮไลต์</h3><div class="ptext">${marked}</div>
-    ${safe !== pol.text ? `<h3 class="ph3">ข้อความที่ตัดคำเสี่ยงแล้ว <button class="link" id="polCopy">คัดลอก</button></h3><div class="ptext" id="polSafe">${esc(safe)}</div>
+    ${safe !== all ? `<h3 class="ph3">ข้อความที่ตัดคำเสี่ยงแล้ว <button class="link" id="polCopy">คัดลอก</button></h3><div class="ptext" id="polSafe">${esc(safe)}</div>
       <p class="muted" style="font-size:11px">ตัดเฉพาะคำที่แทนได้อัตโนมัติ ข้อที่เหลือต้องเขียนใหม่เอง</p>` : ''}
     ${/ฆสพ|ใบอนุญาตโฆษณา/.test(pol.text) ? '' : '<p class="muted" style="font-size:12px;margin-top:14px">หมายเหตุ: ไม่เห็นเลขใบอนุญาตโฆษณา (ฆสพ.) ในข้อความ เช็คว่าข้อความนี้ขออนุญาตโฆษณาแล้ว (กฎหมายสถานพยาบาล)</p>'}`;
 }
@@ -1366,21 +1383,86 @@ function renderPolicy(){
       <label class="pl">ลิงก์แอดจาก Ads Manager หรือเลขแอด</label>
       <div class="prow"><input id="polUrl" class="pinput" placeholder="https://adsmanager.facebook.com/...selected_ad_ids=..." value="${esc(pol.url)}"><button class="btn-primary" id="polGo" ${pol.busy ? 'disabled' : ''}>${pol.busy ? 'กำลังดึง…' : 'ดึงข้อความ'}</button></div>
       ${pol.err ? `<div class="t-bad" style="font-size:12px;margin-top:6px">${esc(pol.err)}</div>` : ''}
-      ${pol.ad ? `<div class="pad-ad">${pol.ad.image ? `<img src="${esc(pol.ad.image)}" alt="" referrerpolicy="no-referrer">` : ''}<div><b>${esc(pol.ad.name || '')}</b><small class="muted">รูปต้องตรวจด้วยตา: ก่อน-หลัง, เข็ม/เลือด, ซูมสัดส่วน, ตัวหนังสือในรูป</small></div></div>` : ''}
+      ${pol.ad ? `<div class="pad-ad">${pol.ad.image ? `<img src="${esc(pol.ad.image)}" alt="" referrerpolicy="no-referrer">` : ''}<div><b>${esc(pol.ad.name || '')}</b><small class="muted">${pol.ad.video ? 'ตรวจคลิปแอดทีละเฟรม' : 'ตรวจภาพปก · ลิงก์ไม่ให้ไฟล์คลิป ถ้าเป็นคลิปให้อัปโหลดไฟล์ด้านล่าง'}</small></div></div>` : ''}
+      <label class="pl" style="margin-top:14px">รูป / คลิปแอด (อัปโหลด หรือกด Cmd+V วางภาพ)</label>
+      <label class="pdrop"><input type="file" id="polFile" accept="image/*,video/*" multiple hidden><span>เลือกไฟล์รูปหรือคลิป</span><small class="muted">อ่านตัวหนังสือในภาพ + ดูว่ามีภาพก่อน-หลัง เข็ม เลือด ซูมไขมัน ชุดชั้นใน · คลิปดูทุก ~3 วินาที</small></label>
       <label class="pl" style="margin-top:14px">ข้อความแอด (แก้ได้ ตรวจทันทีที่พิมพ์)</label>
       <textarea id="polText" class="ptarea" placeholder="วางแคปชัน / หัวข้อ / ข้อความในรูป">${esc(pol.text)}</textarea>
-      <p class="muted" style="font-size:11px">ใช้ได้ทั้งแอดใหม่ก่อนยิง และแอดที่โดนปฏิเสธ · ตรวจได้เฉพาะคำ ไม่ได้อ่านบริบทหรือรูป · Meta ยังเป็นผู้ตัดสินสุดท้าย</p>
+      <p class="muted" style="font-size:11px">ใช้ได้ทั้งแอดใหม่ก่อนยิง และแอดที่โดนปฏิเสธ · ตรวจคำ + ตัวหนังสือในภาพ + ภาพเสี่ยงคร่าว ๆ ไม่เข้าใจบริบทหรือเสียงพูด · Meta ยังเป็นผู้ตัดสินสุดท้าย</p>
     </div>
     <div class="card pad pol-out" id="polOut">${policyResultHTML()}</div>
   </div>`;
 }
+// ---- looking at images/clips in the browser, no paid AI: Tesseract reads Thai/English text in each frame,
+// CLIP (an open image model, runs locally after a one-time download) says which risky kind of picture a frame looks like.
+// ponytail: CLIP zero-shot is a rough eye: it flags frames to look at, it does not prove a violation. Upgrade = AI mode (policy-check).
+const VLABELS = [
+  {t: 'a before and after comparison, two photos of the same face or body side by side', sev: 'block', id: 'A2/B2', name: 'ภาพก่อน-หลัง', pol: 'Before-and-after photos', why: 'Meta ห้ามภาพเปรียบเทียบก่อน-หลังสำหรับหัตถการความงาม/ลดน้ำหนัก และกฎหมายสถานพยาบาลห้าม', fix: 'ใช้ภาพผลลัพธ์ภาพเดียว ไม่เทียบ หรือภาพบรรยากาศการรับบริการ'},
+  {t: 'blood, an open wound or a surgery in progress', sev: 'block', id: 'A4', name: 'เลือด/แผล/ผ่าตัด', pol: 'Sensational content', why: 'Meta ห้ามภาพทางการแพทย์ที่น่ากลัวหรือรุนแรง', fix: 'ตัดฉากเลือด/แผลออก'},
+  {t: 'a syringe needle injecting into skin', sev: 'fix', id: 'A4', name: 'เข็มฉีดเข้าผิว', pol: 'Sensational content', why: 'ภาพเข็มเจาะผิวมักถูกมองเป็นเนื้อหาทางการแพทย์ที่น่ากลัว', fix: 'ใช้ภาพก่อน/หลังฉีด ไม่เห็นเข็มเข้าผิว'},
+  {t: 'a close-up of belly fat or a hand pinching body fat', sev: 'fix', id: 'A2', name: 'ซูมไขมัน/จุดบกพร่อง', pol: 'Health and wellness', why: 'Meta ห้ามเน้นจุดบกพร่องของร่างกายแบบซูมใกล้', fix: 'ใช้ภาพทั้งตัวแบบแต่งกายเรียบร้อย'},
+  {t: 'a measuring tape around a waist', sev: 'fix', id: 'A2', name: 'สายวัดรอบเอว', pol: 'Health and wellness', why: 'ภาพวัดรอบเอวสื่อผลลดน้ำหนัก Meta มักปฏิเสธ', fix: 'ตัดภาพสายวัด/ตาชั่งออก'},
+  {t: 'a person in underwear or a bikini showing their body', sev: 'fix', id: 'A5', name: 'ชุดชั้นใน/บิกินี', pol: 'Adult nudity and sexual activity', why: 'Meta จำกัดภาพที่โชว์ร่างกายหรือเน้นสัดส่วน', fix: 'ใช้ภาพแต่งกายมิดชิด ไม่ซูมสัดส่วน'},
+];
+const VNEUTRAL = ['a smiling person portrait', 'a doctor talking to the camera', 'a clinic room or reception desk', 'an advertisement graphic with text and a price', 'a beauty product or device', 'a close-up of a face with clear skin'];
+let ocrW = null, clipP = null;
+const loadScript = src => new Promise((ok, no) => { const sc = document.createElement('script'); sc.src = src; sc.onload = ok; sc.onerror = no; document.head.append(sc); });
+async function eyes(){
+  if (!window.Tesseract) await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js');
+  ocrW ??= await Tesseract.createWorker(['tha', 'eng']);
+  clipP ??= import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.2').then(m => m.pipeline('zero-shot-image-classification', 'Xenova/clip-vit-base-patch32'));
+  return [ocrW, await clipP];
+}
+const busy = msg => { pol.mBusy = msg; const o = $('#polOut'); if (o && view === 'policy') o.innerHTML = policyResultHTML(); };
+async function seeFrame(cv, label){
+  const [ocr, clip] = await eyes(), url = cv.toDataURL('image/jpeg', .85);
+  // keep lines that read like words: OCR on photos also returns symbol soup that would trip rules by accident
+  const text = (await ocr.recognize(cv)).data.text.split('\n').map(l => l.replace(/[ \t]+/g, ' ').trim())
+    .filter(l => l.length >= 4 && (l.match(/[ก-๙a-zA-Z0-9 ,.%฿-]/g) || []).length / l.length >= .85 && /[ก-๙]{3}|[a-zA-Z]{4}/.test(l)).join('\n');
+  const out = await clip(url, [...VLABELS.map(v => v.t), ...VNEUTRAL]), top = out[0];
+  const vis = out.filter(o => { const v = VLABELS.find(x => x.t === o.label); return v && (o.score >= .45 || (o === top && o.score >= .3)); })
+    .map(o => ({...VLABELS.find(x => x.t === o.label), score: o.score}));
+  const th = document.createElement('canvas'), k = 220 / Math.max(cv.width, cv.height); th.width = cv.width * k; th.height = cv.height * k;
+  th.getContext('2d').drawImage(cv, 0, 0, th.width, th.height);
+  pol.media.push({src: th.toDataURL('image/jpeg', .7), label, text, vis});
+  pol.ocr = pol.media.map(m => m.text).filter(Boolean).join('\n');
+}
+const toCanvas = img => { const cv = document.createElement('canvas'), k = Math.min(1, 1280 / Math.max(img.width || img.videoWidth, img.height || img.videoHeight));
+  cv.width = (img.width || img.videoWidth) * k; cv.height = (img.height || img.videoHeight) * k; cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height); return cv; };
+async function seeBlob(blob, name){
+  if (/^image\//.test(blob.type)) { busy(`กำลังดู ${name}…`); await seeFrame(toCanvas(await createImageBitmap(blob)), name); return; }
+  if (!/^video\//.test(blob.type)) return;
+  const v = document.createElement('video'); v.muted = true; v.src = URL.createObjectURL(blob);
+  await new Promise((ok, no) => { v.onloadeddata = ok; v.onerror = () => no(new Error('เปิดคลิปไม่ได้')); });
+  const n = Math.min(10, Math.max(3, Math.ceil(v.duration / 3)));   // ponytail: ~1 frame per 3 s, max 10; a 1-frame flash between samples is missed
+  for (let i = 0; i < n; i++) {
+    const t = v.duration * (i + .5) / n; v.currentTime = t; await new Promise(r => v.onseeked = r);
+    busy(`กำลังดู ${name} เฟรม ${i + 1}/${n}…`); await seeFrame(toCanvas(v), `${name} · วินาทีที่ ${t.toFixed(1)}`);
+  }
+  URL.revokeObjectURL(v.src);
+}
+async function seeFiles(files){
+  try { busy(ocrW ? 'กำลังดู…' : 'กำลังโหลดตัวอ่านภาพครั้งแรก (ประมาณ 100 MB, ครั้งต่อไปเร็ว)…');
+    for (const f of files) await seeBlob(f, f.name || 'ภาพที่วาง'); }
+  catch (e) { pol.err = 'ดูภาพ/คลิปไม่ได้: ' + e.message; }
+  busy(''); if (view === 'policy') { fxKey = ''; render(); }
+}
+async function seeUrl(url, name){
+  const {data, error} = await sb.functions.invoke('policy-check', {body: {proxy: url}});
+  if (error || !(data instanceof Blob)) throw new Error('โหลดรูปจาก Facebook ไม่ได้');
+  await seeFiles([new File([data], name, {type: data.type})]);
+}
+document.addEventListener('change', e => { if (e.target.id === 'polFile') { pol.media = []; pol.ocr = ''; seeFiles([...e.target.files]); } });
+document.addEventListener('paste', e => { if (view !== 'policy') return; const fs = [...e.clipboardData.files].filter(f => /^(image|video)\//.test(f.type)); if (fs.length) { e.preventDefault(); seeFiles(fs); } });
+
 async function policyFetch(){
   pol.url = $('#polUrl').value.trim(); if (!pol.url) return;
   pol.busy = true; pol.err = ''; render();
   const {data, error} = await sb.functions.invoke('policy-check', {body: {read: true, url: pol.url}});
   pol.busy = false;
   if (error || data?.error) { let m = data?.error; try { m ||= (await error.context.json()).error; } catch {} pol.err = m || 'ดึงไม่ได้'; }
-  else { pol.ad = data; pol.text = data.text || ''; }
+  else { pol.ad = data; pol.text = data.text || ''; pol.media = []; pol.ocr = '';
+    if (data.video) seeUrl(data.video, 'คลิปแอด').catch(e => { pol.err = e.message; }); else if (data.image) seeUrl(data.image, 'ภาพปก').catch(e => { pol.err = e.message; }); }
   if (view === 'policy') { fxKey = ''; render(); }
 }
 document.addEventListener('input', e => { if (e.target.id === 'polText') { pol.text = e.target.value; $('#polOut').innerHTML = policyResultHTML(); } else if (e.target.id === 'polUrl') pol.url = e.target.value; });
