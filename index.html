@@ -1226,13 +1226,14 @@ function renderDash(){
 
     <div class="card hero span-8" ${cardI()}><div class="orb" aria-hidden="true"></div>
       <div class="hero-k">สรุป ${n} วัน · ${thLong(rng.from)} – ${thLong(rng.to, true)}</div>
-      <div class="hero-t">${cpr ? `ได้แชทละ <b>${baht(cpr)}</b>` : 'ยังไม่มีแชทในช่วงนี้'}${ci0 ? Math.abs(ci0 - 1) < .01 ? ' <span>เท่าช่วงก่อน</span>' : ` <span class="${ci0 < 1 ? 't-ok' : 't-bad'}">${ci0 < 1 ? 'ถูกลง' : 'แพงขึ้น'} ${Math.abs(Math.round((ci0 - 1) * 100))}% จากช่วงก่อน</span>` : ''}</div>
+      <div class="hero-t">${cpr ? `ได้แชทละ <b>${baht(cpr)}</b>` : 'ยังไม่มีแชทในช่วงนี้'}${ci0 ? Math.abs(ci0 - 1) < .01 ? ' <span>เท่าช่วงก่อน</span>' : ` <span class="${ci0 < 1 ? 't-ok' : 't-bad'}">${ci0 < 1 ? 'ถูกลง' : 'แพงขึ้น'} ${Math.abs(Math.round((ci0 - 1) * 100))}%</span>` : ''}</div>
+      ${ci0 ? `<div class="hero-k">เทียบช่วงก่อน ${thLong(shiftDay(rng.from, -n))} – ${thLong(shiftDay(rng.from, -1), true)} (${n} วันก่อนหน้า) ที่ได้แชทละ ${baht(cprP)}</div>` : ''}
       <ul class="hero-l">
         ${best ? `<li><span class="hl ok">ดาวเด่น</span><button class="link" data-open="${esc(best.name)}">${esc(best.name)}</button> ${vsNormal(best.i)}</li>` : ''}
         ${bad ? `<li><span class="hl bad">ต้องดู</span><button class="link" data-open="${esc(bad.name)}">${esc(bad.name)}</button> ${bad.i === 9 ? 'ใช้เงินแต่ยังไม่มีแชท' : vsNormal(bad.i)}</li>` : ''}
         ${low.length ? `<li><span class="hl warn">เงินใกล้หมด</span>${low.map(x => `<button class="link" data-open="${esc(x.c.name)}">${esc(x.c.name)}</button> ${x.w.days.toFixed(1)} วัน`).join(' · ')}</li>` : ''}
         ${by('bad').length ? `<li><span class="hl bad">มีปัญหา</span>${by('bad').map(t => `<button class="link" data-open="${esc(t.c.name)}">${esc(t.c.name)}</button>`).join(', ')}</li>` : ''}
-      </ul></div>
+      </ul>${best || bad ? `<div class="hero-k">"ปกติ" ของแต่ละคลินิก = ฿/แชทเฉลี่ย 28 วันก่อนหน้า (${thLong(shiftDay(rng.from, -28))} – ${thLong(shiftDay(rng.from, -1), true)})</div>` : ''}</div>
     <div class="card gauge span-4" ${cardI()}><div class="card-h"><b>เช็คแอดแล้ว</b><span>${thDate(rng.to)}</span></div>
       ${ring(checked / Math.max(1, db.clinics.length), `${checked}/${db.clinics.length}`, 'คลินิก', `เช็คแอดแล้ว ${checked} จาก ${db.clinics.length} คลินิก`)}</div>
 
