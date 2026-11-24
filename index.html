@@ -70,6 +70,11 @@ header h1{font-size:16px;font-weight:600;margin:0 8px 0 0;white-space:nowrap}
 header{padding-right:64px}
 header details.menu{position:absolute;top:10px;right:16px}
 header{z-index:30}  /* above the dashboard date-range button (.dash-h z 10) so the ⋯ list is never covered */
+/* page tabs always sit on their own second row, so the header doesn't reflow when a page hides the date box */
+header .hbreak{flex-basis:100%;height:0;order:1}
+header .seg[role=tablist]{order:2;max-width:100%;overflow-x:auto;scrollbar-width:none}
+header .seg[role=tablist]::-webkit-scrollbar{display:none}
+header .seg[role=tablist] button{white-space:nowrap;flex:none}
 header .menu .pop{background:var(--pop);min-width:240px}
 .menu .acct{padding:8px 12px 4px;display:grid}.menu .acct small{font-size:11px;color:var(--text-3)}.menu .acct b{font-size:13px;font-weight:600;overflow-wrap:anywhere}
 .menu hr{border:0;border-top:1px solid var(--line);margin:4px 0}
@@ -488,6 +493,7 @@ tbody tr:active{background:var(--accent-tint-2)}
     <span id="dayslot"></span>
     <button class="ghost icon" id="next" aria-label="วันถัดไป" title="วันถัดไป (→)">›</button>
   </div>
+  <span class="hbreak" aria-hidden="true"></span>
   <div class="seg" role="tablist">
     <button role="tab" data-view="dash" aria-selected="true">ภาพรวม</button>
     <button role="tab" data-view="log">บันทึกรายวัน</button>
