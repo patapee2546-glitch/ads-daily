@@ -586,6 +586,31 @@ tbody tr:active{background:var(--accent-tint-2)}
 .bad-ad .h{color:var(--text-2);margin:4px 0;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-line}
 .bad-ad small{color:var(--text-3);font-size:11px}
 @media (max-width:900px){.brain-wrap{grid-template-columns:1fr;height:auto}.brain-stage{height:62vh}}
+
+/* ---- ตรวจกฎ Meta ---- */
+.pol{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:16px;align-items:start}
+.pl{display:block;font-size:12px;color:var(--text-2);margin-bottom:6px}
+.prow{display:flex;gap:8px}
+.pinput,.ptarea{width:100%;border:1px solid var(--line-2);border-radius:12px;background:var(--tint);color:var(--text);padding:9px 12px;font:inherit}
+.ptarea{min-height:260px;resize:vertical;line-height:1.6}
+.prow .btn-primary{height:auto;white-space:nowrap}
+.pad-ad{display:flex;gap:12px;align-items:center;margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:12px}
+.pad-ad img{width:64px;height:64px;object-fit:cover;border-radius:8px}.pad-ad small{display:block;font-size:11px}
+.pv{display:flex;flex-direction:column;gap:2px;padding:14px 16px;border-radius:14px;border:1px solid}
+.pv b{font-size:20px}.pv span{font-size:13px;color:var(--text-2)}
+.pv.bad{border-color:color-mix(in oklch,var(--bad) 50%,transparent);background:color-mix(in oklch,var(--bad) 12%,transparent)}.pv.bad b{color:var(--bad)}
+.pv.warn{border-color:color-mix(in oklch,var(--warn) 50%,transparent);background:color-mix(in oklch,var(--warn) 12%,transparent)}.pv.warn b{color:var(--warn)}
+.pv.ok{border-color:color-mix(in oklch,var(--ok) 50%,transparent);background:color-mix(in oklch,var(--ok) 12%,transparent)}.pv.ok b{color:var(--ok)}
+.ph3{font-size:12px;color:var(--text-3);font-weight:500;margin:18px 0 6px;display:flex;gap:10px;align-items:center}
+.pi{padding:10px 0;border-top:1px solid var(--line);display:grid;gap:4px;font-size:13px}
+.ptag{font-size:11px;font-weight:600;padding:1px 8px;border-radius:999px;border:1px solid currentColor}
+.ptag.block{color:var(--bad)}.ptag.fix{color:var(--warn)}.ptag.caution{color:var(--text-3)}
+.ppol{font-size:12px;color:var(--text-3)}.ppol a{color:inherit}
+.pwhy{color:var(--text-2)}.pfix{color:var(--text)}
+.pm{border-radius:4px;padding:0 2px;color:inherit}
+.pm.block{background:color-mix(in oklch,var(--bad) 30%,transparent)}.pm.fix{background:color-mix(in oklch,var(--warn) 30%,transparent)}.pm.caution{background:var(--accent-tint)}
+.ptext{white-space:pre-wrap;line-height:1.7;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--tint);font-size:13px;max-height:340px;overflow:auto}
+@media (max-width:900px){.pol{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important}.metric:hover,.ghost:hover,.ghost:active,.seg button:active,tbody tr:hover .dots .dot{transform:none}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 @supports not (backdrop-filter:blur(1px)){:root{--surface:var(--surface-2)}}
@@ -608,6 +633,7 @@ tbody tr:active{background:var(--accent-tint-2)}
     <button role="tab" data-view="history"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg>ย้อนหลัง 14 วัน</button>
     <button role="tab" data-view="reports"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18"/><path d="M8 17v-5M13 17V8M18 17v-9"/></svg>รีพอร์ต</button>
     <button role="tab" data-view="brain"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><circle cx="4.5" cy="6" r="1.8"/><circle cx="19.5" cy="6" r="1.8"/><circle cx="5" cy="19" r="1.8"/><circle cx="19" cy="18.5" r="1.8"/><path d="M6 7.2 9.6 10.3M18 7.2l-3.6 3.1M6.4 17.9l3.3-3.6M17.6 17.4l-3.3-3.2"/></svg>สมองมุมขาย</button>
+    <button role="tab" data-view="policy"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6Z"/><path d="m9 12 2 2 4-4"/></svg>ตรวจกฎ Meta</button>
     <button role="tab" data-view="posts"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg>โพสต์เพจ</button>
     <button role="tab" data-view="angel"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9Z"/><path d="M19 15v4M17 17h4"/></svg>แอดนางฟ้า</button>
     <button role="tab" data-view="media"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.5"/><path d="m21 16-5-5-9 8"/></svg>คลังสื่อคู่แข่ง</button>
@@ -1263,6 +1289,107 @@ function renderDash(){
   </div>`;
 }
 
+// ---- ตรวจกฎ Meta: rule engine in the browser, no AI. Rules = Meta Advertising Standards + Thai medical-facility ad law
+// Structure follows the meta-ad-policy-checker skill (github gooseworks-ai/goose-skills): its policy keys, Block/Fix Required/Caution, PASS/FIX REQUIRED/BLOCK, risk score.
+// ponytail: phrase rules only; they catch wording, not context, and cannot read text inside images. Upgrade = AI mode (policy-check).
+const PRULES = [
+  {pol: 'Restricted content: Prescription drugs', id: 'A3/B6', sev: 'block', name: 'ชื่อยา/สารฉีด', rx: /botox|b0t0x|โบท็อกซ์|โบท็อก|โบท๊อกซ์|โบท๊อก|โบทอกซ์|โบทอก|botulinum|โบทูลินัม|dysport|xeomin|nabota|aestox|neuronox|ozempic|saxenda|wegovy|mounjaro/gi,
+    why: 'Meta ห้ามโปรโมตยาที่ต้องสั่งโดยแพทย์ และ พ.ร.บ.ยา ห้ามโฆษณาชื่อการค้ายาอันตรายต่อประชาชน', fix: 'ใช้คำกลาง ๆ เช่น "ปรับรูปหน้า", "ลดริ้วรอย", "หน้าเรียว"', to: 'ปรับรูปหน้า'},
+  {pol: 'Before-and-after photos', id: 'A2/B2', sev: 'block', name: 'ก่อน-หลัง', rx: /ก่อน\s*[-–/&และ]*\s*หลัง(?:ทำ)?|before\s*[-–/&]?\s*(?:and\s*)?after/gi,
+    why: 'Meta ห้ามภาพ/ข้อความเปรียบเทียบก่อน-หลังสำหรับหัตถการความงามและลดน้ำหนัก และกฎหมายสถานพยาบาลห้ามเช่นกัน', fix: 'เล่าขั้นตอนหรือประสบการณ์บริการแทนผลเปรียบเทียบ', to: ''},
+  {pol: 'Personal attributes', id: 'A1', sev: 'block', name: 'ชี้ลักษณะส่วนตัวของคนดู', rx: /คุณ\s*(?:มี|เป็น|กำลัง|ยัง)?\s*(?:สิว|ฝ้า|อ้วน|หย่อนคล้อย|หย่อน|ริ้วรอย|ผมร่วง|หัวล้าน|หน้าแก่|พุงย้วย|พุง|เหนียง|ขาใหญ่|แขนใหญ่|ไขมัน)|(?:สิว|ฝ้า|อ้วน|หย่อน|ริ้วรอย|ผมร่วง|พุง)[^\n.!?]{0,12}(?:ใช่ไหม|ใช่มั้ย|หรือเปล่า|รึเปล่า)/gi,
+    why: 'Meta ห้ามสื่อว่ารู้ลักษณะสุขภาพหรือรูปร่างของคนดู ด้วยการพูดถึง "คุณ" ตรง ๆ', fix: 'พูดถึงปัญหาแบบกลาง ๆ เช่น "ปัญหาสิวแก้ได้", "สำหรับคนที่อยากดูแลผิว"'},
+  {pol: 'Unrealistic outcomes / Misinformation', id: 'A6/B1', sev: 'block', name: 'รับประกันผล/เกินจริง', rx: /(?:เห็นผล|ได้ผล|หาย|ปลอดภัย|ขาว|ใส)\s*100\s*%|100\s*%\s*(?:เห็นผล|ได้ผล|ปลอดภัย)|หายขาด|การันตีผล|รับประกันผล(?:ลัพธ์)?|ได้ผลแน่นอน|เห็นผลแน่นอน|ไม่ได้ผล[^\s]{0,8}คืนเงิน|ไม่มีผลข้างเคียง|ไร้ผลข้างเคียง/gi,
+    why: 'ห้ามรับประกันผลการรักษาหรือความปลอดภัย (Meta misleading claims + กฎหมายห้ามโฆษณาเกินจริง)', fix: 'ใช้ "ผลลัพธ์ขึ้นกับแต่ละบุคคล" และตัดคำรับประกันออก', to: ''},
+  {pol: 'Health and wellness', id: 'A2', sev: 'fix', name: 'ผลเร็วผิดปกติ', rx: /(?:ภายใน|ใน)\s*\d+\s*(?:วัน|ชั่วโมง|ชม\.?|นาที|สัปดาห์|ครั้ง)|ครั้งเดียวเห็นผล|เห็นผลทันที|เห็นผลไว|ลด\s*\d+\s*(?:กิโล|กก\.?|kg|โล)/gi,
+    why: 'Meta ห้ามอ้างผลลัพธ์ที่เร็วหรือมากเกินจริง โดยเฉพาะลดน้ำหนักและความงาม', fix: 'ตัดตัวเลขเวลา/น้ำหนักที่สื่อผลลัพธ์ออก หรือบอกเป็นขั้นตอนบริการแทน'},
+  {pol: 'Unrealistic outcomes', id: 'A6/B4', sev: 'fix', name: 'อ้างดีที่สุด/อันดับ 1', rx: /อันดับ\s*(?:1|หนึ่ง)|เบอร์\s*1|no\.?\s*1|ที่\s*1\s*ใน|ดีที่สุด|ที่สุดใน(?:ไทย|ประเทศ)|เจ้าแรก|ที่เดียวใน/gi,
+    why: 'กฎหมายสถานพยาบาลห้ามอ้างว่าดีที่สุด/อันดับหนึ่ง และ Meta ห้ามอ้างโดยไม่มีหลักฐาน', fix: 'ตัดคำอ้างอันดับออก หรือบอกจุดเด่นที่พิสูจน์ได้ เช่น ปีประสบการณ์', to: ''},
+  {pol: 'Health and wellness', id: 'A6', sev: 'fix', name: 'ไม่เจ็บ/ถาวร/ปลอดภัยแน่นอน', rx: /ไม่เจ็บ(?:เลย)?|ไม่ต้องพักฟื้น|ไม่บวม|ไม่ช้ำ|ปลอดภัยแน่นอน|ถาวร/gi,
+    why: 'การอ้างว่าไม่เจ็บ/ไม่มีผลข้างเคียงเป็นการอ้างความปลอดภัยเกินจริง', fix: 'ใช้ "เจ็บน้อย", "พักฟื้นไม่นาน (ขึ้นกับแต่ละบุคคล)"'},
+  {pol: 'กฎหมายสถานพยาบาล (ลด แลก แจก แถม)', id: 'B5', sev: 'fix', name: 'ลุ้น/แจก/ชิงรางวัล', rx: /ลุ้นรับ|ลุ้นรางวัล|ลุ้นโชค|ชิงรางวัล|จับรางวัล|เสี่ยงโชค|แจกฟรี|แจกจริง/gi,
+    why: 'กฎหมายสถานพยาบาลห้าม ลด แลก แจก แถม เสี่ยงโชค ที่จูงใจให้รับบริการเกินจำเป็น', fix: 'บอกราคาและเงื่อนไขโปรให้ชัดแทนการแจก/ลุ้น'},
+  {pol: 'Engagement bait / Spam', id: 'A8', sev: 'fix', name: 'ล่อให้กดแชร์/คอมเมนต์', rx: /แชร์(?:เลย|ด่วน|ให้เพื่อน)|แท็กเพื่อน|tag\s*เพื่อน|คอมเมนต์[^\s]{0,6}รับ|เม้น[^\s]{0,6}รับ|กดไลค์|กดแชร์/gi,
+    why: 'Meta ลดการแสดงผลแอดที่ล่อให้มีส่วนร่วม (engagement bait)', fix: 'ใช้ปุ่มทักแชท/จองคิวตามปกติ'},
+  {pol: 'Circumventing systems / Grammar & profanity', id: 'A7', sev: 'fix', name: 'เลี่ยงคำด้วยสัญลักษณ์', rx: /[ก-๙](?:[-*_][ก-๙]){2,}|b0t0x|b0tox|bot0x|s[-.]l[-.]a[-.]y/gi,
+    why: 'Meta ถือว่าการเขียนเลี่ยงคำเพื่อหลบกฎเป็นการละเมิด', fix: 'เขียนคำปกติ แล้วเปลี่ยนเป็นคำที่ไม่ผิดกฎแทน'},
+  {pol: 'Adult nudity and sexual activity', id: 'A5', sev: 'fix', name: 'เน้นสัดส่วนทางเพศ', rx: /นมโต|อึ๋ม|หน้าอกใหญ่|ก้นงอน|เซ็กซี่|sexy|ยั่ว/gi,
+    why: 'Meta ห้ามเนื้อหาที่เน้นร่างกายเชิงเพศ', fix: 'พูดถึงความมั่นใจหรือรูปทรงที่สมส่วนแทน'},
+  {pol: 'กฎหมายสถานพยาบาล (บุคคลมีชื่อเสียง)', id: 'B3', sev: 'caution', name: 'ดารา/อินฟลูรับรองผล', rx: /ดารา|เซเลบ|อินฟลู|influencer|ไอดอล/gi,
+    why: 'กฎหมายห้ามใช้ดารา/คนมีชื่อเสียงยืนยันผลการรักษา', fix: 'ถ้ามีดาราในแอด อย่าให้พูดถึงผลการรักษา'},
+  {pol: 'Sensational content', id: 'A4', sev: 'caution', name: 'ภาพ/คำน่ากลัว', rx: /เลือด|แผลสด|ผ่าสด|เข็มทิ่ม|มีดผ่า/gi,
+    why: 'Meta ห้ามเนื้อหาทางการแพทย์ที่น่ากลัวหรือรุนแรง', fix: 'ตรวจภาพประกอบว่าไม่มีเข็ม/เลือด/แผล'},
+  {pol: 'กฎหมายสถานพยาบาล (โปรโมชัน)', id: 'B5', sev: 'caution', name: 'โปรลด/แถม', rx: /ลด\s*\d+\s*%|ซื้อ\s*1\s*แถม\s*1|แถมฟรี|แถม/gi,
+    why: 'โปรทำได้ แต่ต้องระบุราคาและเงื่อนไขให้ชัด ไม่จูงใจเกินจำเป็น', fix: 'ใส่ราคาเต็ม ราคาโปร และเงื่อนไข/วันหมดเขต'},
+];
+const SEV = {block: ['Block', 't-bad'], fix: ['Fix Required', 't-warn'], caution: ['Caution', 'muted']};
+const POLICY_INDEX = 'https://transparency.meta.com/policies/ad-standards/';
+function policyScan(text){
+  const hits = [];
+  for (const r of PRULES) for (const m of text.matchAll(r.rx)) hits.push({r, at: m.index, end: m.index + m[0].length, word: m[0]});
+  const verdict = hits.some(h => h.r.sev === 'block') ? 'block' : hits.some(h => h.r.sev === 'fix') ? 'fix' : 'pass';
+  // safer text: drop/replace the words whose rule has a replacement
+  let safe = text; for (const r of PRULES) if ('to' in r) safe = safe.replace(r.rx, r.to);
+  return {hits, verdict, safe: safe.replace(/[ \t]{2,}/g, ' ')};
+}
+console.assert(policyScan('โบท็อกซ์ ลดริ้วรอย 100% อันดับ 1').verdict === 'block' && policyScan('ปรึกษาแพทย์ฟรี ทักแชทได้เลย ฆสพ. 123').verdict === 'pass'
+  && policyScan('คุณมีสิวใช่ไหม').hits.some(h => h.r.id === 'A1') && !/โบท็อก/.test(policyScan('โปรโบท็อกซ์ 50u').safe), 'policy rules');
+let pol = {url: '', text: '', ad: null, busy: false, err: ''};
+function policyResultHTML(){
+  const {hits, verdict, safe} = policyScan(pol.text);
+  if (!pol.text.trim()) return '<div class="muted pad">วางลิงก์แอด หรือพิมพ์/วางข้อความแอดด้านซ้าย ระบบจะตรวจทันที</div>';
+  const V = {block: ['BLOCK', 'ผิดกฎชัดเจน แอดแทบจะโดนปฏิเสธแน่ อย่ายิงจนกว่าจะแก้', 'bad'], fix: ['FIX REQUIRED', 'มีคำเสี่ยง อาจโดนปฏิเสธหรือแสดงผลน้อย ควรแก้ก่อนยิง', 'warn'], pass: ['PASS', 'ไม่พบคำต้องห้าม (ยังต้องตรวจรูป/วิดีโอเอง)', 'ok']}[verdict];
+  // risk score as in the skill: count of Block + Fix Required issues
+  const nb = new Set(hits.filter(h => h.r.sev === 'block').map(h => h.r)).size, nf = new Set(hits.filter(h => h.r.sev === 'fix').map(h => h.r)).size;
+  const risk = nb >= 2 || (nb && nf) ? 'High' : nb || nf >= 2 ? 'Medium' : 'Low';
+  let marked = '', k = 0;
+  for (const h of hits.filter(h => h.at >= 0).sort((a, b) => a.at - b.at)) { if (h.at < k) continue;
+    marked += esc(pol.text.slice(k, h.at)) + `<mark class="pm ${h.r.sev}" title="${esc(h.r.id + ' ' + h.r.name)}">${esc(h.word)}</mark>`; k = h.end; }
+  marked += esc(pol.text.slice(k));
+  const groups = [...new Map(hits.map(h => [h.r.id + h.r.name, {r: h.r, words: [...new Set(hits.filter(x => x.r === h.r).map(x => x.word).filter(Boolean))]}])).values()]
+    .sort((a, b) => ['block', 'fix', 'caution'].indexOf(a.r.sev) - ['block', 'fix', 'caution'].indexOf(b.r.sev));
+  return `<div class="pv ${V[2]}"><b>VERDICT: ${V[0]}</b><span>${V[1]} · RISK SCORE: ${risk}</span></div>
+    <h3 class="ph3">ข้อที่เจอ (${groups.length})</h3>
+    ${groups.map(g => `<div class="pi ${g.r.sev}"><div><span class="ptag ${g.r.sev}">${SEV[g.r.sev][0]}</span> <b>${esc(g.r.name)}</b> <small class="muted">${g.r.id}</small></div>
+      <div class="ppol">Policy: ${/กฎหมาย/.test(g.r.pol) ? esc(g.r.pol) : `<a href="${POLICY_INDEX}" target="_blank" rel="noopener">${esc(g.r.pol)}</a>`}</div>
+      ${g.words.length ? `<div class="pw">${g.words.map(w => `<mark class="pm ${g.r.sev}">${esc(w)}</mark>`).join(' ')}</div>` : ''}
+      <div class="pwhy">${esc(g.r.why)}</div><div class="pfix">แก้: ${esc(g.r.fix)}</div></div>`).join('') || '<div class="muted">ไม่พบ</div>'}
+    <h3 class="ph3">ข้อความที่ไฮไลต์</h3><div class="ptext">${marked}</div>
+    ${safe !== pol.text ? `<h3 class="ph3">ข้อความที่ตัดคำเสี่ยงแล้ว <button class="link" id="polCopy">คัดลอก</button></h3><div class="ptext" id="polSafe">${esc(safe)}</div>
+      <p class="muted" style="font-size:11px">ตัดเฉพาะคำที่แทนได้อัตโนมัติ ข้อที่เหลือต้องเขียนใหม่เอง</p>` : ''}
+    ${/ฆสพ|ใบอนุญาตโฆษณา/.test(pol.text) ? '' : '<p class="muted" style="font-size:12px;margin-top:14px">หมายเหตุ: ไม่เห็นเลขใบอนุญาตโฆษณา (ฆสพ.) ในข้อความ เช็คว่าข้อความนี้ขออนุญาตโฆษณาแล้ว (กฎหมายสถานพยาบาล)</p>'}`;
+}
+function renderPolicy(){
+  return `<div class="dash-h"><h2>ตรวจกฎ Meta</h2><p>ตรวจข้อความแอดในเว็บทันที ไม่ใช้ AI · วิธีตรวจและระดับความเสี่ยงตาม skill meta-ad-policy-checker (gooseworks-ai/goose-skills) + กฎหมายโฆษณาสถานพยาบาลไทย</p></div>
+  <div class="pol">
+    <div class="card pad pol-in">
+      <label class="pl">ลิงก์แอดจาก Ads Manager หรือเลขแอด</label>
+      <div class="prow"><input id="polUrl" class="pinput" placeholder="https://adsmanager.facebook.com/...selected_ad_ids=..." value="${esc(pol.url)}"><button class="btn-primary" id="polGo" ${pol.busy ? 'disabled' : ''}>${pol.busy ? 'กำลังดึง…' : 'ดึงข้อความ'}</button></div>
+      ${pol.err ? `<div class="t-bad" style="font-size:12px;margin-top:6px">${esc(pol.err)}</div>` : ''}
+      ${pol.ad ? `<div class="pad-ad">${pol.ad.image ? `<img src="${esc(pol.ad.image)}" alt="" referrerpolicy="no-referrer">` : ''}<div><b>${esc(pol.ad.name || '')}</b><small class="muted">รูปต้องตรวจด้วยตา: ก่อน-หลัง, เข็ม/เลือด, ซูมสัดส่วน, ตัวหนังสือในรูป</small></div></div>` : ''}
+      <label class="pl" style="margin-top:14px">ข้อความแอด (แก้ได้ ตรวจทันทีที่พิมพ์)</label>
+      <textarea id="polText" class="ptarea" placeholder="วางแคปชัน / หัวข้อ / ข้อความในรูป">${esc(pol.text)}</textarea>
+      <p class="muted" style="font-size:11px">ใช้ได้ทั้งแอดใหม่ก่อนยิง และแอดที่โดนปฏิเสธ · ตรวจได้เฉพาะคำ ไม่ได้อ่านบริบทหรือรูป · Meta ยังเป็นผู้ตัดสินสุดท้าย</p>
+    </div>
+    <div class="card pad pol-out" id="polOut">${policyResultHTML()}</div>
+  </div>`;
+}
+async function policyFetch(){
+  pol.url = $('#polUrl').value.trim(); if (!pol.url) return;
+  pol.busy = true; pol.err = ''; render();
+  const {data, error} = await sb.functions.invoke('policy-check', {body: {read: true, url: pol.url}});
+  pol.busy = false;
+  if (error || data?.error) { let m = data?.error; try { m ||= (await error.context.json()).error; } catch {} pol.err = m || 'ดึงไม่ได้'; }
+  else { pol.ad = data; pol.text = data.text || ''; }
+  if (view === 'policy') { fxKey = ''; render(); }
+}
+document.addEventListener('input', e => { if (e.target.id === 'polText') { pol.text = e.target.value; $('#polOut').innerHTML = policyResultHTML(); } else if (e.target.id === 'polUrl') pol.url = e.target.value; });
+document.addEventListener('click', e => {
+  if (e.target.id === 'polGo') policyFetch();
+  if (e.target.id === 'polCopy') navigator.clipboard?.writeText($('#polSafe').textContent).then(() => toast('คัดลอกข้อความแล้ว'));
+});
+document.addEventListener('keydown', e => { if (e.target.id === 'polUrl' && e.key === 'Enter') policyFetch(); });
+
 // ---- angle brain: every snapshot ad tagged by sales angle (from its hook) + treatment, scored vs its clinic's normal ฿/chat
 // ponytail: keyword rules, not a model; ~25% of spend matches no angle. Upgrade path = LLM tagging in the nightly job.
 const ANGLES = {
@@ -1883,7 +2010,7 @@ function renderReports(){
           : j.status === 'done' ? '<div class="muted" style="font-size:12px;margin-top:6px">ไม่มีรีพอร์ตที่ถึงกำหนดในรอบนี้</div>' : ''}
         ${j.log ? `<details><summary>ดู log</summary><pre>${esc(j.log)}</pre></details>` : ''}</div>`; }).join('') || '<div class="job muted">ยังไม่เคยกด Run จากเว็บ</div>'}</div>`;
 }
-const mainHTML = () => view === 'dash' ? renderDash() : view === 'reports' ? renderReports() : view === 'posts' ? renderPosts() : view === 'angel' ? renderAngel() : view === 'media' ? `<iframe id="radar" src="radar/index.html" title="คลังสื่อคู่แข่ง (Competitor Ad Radar)"></iframe>` : view === 'log' ? renderLog() : view === 'today' ? renderToday() : view === 'leadnote' ? renderLeadNote('lead') : view === 'adsnote' ? renderLeadNote('adsb') : view === 'history' ? renderHistory() : view === 'brain' ? renderBrain()
+const mainHTML = () => view === 'dash' ? renderDash() : view === 'reports' ? renderReports() : view === 'posts' ? renderPosts() : view === 'angel' ? renderAngel() : view === 'media' ? `<iframe id="radar" src="radar/index.html" title="คลังสื่อคู่แข่ง (Competitor Ad Radar)"></iframe>` : view === 'log' ? renderLog() : view === 'today' ? renderToday() : view === 'leadnote' ? renderLeadNote('lead') : view === 'adsnote' ? renderLeadNote('adsb') : view === 'history' ? renderHistory() : view === 'brain' ? renderBrain() : view === 'policy' ? renderPolicy()
   : `<div class="card"><div class="card-h"><b>ข้อความสรุป ${thDate(day)}</b><span>วางใน LINE หรือ Obsidian ได้</span></div><pre>${esc(summaryText(day))}</pre></div>`;
 const typingInMain = () => /INPUT|TEXTAREA/.test(document.activeElement?.tagName) && document.activeElement.closest('#main');
 
@@ -1979,7 +2106,7 @@ function render(){
   // the media library is an iframe: keep it (and its scroll/filters) across the page's periodic re-renders
   if (boardBusy) return;   // mid-drag on the notes board: a rebuild would drop the item being moved
   const key = `${view}|${OWNER}|${dayFrom}|${day}`, same = key === fxKey, before = same ? snapNums() : null; fxEnter = !same;
-  if (!(view === 'media' && $('#radar')) && !(view === 'brain' && $('#brain') && same)) { $('#main').innerHTML = mainHTML(); if (view === 'brain') drawBrain(); }
+  if (!(view === 'media' && $('#radar')) && !(view === 'brain' && $('#brain') && same) && !(view === 'policy' && $('#polText') && same)) { $('#main').innerHTML = mainHTML(); if (view === 'brain') drawBrain(); }
   if (before) flashChanged(before); else countUp();
   fxKey = key; slideSegs();
   renderPanel(); checkEmptyBal();
