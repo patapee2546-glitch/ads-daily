@@ -912,9 +912,9 @@ const baht = n => n === '' || n == null || isNaN(n) ? '–' : '฿' + Math.round
 const int = n => n === '' || n == null || isNaN(n) ? '–' : Math.round(n).toLocaleString('th-TH');
 const todayISO = () => iso(new Date(Date.now() - new Date().getTimezoneOffset()*6e4));
 let TODAY = todayISO();
-let day = dayBefore(TODAY);   // open on yesterday: the latest day with a full day of spend
+let day = TODAY;   // open on today (the team asked for the current day; today's spend is still running)
 let cur = null, view = 'dash', q = '';
-let rng = {from: iso(new Date(Date.parse(day) - 13*864e5)), to: day};   // dashboard range, both ends inclusive
+let rng = {from: iso(new Date(Date.parse(TODAY) - 13*864e5)), to: TODAY};   // dashboard range, both ends inclusive: the last 14 days up to today
 let rngCpr = null;                                // own range for the cost-per-result-by-clinic card; null = same as rng
 let rp = null;                                    // open range picker: {target, from, to, hover, month: 'YYYY-MM'}
 
