@@ -1391,7 +1391,8 @@ function policyScan(text){
 }
 console.assert(policyScan('โบท็อกซ์ ลดริ้วรอย 100% อันดับ 1').verdict === 'block' && policyScan('ปรึกษาแพทย์ฟรี ทักแชทได้เลย ฆสพ. 123').verdict === 'pass'
   && policyScan('คุณมีสิวใช่ไหม').hits.some(h => h.r.id === 'A1') && !/โบท็อก/.test(policyScan('โปรโบท็อกซ์ 50u').safe), 'policy rules');
-let pol = {url: '', text: '', ad: null, busy: false, err: '', media: [], ocr: '', mBusy: '', run: null};
+const POL0 = () => ({url: '', text: '', ad: null, busy: false, err: '', media: [], ocr: '', mBusy: '', run: null});
+let pol = POL0(), polView = null;   // a link belongs to the tab it was pasted in: leaving that tab starts clean
 function policyResultHTML(){
   const all = pol.text + (pol.ocr ? '\n\n[ตัวหนังสือในรูป/คลิป]\n' + pol.ocr : '');
   let {hits, verdict, safe} = policyScan(all);
@@ -1456,7 +1457,7 @@ const VLABELS = [
   {t: 'a person in underwear or a bikini showing their body', sev: 'fix', id: 'A5', name: 'ชุดชั้นใน/บิกินี', pol: 'Adult nudity and sexual activity', why: 'Meta จำกัดภาพที่โชว์ร่างกายหรือเน้นสัดส่วน', fix: 'ใช้ภาพแต่งกายมิดชิด ไม่ซูมสัดส่วน'},
 ];
 const VNEUTRAL = ['a smiling person portrait', 'a doctor talking to the camera', 'a clinic room or reception desk', 'an advertisement graphic with text and a price', 'a beauty product or device', 'a close-up of a face with clear skin'];
-let ocrW = null, clipP = null;
+let ocrW = null, clipP = null, seeInto = null;
 const loadScript = src => new Promise((ok, no) => { const sc = document.createElement('script'); sc.src = src; sc.onload = ok; sc.onerror = no; document.head.append(sc); });
 async function eyes(){
   if (!window.Tesseract) await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js');
@@ -1475,8 +1476,8 @@ async function seeFrame(cv, label){
     .map(o => ({...VLABELS.find(x => x.t === o.label), score: o.score}));
   const th = document.createElement('canvas'), k = 220 / Math.max(cv.width, cv.height); th.width = cv.width * k; th.height = cv.height * k;
   th.getContext('2d').drawImage(cv, 0, 0, th.width, th.height);
-  pol.media.push({src: th.toDataURL('image/jpeg', .7), label, text, vis});
-  pol.ocr = pol.media.map(m => m.text).filter(Boolean).join('\n');
+  seeInto.media.push({src: th.toDataURL('image/jpeg', .7), label, text, vis});
+  seeInto.ocr = seeInto.media.map(m => m.text).filter(Boolean).join('\n');
 }
 const toCanvas = img => { const cv = document.createElement('canvas'), k = Math.min(1, 1280 / Math.max(img.width || img.videoWidth, img.height || img.videoHeight));
   cv.width = (img.width || img.videoWidth) * k; cv.height = (img.height || img.videoHeight) * k; cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height); return cv; };
@@ -1493,6 +1494,7 @@ async function seeBlob(blob, name){
   URL.revokeObjectURL(v.src);
 }
 async function seeFiles(files){
+  seeInto = pol;
   try { busy(ocrW ? 'กำลังดู…' : 'กำลังโหลดตัวอ่านภาพครั้งแรก (ประมาณ 100 MB, ครั้งต่อไปเร็ว)…');
     for (const f of files) await seeBlob(f, f.name || 'ภาพที่วาง'); }
   catch (e) { pol.err = 'ดูภาพ/คลิปไม่ได้: ' + e.message; }
@@ -1539,23 +1541,25 @@ function runHTML(){
     ${r.total > r.ads.length ? `<small class="muted">แสดง ${r.ads.length} จาก ${r.total} แอด</small>` : ''}</div>`;
 }
 async function policyRun(){
-  pol.run = {busy: true}; if (['policy', 'running'].includes(view)) { fxKey = ''; render(); }
-  const {data, error} = await sb.functions.invoke('policy-check', {body: {running: pol.text}});
+  const P = pol;   // the tab may be left (and pol reset) before Meta answers: write only into this check's own state
+  P.run = {busy: true}; if (pol === P && ['policy', 'running'].includes(view)) { fxKey = ''; render(); }
+  const {data, error} = await sb.functions.invoke('policy-check', {body: {running: P.text}});
   let m = data?.error; if (error && !m) { try { m = (await error.context.json()).error; } catch {} }
-  pol.run = error || m ? {err: m || 'เช็คไม่ได้'} : data;
-  if (['policy', 'running'].includes(view)) { fxKey = ''; render(); }
+  P.run = error || m ? {err: m || 'เช็คไม่ได้'} : data;
+  if (pol === P && ['policy', 'running'].includes(view)) { fxKey = ''; render(); }
 }
 document.addEventListener('click', e => { if (e.target.id === 'polRun') policyRun(); });
 
 async function policyFetch(){
-  pol.url = $('#polUrl').value.trim(); if (!pol.url) return;
-  pol.busy = true; pol.err = ''; pol.run = null; fxKey = ''; render();
-  const {data, error} = await sb.functions.invoke('policy-check', {body: {read: true, url: pol.url}});
-  pol.busy = false;
-  if (error || data?.error) { let m = data?.error; try { m ||= (await error.context.json()).error; } catch {} pol.err = m || 'ดึงไม่ได้'; }
-  else { pol.ad = data; pol.text = data.text || ''; pol.media = []; pol.ocr = ''; policyRun();
-    if (view === 'running') {} else if (data.video) seeUrl(data.video, 'คลิปแอด').catch(e => { pol.err = e.message; }); else if (data.image) seeUrl(data.image, 'ภาพปก').catch(e => { pol.err = e.message; }); }
-  if (['policy', 'running'].includes(view)) { fxKey = ''; render(); }
+  const P = pol;   // the tab may be left (and pol reset) before Meta answers: write only into this check's own state
+  P.url = $('#polUrl').value.trim(); if (!P.url) return;
+  P.busy = true; P.err = ''; P.run = null; fxKey = ''; render();
+  const {data, error} = await sb.functions.invoke('policy-check', {body: {read: true, url: P.url}});
+  P.busy = false;
+  if (error || data?.error) { let m = data?.error; try { m ||= (await error.context.json()).error; } catch {} P.err = m || 'ดึงไม่ได้'; }
+  else { P.ad = data; P.text = data.text || ''; P.media = []; P.ocr = ''; policyRun();
+    if (view === 'running') {} else if (data.video) seeUrl(data.video, 'คลิปแอด').catch(e => { P.err = e.message; }); else if (data.image) seeUrl(data.image, 'ภาพปก').catch(e => { P.err = e.message; }); }
+  if (pol === P && ['policy', 'running'].includes(view)) { fxKey = ''; render(); }
 }
 document.addEventListener('input', e => { if (e.target.id === 'polText') { pol.text = e.target.value; $('#polOut').innerHTML = policyResultHTML(); if (pol.run && !pol.run.busy) pol.run = null; const rb = $('#polRunBox'); if (rb) rb.innerHTML = runHTML(); } else if (e.target.id === 'polUrl') pol.url = e.target.value; });
 document.addEventListener('click', e => {
@@ -2420,6 +2424,8 @@ function slideSegs(){
 addEventListener('resize', slideSegs); document.fonts?.ready.then(slideSegs);
 document.addEventListener('change', e => { if (e.target.id === 'brainClin') { brainClinic = e.target.value; drawBrain(); } });
 function render(){
+  if (polView && polView !== view) pol = POL0();
+  polView = ['policy', 'running'].includes(view) ? view : null;
   $('#dayslot').innerHTML = rangeButton('day');
   document.querySelector('.datebox').style.display = ['dash', 'log', 'angel', 'media', 'reports'].includes(view) ? 'none' : '';
   document.querySelectorAll('[role=tab]').forEach(b => b.setAttribute('aria-selected', b.dataset.view===view));
