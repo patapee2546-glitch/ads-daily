@@ -263,6 +263,10 @@ aside{border-left:1px solid var(--line);background:var(--surface);backdrop-filte
 .leadnote .card-h select{max-width:260px}
 .board{position:relative;border-top:1px solid var(--line);overflow-x:auto;overflow-y:hidden;outline:none;
   background-image:radial-gradient(var(--line-2) 1px,transparent 1px);background-size:24px 24px}
+.bcols2{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--line)}.bcol{min-width:0}.bcol+.bcol{border-left:1px solid var(--line)}
+@media (max-width:900px){.bcols2{grid-template-columns:1fr}.bcol+.bcol{border-left:0;border-top:1px solid var(--line)}}
+.bhd{padding:8px 16px;font-weight:600;color:var(--text-2)}
+.board.on{box-shadow:inset 0 0 0 2px color-mix(in oklab,var(--accent) 45%,transparent)}
 .board-empty{position:absolute;inset:40% 0 auto;text-align:center;color:var(--text-3);margin:0;pointer-events:none}
 .bi{position:absolute;box-sizing:border-box;border:1px solid transparent;border-radius:10px;touch-action:none}
 .bi:hover{border-color:var(--line-2)}.bi.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
@@ -1084,22 +1088,30 @@ const LOG_TOPICS = [['ads','แอด'], ['page','เพจ'], ['budget','งบ
 // Images (chat screenshots = customer data) go to the private bucket lead-notes and are shown through 1-hour signed URLs.
 let leadClinic = null, boardBusy = false, boardSel = null, boardPt = null;
 const BUCKET = 'lead-notes', urlCache = {};
-function leadBoard(name){
-  const t = topic(name, 'lead');
-  if (!t.board) t.board = t.note ? [{id: crypto.randomUUID(), type: 'text', x: 24, y: 24, w: 560, h: 220, text: t.note}] : [];
+// two boards side by side: 'lead' (แชท/ลีด) and 'adsb' (แอดที่ปรับ); toolbar, shortcuts and menus act on the last one touched
+let bKey = 'lead';
+const bEl = () => document.querySelector(`.board[data-key="${bKey}"]`);
+function bUse(bd){
+  if (!bd || bd.dataset.key === bKey) return;
+  const old = bEl(); if (old) { old.classList.remove('on'); old.querySelectorAll('.bi.sel').forEach(x => x.classList.remove('sel')); }
+  bKey = bd.dataset.key; bd.classList.add('on'); boardSel = null; boardMulti = new Set(); boardPt = null;
+}
+function leadBoard(name, k = bKey){
+  const t = topic(name, k);
+  if (!t.board) t.board = k === 'lead' && t.note ? [{id: crypto.randomUUID(), type: 'text', x: 24, y: 24, w: 560, h: 220, text: t.note}] : [];
   return t.board;
 }
 // undo / redo: snapshots of the board per clinic+day; a burst of typing folds into one step
 let bHist = {key: '', stack: [], redo: [], t: 0};
-function histEnsure(){ const k = leadClinic + '|' + day; if (bHist.key !== k) bHist = {key: k, stack: [JSON.stringify(leadBoard(leadClinic))], redo: [], t: 0}; }
-function histRestore(s){ topic(leadClinic, 'lead').board = JSON.parse(s); boardSel = null; boardMulti = new Set(); boardCommit(true); drawBoard(); }
+function histEnsure(){ const k = leadClinic + '|' + day + '|' + bKey; if (bHist.key !== k) bHist = {key: k, stack: [JSON.stringify(leadBoard(leadClinic))], redo: [], t: 0}; }
+function histRestore(s){ topic(leadClinic, bKey).board = JSON.parse(s); boardSel = null; boardMulti = new Set(); boardCommit(true); drawBoard(); }
 function boardUndo(){ histEnsure(); const st = bHist.stack; if (st.length < 2) return; bHist.redo.push(st.pop()); histRestore(st.at(-1)); }
 function boardRedo(){ histEnsure(); const s = bHist.redo.pop(); if (!s) return; bHist.stack.push(s); histRestore(s); }
 function boardCommit(noHist, typing){
-  if (!noHist) { histEnsure(); const st = bHist.stack, snap = JSON.stringify(topic(leadClinic, 'lead').board);
+  if (!noHist) { histEnsure(); const st = bHist.stack, snap = JSON.stringify(topic(leadClinic, bKey).board);
     if (st.at(-1) !== snap) { if (typing && Date.now() - bHist.t < 1500 && st.length > 1) st[st.length - 1] = snap; else st.push(snap);
       if (st.length > 50) st.shift(); bHist.redo = []; bHist.t = Date.now(); } }
-  const t = topic(leadClinic, 'lead'), texts = t.board.filter(i => i.type === 'text').map(i => (i.text || '').trim()).filter(Boolean);
+  const t = topic(leadClinic, bKey), texts = t.board.filter(i => i.type === 'text').map(i => (i.text || '').trim()).filter(Boolean);
   const n = t.board.filter(i => i.type === 'img').length;
   t.note = texts.join('\n\n') || (n ? `รูป ${n} รูป` : '');
   save(day, leadClinic);
@@ -1144,14 +1156,14 @@ function itemHTML(it, z){
   return `<div class="bi bi-${it.type}${boardSel === it.id ? ' sel' : ''}" data-id="${it.id}" style="${box}">${inner}
     <button class="bx" data-bdel aria-label="ลบ" title="ลบ">×</button><span class="rz" data-rz title="ลากเพื่อย่อ/ขยาย"></span></div>`;
 }
-function boardHTML(){ const b = leadBoard(leadClinic); return b.map((it, z) => itemHTML(it, z + 1)).join('') +
+function boardHTML(k = bKey){ const b = leadBoard(leadClinic, k); return b.map((it, z) => itemHTML(it, z + 1)).join('') +
   (b.length ? '' : '<p class="board-empty">วางรูป (⌘V / Ctrl+V) หรือลากไฟล์รูปมาวางตรงนี้ · กด "+ ข้อความ" เพื่อพิมพ์</p>'); }
 function drawBoard(){
-  const el = $('#board'); if (!el) return;
+  const el = bEl(); if (!el) return;
   el.style.height = boardH(leadBoard(leadClinic)) + 'px'; el.innerHTML = boardHTML(); signImgs();
 }
 async function signImgs(){
-  const imgs = [...document.querySelectorAll('#board img[data-path]')];
+  const imgs = [...document.querySelectorAll('.board img[data-path]')];
   const need = [...new Set(imgs.map(i => i.dataset.path).filter(x => !(urlCache[x]?.exp > Date.now())))];
   if (need.length) {
     const {data, error} = await sb.storage.from(BUCKET).createSignedUrls(need, 3600);
@@ -1171,7 +1183,7 @@ async function shrink(file){
 }
 async function addImages(files, x, y){
   const imgs = [...files].filter(f => /^image\//.test(f.type)); if (!imgs.length) return;
-  const st = $('#bState'), c = db.clinics.find(v => v.name === leadClinic), name = leadClinic, d = day;
+  const st = $('#bState'), c = db.clinics.find(v => v.name === leadClinic), name = leadClinic, d = day, bk = bKey;
   for (const [n, f] of imgs.entries()) {
     if (st) st.textContent = `กำลังอัปโหลดรูป ${n + 1}/${imgs.length}…`;
     try {
@@ -1180,14 +1192,14 @@ async function addImages(files, x, y){
       const {error} = await sb.storage.from(BUCKET).upload(path, blob, {contentType: blob.type});
       if (error) throw error;
       const k = Math.min(1, 420 / w);
-      const b = topicAt(d, name).board; b.push({id: crypto.randomUUID(), type: 'img', x: x + n * 24, y: y + n * 24, w: Math.round(w * k), h: Math.round(h * k), path});
+      const b = topicAt(d, name, bk).board; b.push({id: crypto.randomUUID(), type: 'img', x: x + n * 24, y: y + n * 24, w: Math.round(w * k), h: Math.round(h * k), path});
     } catch (e) { alert('อัปโหลดรูปไม่ได้: ' + (e.message || e)); }
   }
   if (st) st.textContent = '';
-  if (name === leadClinic && d === day) { boardCommit(); drawBoard(); } else save(d, name);
+  if (name === leadClinic && d === day && bk === bKey) { boardCommit(); drawBoard(); } else save(d, name);
 }
 // the board of a given day/clinic even if the user moved on while an upload was running
-function topicAt(d, name){ const e = ((db.days[d] ??= {})[name] ??= {}), t = (e.lead ??= {}); t.board ??= []; return t; }
+function topicAt(d, name, k = 'lead'){ const e = ((db.days[d] ??= {})[name] ??= {}), t = (e[k] ??= {}); t.board ??= []; return t; }
 function addText(x, y, text = ''){
   const id = crypto.randomUUID(); boardSel = id; boardMulti = new Set([id]);
   leadBoard(leadClinic).push({id, type: 'text', x, y, w: 320, h: 140, text});
@@ -1203,13 +1215,13 @@ function delItem(id){
   const b = leadBoard(leadClinic), i = b.findIndex(v => v.id === id); if (i < 0) return;
   const [it] = b.splice(i, 1);
   // ponytail: the screenshot file is removed 60 s later unless an undo put it back; undoing after that leaves a blank image
-  const d = day, n = leadClinic;
-  if (it.type === 'img') setTimeout(() => { if (!JSON.stringify(topicAt(d, n).board).includes(it.path)) sb.storage.from(BUCKET).remove([it.path]); }, 60e3);
+  const d = day, n = leadClinic, bk = bKey;
+  if (it.type === 'img') setTimeout(() => { if (!JSON.stringify(topicAt(d, n, bk).board).includes(it.path)) sb.storage.from(BUCKET).remove([it.path]); }, 60e3);
   boardSel = null; boardCommit(); drawBoard();
 }
 // where a pasted item lands: the last click on the board, else the top-left of what is on screen
 function dropPoint(){
-  const el = $('#board'), r = el.getBoundingClientRect(), p = boardPt || {x: 24, y: Math.max(24, Math.round(-r.top + 80))};
+  const el = bEl(), r = el.getBoundingClientRect(), p = boardPt || {x: 24, y: Math.max(24, Math.round(-r.top + 80))};
   return {x: Math.max(0, Math.min(p.x, el.clientWidth - 440)), y: p.y};   // keep a new box (max 420px wide) inside the board
 }
 function renderLeadNote(){
@@ -1225,7 +1237,8 @@ function renderLeadNote(){
       <span class="bcols" role="group" aria-label="สีลูกศร/กรอบ">${BCOLS.map(c => `<button data-bcol="${c}" style="background:${c}" aria-pressed="${c === bColor}" aria-label="สี ${c}"></button>`).join('')}</span>
       <span class="bws" role="group" aria-label="ความหนาเส้น">${BWS.map(([w, n]) => `<button data-bw="${w}" aria-pressed="${w === bWidth}" title="เส้น${n}"><i style="height:${w}px"></i>${n}</button>`).join('')}</span>
       <span class="spacer"></span><span class="muted" id="bState"></span><span class="muted">วางรูป ⌘V · ลากย้าย · ลากมุมขวาล่างย่อ/ขยาย · Delete ลบ · ลากที่ว่างเพื่อเลือกหลายชิ้น · ⌘Z ย้อน · ⌘D ทำซ้ำ · ⌘C/⌘V คัดลอก · คลิกขวาเปิดเมนู · บันทึกอัตโนมัติ</span></div>
-    <div class="board" id="board" tabindex="0" aria-label="กระดานโน้ต ${esc(c.name)} ${thDate(day)}" style="height:${boardH(leadBoard(c.name))}px">${boardHTML()}</div></div>
+    <div class="bcols2">${[['lead', '💬 แชท/ลีด'], ['adsb', '📣 แอดที่ปรับ']].map(([k, n]) => `<section class="bcol">
+      <div class="bhd">${n}</div><div class="board${k === bKey ? ' on' : ''}" data-key="${k}" tabindex="0" aria-label="กระดาน${n} ${esc(c.name)} ${thDate(day)}" style="height:${boardH(leadBoard(c.name, k))}px">${boardHTML(k)}</div></section>`).join('')}</div></div>
   ${past.length ? `<div class="card"><div class="card-h"><b>โน้ตวันก่อนๆ</b><span>${past.length} วัน</span></div>
     <ul class="leadpast">${past.map(d => `<li><button class="ghost" data-goday="${d}">${thLong(d, true)}</button><p>${esc(rec(d, c.name).lead.note)}</p></li>`).join('')}</ul></div>` : ''}`;
 }
@@ -1272,7 +1285,7 @@ function boardPaste(items, off, dx = off, dy = off){
     if (c.type === 'arrow') Object.assign(c, {x1: c.x1 + dx, y1: c.y1 + dy, x2: c.x2 + dx, y2: c.y2 + dy}); else Object.assign(c, {x: Math.max(0, c.x + dx), y: Math.max(0, c.y + dy)});
     return c; });
   if (!add.length) return;
-  leadBoard(leadClinic).push(...add); boardSel = null; boardCommit(); drawBoard(); selectOnly($('#board'), add.map(i => i.id));
+  leadBoard(leadClinic).push(...add); boardSel = null; boardCommit(); drawBoard(); selectOnly(bEl(), add.map(i => i.id));
 }
 // right-click menu on the board: the same actions as the shortcuts, for mouse users
 let bClip = null;
@@ -1288,8 +1301,8 @@ function bMenuHTML(onItem){
     + b('front', 'ไว้หน้าสุด') + b('back', 'ไว้หลังสุด') + '<hr>' + undo + '<hr>' + b('del', `ลบ${sel.length > 1 ? ` ${sel.length} ชิ้น` : ''}`, '<kbd>Delete</kbd>', false, 'del');
 }
 $('#main').addEventListener('contextmenu', e => {
-  const bd = e.target.closest('#board'); if (!bd || e.target.closest('textarea')) return;   // in a text box keep the browser menu (spelling, paste)
-  e.preventDefault(); closeBMenu(); histEnsure();
+  const bd = e.target.closest('.board'); if (!bd || e.target.closest('textarea')) return;   // in a text box keep the browser menu (spelling, paste)
+  e.preventDefault(); closeBMenu(); bUse(bd); histEnsure();
   const el = e.target.closest('.bi'), r = bd.getBoundingClientRect();
   if (el && !boardMulti.has(el.dataset.id)) selectOnly(bd, [el.dataset.id]); else if (!el) selectOnly(bd, []);
   const pt = {x: Math.round(e.clientX - r.left), y: Math.round(e.clientY - r.top)};
@@ -1309,9 +1322,9 @@ document.addEventListener('click', e => {
     const q = bClip.map(itemBox), mx = Math.min(...q.map(v => v.x)), my = Math.min(...q.map(v => v.y));
     boardPaste(bClip, 0, pt.x - mx, pt.y - my);
   }
-  else if (act === 'width') { sel.forEach(i => { if (i.color) i.sw = +btn.dataset.w; }); boardCommit(); drawBoard(); selectOnly($('#board'), sel.map(i => i.id)); }
-  else if (act === 'color') { sel.forEach(i => { if (i.color) i.color = btn.dataset.c; }); boardCommit(); drawBoard(); selectOnly($('#board'), sel.map(i => i.id)); }
-  else if (act === 'front' || act === 'back') { const rest = b.filter(i => !boardMulti.has(i.id)); b.length = 0; b.push(...(act === 'front' ? [...rest, ...sel] : [...sel, ...rest])); boardCommit(); drawBoard(); selectOnly($('#board'), sel.map(i => i.id)); }
+  else if (act === 'width') { sel.forEach(i => { if (i.color) i.sw = +btn.dataset.w; }); boardCommit(); drawBoard(); selectOnly(bEl(), sel.map(i => i.id)); }
+  else if (act === 'color') { sel.forEach(i => { if (i.color) i.color = btn.dataset.c; }); boardCommit(); drawBoard(); selectOnly(bEl(), sel.map(i => i.id)); }
+  else if (act === 'front' || act === 'back') { const rest = b.filter(i => !boardMulti.has(i.id)); b.length = 0; b.push(...(act === 'front' ? [...rest, ...sel] : [...sel, ...rest])); boardCommit(); drawBoard(); selectOnly(bEl(), sel.map(i => i.id)); }
   else if (act === 'del') { sel.forEach(i => delItem(i.id)); boardMulti = new Set(); }
   else if (act === 'undo') boardUndo();
   else if (act === 'redo') boardRedo();
@@ -1322,8 +1335,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeBMenu()
 addEventListener('scroll', closeBMenu, true);
 // board pointer work: drag an item (images anywhere, text boxes by their top grip), resize from the corner, select, delete
 $('#main').addEventListener('pointerdown', e => {
-  const bd = e.target.closest('#board'); if (!bd) return;
-  const r = bd.getBoundingClientRect();
+  const bd = e.target.closest('.board'); if (!bd) return;
+  bUse(bd); const r = bd.getBoundingClientRect();
   boardPt = {x: Math.max(0, Math.round(e.clientX - r.left)), y: Math.max(0, Math.round(e.clientY - r.top))};
   const el = e.target.closest('.bi');
   if (!el) { selectOnly(bd, []); if (e.target === bd) marquee(e, bd, r); return; }
@@ -1354,18 +1367,19 @@ $('#main').addEventListener('pointerdown', e => {
     boardBusy = false; bd.style.height = boardH(b) + 'px'; if (['x', 'y', 'w', 'h', 'x1', 'y1', 'x2', 'y2'].some(k => it[k] !== o[k])) boardCommit(); };
   cap.addEventListener('pointermove', move); cap.addEventListener('pointerup', up); cap.addEventListener('pointercancel', up);
 });
-$('#main').addEventListener('dragover', e => { if (e.target.closest('#board')) e.preventDefault(); });
+$('#main').addEventListener('dragover', e => { if (e.target.closest('.board')) e.preventDefault(); });
 $('#main').addEventListener('drop', e => {
-  const bd = e.target.closest('#board'); if (!bd || !e.dataTransfer?.files?.length) return;
+  const bd = e.target.closest('.board'); if (!bd || !e.dataTransfer?.files?.length) return;
+  bUse(bd);
   e.preventDefault(); const r = bd.getBoundingClientRect();
   addImages(e.dataTransfer.files, Math.round(e.clientX - r.left), Math.round(e.clientY - r.top));
 });
 document.addEventListener('copy', e => {
-  if (view !== 'leadnote' || !$('#board') || !boardMulti.size || /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
+  if (view !== 'leadnote' || !bEl() || !boardMulti.size || /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
   e.preventDefault(); bClip = boardSelected().map(i => ({...i})); e.clipboardData.setData('text/plain', BCLIP + JSON.stringify(bClip)); bPasteN = 0;
 });
 document.addEventListener('paste', e => {
-  if (view !== 'leadnote' || !$('#board')) return;
+  if (view !== 'leadnote' || !bEl()) return;
   const bt = e.clipboardData?.getData('text') || '';
   if (bt.startsWith(BCLIP) && !e.target.closest?.('textarea, input, select')) {
     e.preventDefault(); try { boardPaste(JSON.parse(bt.slice(BCLIP.length)), 24 * ++bPasteN); } catch {}
@@ -1376,7 +1390,7 @@ document.addEventListener('paste', e => {
   const t = e.clipboardData?.getData('text'); if (t) { e.preventDefault(); const p = dropPoint(); addText(p.x, p.y, t); }
 });
 document.addEventListener('keydown', e => {
-  if (view !== 'leadnote' || !$('#board') || !(e.metaKey || e.ctrlKey) || /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;   // inside a text box the browser's own undo runs
+  if (view !== 'leadnote' || !bEl() || !(e.metaKey || e.ctrlKey) || /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;   // inside a text box the browser's own undo runs
   const k = e.key.toLowerCase();
   if (k === 'z' && !e.shiftKey) { e.preventDefault(); boardUndo(); }
   else if (k === 'd') { e.preventDefault(); boardPaste(boardSelected(), 24); }
@@ -1746,11 +1760,11 @@ $('#main').addEventListener('click', e => {
   const bv = e.target.closest('[data-bvec]'); if (bv) { addVector(bv.dataset.bvec); return; }
   const bw = e.target.closest('[data-bw]'); if (bw) {   // thickness for new vectors, and for the selected ones
     bWidth = +bw.dataset.bw; document.querySelectorAll('[data-bw]').forEach(x => x.setAttribute('aria-pressed', x === bw));
-    const sel = leadBoard(leadClinic).filter(v => boardMulti.has(v.id) && v.color); if (sel.length) { sel.forEach(v => v.sw = bWidth); boardCommit(); drawBoard(); selectOnly($('#board'), sel.map(v => v.id)); }
+    const sel = leadBoard(leadClinic).filter(v => boardMulti.has(v.id) && v.color); if (sel.length) { sel.forEach(v => v.sw = bWidth); boardCommit(); drawBoard(); selectOnly(bEl(), sel.map(v => v.id)); }
     return; }
   const bc = e.target.closest('[data-bcol]'); if (bc) {   // pick the colour for new vectors, and recolour the selected one
     bColor = bc.dataset.bcol; document.querySelectorAll('[data-bcol]').forEach(x => x.setAttribute('aria-pressed', x === bc));
-    const sel = leadBoard(leadClinic).filter(v => boardMulti.has(v.id) && v.color); if (sel.length) { sel.forEach(v => v.color = bColor); boardCommit(); drawBoard(); selectOnly($('#board'), sel.map(v => v.id)); }
+    const sel = leadBoard(leadClinic).filter(v => boardMulti.has(v.id) && v.color); if (sel.length) { sel.forEach(v => v.color = bColor); boardCommit(); drawBoard(); selectOnly(bEl(), sel.map(v => v.id)); }
     return; }
   if (e.target.closest('[data-rep-run]')) {
     if (!confirm('สั่งรันรีพอร์ตจริงตอนนี้? ระบบจะสร้าง PDF อัปโหลด Drive และส่ง Telegram ให้ลูกค้าทุกคลินิกที่ถึงกำหนด')) return;
@@ -1795,7 +1809,7 @@ document.querySelectorAll('[role=tab]').forEach(b => b.onclick = () => { view = 
 $('#q').oninput = e => { q = e.target.value; if (view !== 'dash' && view !== 'text') $('#main').innerHTML = mainHTML(); };
 // daily log edits
 $('#main').addEventListener('input', e => {
-  if (e.target.matches('[data-bt]')) { const it = leadBoard(leadClinic).find(v => v.id === e.target.closest('.bi').dataset.id); if (it) { it.text = e.target.value; boardCommit(false, true); } return; }
+  if (e.target.matches('[data-bt]')) { bUse(e.target.closest('.board')); const it = leadBoard(leadClinic).find(v => v.id === e.target.closest('.bi').dataset.id); if (it) { it.text = e.target.value; boardCommit(false, true); } return; }
   const k = e.target.dataset.log; if (!k) return;
   const [c, t] = k.split('|'), d = logDay || TODAY;
   ((((db.days[d] ??= {})[c] ??= {})[t] ??= {}).note = e.target.value); save(d, c);
