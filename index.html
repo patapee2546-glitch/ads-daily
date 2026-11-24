@@ -695,7 +695,7 @@ const runMoney = w => has(w.balance)
   ? (has(w.limit) && w.limit < w.balance
       ? `เหลือจริง ${baht(w.limit)} <span class="muted">· Meta ยังโชว์ ${baht(w.balance)} (ยังไม่หักยอดใช้ล่าสุด ${baht(w.balance - w.limit)})</span>`
       : `ยอดเงิน ${baht(w.balance)}`)
-  : `วงเงินบัญชีเหลือ ${baht(w.limit)}`;
+  : `วงเงินบัญชีเหลือ ${baht(w.limit)} <span class="muted" title="บัญชีที่ผูกบัตร: Meta ไม่ส่งยอดเงินที่เติมไว้ผ่าน API ดูยอดเงินจริงในหน้าการชำระเงินของ Meta">· ไม่ใช่ยอดเงิน (บัญชีบัตร ดูยอดใน Meta)</span>`;
 function runwayCell(name){
   const w = runway(name);
   if (!w) return '<span class="muted">–</span>';
