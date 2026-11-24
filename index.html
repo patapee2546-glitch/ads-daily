@@ -259,8 +259,21 @@ aside{border-left:1px solid var(--line);background:var(--surface);backdrop-filte
 .note-open{width:100%;min-height:64px;max-height:120px;overflow:hidden;text-align:left;white-space:pre-wrap;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--text);font:inherit;cursor:pointer;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical}
 .note-open:hover{border-color:var(--accent)}
 .leadnote .card-h select{max-width:260px}
-#leadNote{display:block;width:100%;box-sizing:border-box;min-height:max(320px,55vh);resize:vertical;border:0;border-top:1px solid var(--line);padding:16px;background:transparent;color:var(--text);font:15px/1.7 var(--sans)}
-#leadNote:focus{outline:none;box-shadow:inset 0 0 0 2px var(--accent)}
+.board{position:relative;border-top:1px solid var(--line);overflow-x:auto;overflow-y:hidden;outline:none;
+  background-image:radial-gradient(var(--line-2) 1px,transparent 1px);background-size:24px 24px}
+.board-empty{position:absolute;inset:40% 0 auto;text-align:center;color:var(--text-3);margin:0;pointer-events:none}
+.bi{position:absolute;box-sizing:border-box;border:1px solid transparent;border-radius:10px;touch-action:none}
+.bi:hover{border-color:var(--line-2)}.bi.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.bi-img{cursor:grab}.bi-img:active{cursor:grabbing}
+.bi-img img{display:block;width:100%;height:100%;object-fit:contain;border-radius:9px;user-select:none;-webkit-user-drag:none;background:var(--surface)}
+.bi-text{background:var(--surface-2);border-color:var(--line);display:flex;flex-direction:column}
+.bi-text .grip{height:14px;flex:none;cursor:grab;border-radius:9px 9px 0 0;background:linear-gradient(var(--line-2),var(--line-2)) center/32px 3px no-repeat}
+.bi-text textarea{flex:1;min-height:0;resize:none;border:0;background:transparent;color:var(--text);font:15px/1.6 var(--sans);padding:2px 12px 10px;outline:none}
+.bx{position:absolute;top:-10px;right:-10px;width:24px;height:24px;border-radius:50%;border:1px solid var(--line);background:var(--pop);color:var(--text);font-size:14px;line-height:1;cursor:pointer;opacity:0;padding:0}
+.bi:hover .bx,.bi.sel .bx{opacity:1}
+.rz{position:absolute;right:-6px;bottom:-6px;width:14px;height:14px;border-radius:4px;background:var(--accent);cursor:nwse-resize;opacity:0}
+.bi:hover .rz,.bi.sel .rz{opacity:1}
+.btnlike{display:inline-flex;align-items:center;cursor:pointer}
 .leadpast{list-style:none;margin:0;padding:0}.leadpast li{padding:10px 16px;border-top:1px solid var(--line)}.leadpast p{margin:4px 0 0;white-space:pre-wrap;color:var(--text-2)}
 .bell{position:relative;margin-left:4px}.bell b[hidden]{display:none}.bell b{position:absolute;top:-4px;right:-4px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:oklch(58% 0.2 25);color:#fff;font:600 11px/17px var(--sans);text-align:center}
 .mbal{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px;margin:8px 0}.mbal label{display:grid;gap:4px;font-size:12px;color:var(--text-2);flex:1 1 220px}.mbal small{flex-basis:100%;font-size:12px}
@@ -958,20 +971,147 @@ function renderDash(){
 const LOG_START = '2026-11-23';
 let logDay = null;  // null = follow today (rolls over at midnight)
 const LOG_TOPICS = [['ads','แอด'], ['page','เพจ'], ['budget','งบ'], ['lead','ลีด']];
-// long free text about chat/lead quality gets its own page (the panel box is too small); same data: day record lead.note
-let leadClinic = null;
+// โน้ตแชท/ลีด: a free board (Canva-like) per clinic per day. Items {id, type:'text'|'img', x, y, w, h, text|path} live in
+// the day record lead.board; lead.note is kept as the joined text so the panel preview / summary still read it.
+// Images (chat screenshots = customer data) go to the private bucket lead-notes and are shown through 1-hour signed URLs.
+let leadClinic = null, boardBusy = false, boardSel = null, boardPt = null;
+const BUCKET = 'lead-notes', urlCache = {};
+function leadBoard(name){
+  const t = topic(name, 'lead');
+  if (!t.board) t.board = t.note ? [{id: crypto.randomUUID(), type: 'text', x: 24, y: 24, w: 560, h: 220, text: t.note}] : [];
+  return t.board;
+}
+function boardCommit(){
+  const t = topic(leadClinic, 'lead'), texts = t.board.filter(i => i.type === 'text').map(i => (i.text || '').trim()).filter(Boolean);
+  const n = t.board.filter(i => i.type === 'img').length;
+  t.note = texts.join('\n\n') || (n ? `รูป ${n} รูป` : '');
+  save(day, leadClinic);
+}
+const boardH = b => Math.max(640, ...b.map(i => i.y + i.h + 160));
+function itemHTML(it, z){
+  const box = `left:${it.x}px;top:${it.y}px;width:${it.w}px;height:${it.h}px;z-index:${z}`;
+  const inner = it.type === 'img'
+    ? `<img data-path="${esc(it.path)}" src="${esc(urlCache[it.path]?.url || '')}" alt="รูปที่แปะไว้" draggable="false">`
+    : `<div class="grip" title="ลากเพื่อย้าย"></div><textarea data-bt placeholder="พิมพ์ข้อความ" aria-label="กล่องข้อความ">${esc(it.text)}</textarea>`;
+  return `<div class="bi bi-${it.type}${boardSel === it.id ? ' sel' : ''}" data-id="${it.id}" style="${box}">${inner}
+    <button class="bx" data-bdel aria-label="ลบ" title="ลบ">×</button><span class="rz" data-rz title="ลากเพื่อย่อ/ขยาย"></span></div>`;
+}
+function boardHTML(){ const b = leadBoard(leadClinic); return b.map((it, z) => itemHTML(it, z + 1)).join('') +
+  (b.length ? '' : '<p class="board-empty">วางรูป (⌘V / Ctrl+V) หรือลากไฟล์รูปมาวางตรงนี้ · กด "+ ข้อความ" เพื่อพิมพ์</p>'); }
+function drawBoard(){
+  const el = $('#board'); if (!el) return;
+  el.style.height = boardH(leadBoard(leadClinic)) + 'px'; el.innerHTML = boardHTML(); signImgs();
+}
+async function signImgs(){
+  const imgs = [...document.querySelectorAll('#board img[data-path]')];
+  const need = [...new Set(imgs.map(i => i.dataset.path).filter(x => !(urlCache[x]?.exp > Date.now())))];
+  if (need.length) {
+    const {data, error} = await sb.storage.from(BUCKET).createSignedUrls(need, 3600);
+    if (error) console.error(error);
+    for (const r of data || []) if (r.signedUrl) urlCache[r.path] = {url: r.signedUrl, exp: Date.now() + 3500e3};
+  }
+  imgs.forEach(i => { const u = urlCache[i.dataset.path]?.url; if (u && i.getAttribute('src') !== u) i.src = u; });
+}
+// screenshots are shrunk in the browser (longest side 1600px, WebP, JPEG where WebP encoding is missing) before upload
+async function shrink(file){
+  const bmp = await createImageBitmap(file), k = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
+  const cv = document.createElement('canvas'); cv.width = Math.round(bmp.width * k); cv.height = Math.round(bmp.height * k);
+  cv.getContext('2d').drawImage(bmp, 0, 0, cv.width, cv.height);
+  let blob = await new Promise(r => cv.toBlob(r, 'image/webp', 0.82));
+  if (!blob || blob.type !== 'image/webp') blob = await new Promise(r => cv.toBlob(r, 'image/jpeg', 0.85));
+  return {blob, w: cv.width, h: cv.height};
+}
+async function addImages(files, x, y){
+  const imgs = [...files].filter(f => /^image\//.test(f.type)); if (!imgs.length) return;
+  const st = $('#bState'), c = db.clinics.find(v => v.name === leadClinic), name = leadClinic, d = day;
+  for (const [n, f] of imgs.entries()) {
+    if (st) st.textContent = `กำลังอัปโหลดรูป ${n + 1}/${imgs.length}…`;
+    try {
+      const {blob, w, h} = await shrink(f), ext = blob.type === 'image/webp' ? 'webp' : 'jpg';
+      const path = `${c.id}/${d}/${crypto.randomUUID()}.${ext}`;
+      const {error} = await sb.storage.from(BUCKET).upload(path, blob, {contentType: blob.type});
+      if (error) throw error;
+      const k = Math.min(1, 420 / w);
+      const b = topicAt(d, name).board; b.push({id: crypto.randomUUID(), type: 'img', x: x + n * 24, y: y + n * 24, w: Math.round(w * k), h: Math.round(h * k), path});
+    } catch (e) { alert('อัปโหลดรูปไม่ได้: ' + (e.message || e)); }
+  }
+  if (st) st.textContent = '';
+  if (name === leadClinic && d === day) { boardCommit(); drawBoard(); } else save(d, name);
+}
+// the board of a given day/clinic even if the user moved on while an upload was running
+function topicAt(d, name){ const e = ((db.days[d] ??= {})[name] ??= {}), t = (e.lead ??= {}); t.board ??= []; return t; }
+function addText(x, y, text = ''){
+  const id = crypto.randomUUID(); boardSel = id;
+  leadBoard(leadClinic).push({id, type: 'text', x, y, w: 320, h: 140, text});
+  boardCommit(); drawBoard(); document.querySelector(`.bi[data-id="${id}"] textarea`)?.focus();
+}
+function delItem(id){
+  const b = leadBoard(leadClinic), i = b.findIndex(v => v.id === id); if (i < 0) return;
+  const [it] = b.splice(i, 1); if (it.type === 'img') sb.storage.from(BUCKET).remove([it.path]);
+  boardSel = null; boardCommit(); drawBoard();
+}
+// where a pasted item lands: the last click on the board, else the top-left of what is on screen
+function dropPoint(){
+  const el = $('#board'), r = el.getBoundingClientRect(), p = boardPt || {x: 24, y: Math.max(24, Math.round(-r.top + 80))};
+  return {x: Math.max(0, Math.min(p.x, el.clientWidth - 440)), y: p.y};   // keep a new box (max 420px wide) inside the board
+}
 function renderLeadNote(){
   const c = db.clinics.find(x => x.name === (leadClinic || cur)) || db.clinics[0];
   if (!c) return '<p class="muted">ยังไม่มีคลินิก</p>';
-  leadClinic = c.name;
+  leadClinic = c.name; setTimeout(signImgs);
   const past = Object.keys(db.days).filter(d => d !== day && rec(d, c.name).lead?.note).sort().reverse().slice(0, 30);
   return `<div class="card leadnote"><div class="card-h"><b>โน้ตคุณภาพแชท/ลีด</b>
       <select id="leadClinic" aria-label="เลือกคลินิก">${db.clinics.map(x => `<option ${x.name === c.name ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select>
-      <span class="mono">${thDate(day)}</span><span class="spacer"></span><span class="muted">บันทึกอัตโนมัติขณะพิมพ์</span></div>
-    <textarea id="leadNote" data-lead="${esc(c.name)}" placeholder="สิ่งที่เจอ / ต้องทำ: เช่น ลูกค้าถามราคาแล้วเงียบ, แชทไม่ตรงกลุ่ม, แอดมินตอบช้า" aria-label="โน้ตคุณภาพแชท/ลีด ${esc(c.name)} ${thDate(day)}">${esc(rec(day, c.name).lead?.note)}</textarea></div>
+      <span class="mono">${thDate(day)}</span>
+      <button class="ghost" id="bAddText">+ ข้อความ</button><label class="ghost btnlike">+ รูป<input type="file" id="bFile" accept="image/*" multiple hidden></label>
+      <span class="spacer"></span><span class="muted" id="bState"></span><span class="muted">วางรูป ⌘V · ลากย้าย · ลากมุมขวาล่างย่อ/ขยาย · Delete ลบ · บันทึกอัตโนมัติ</span></div>
+    <div class="board" id="board" tabindex="0" aria-label="กระดานโน้ต ${esc(c.name)} ${thDate(day)}" style="height:${boardH(leadBoard(c.name))}px">${boardHTML()}</div></div>
   ${past.length ? `<div class="card"><div class="card-h"><b>โน้ตวันก่อนๆ</b><span>${past.length} วัน</span></div>
     <ul class="leadpast">${past.map(d => `<li><button class="ghost" data-goday="${d}">${thLong(d, true)}</button><p>${esc(rec(d, c.name).lead.note)}</p></li>`).join('')}</ul></div>` : ''}`;
 }
+// board pointer work: drag an item (images anywhere, text boxes by their top grip), resize from the corner, select, delete
+$('#main').addEventListener('pointerdown', e => {
+  const bd = e.target.closest('#board'); if (!bd) return;
+  const r = bd.getBoundingClientRect();
+  boardPt = {x: Math.max(0, Math.round(e.clientX - r.left)), y: Math.max(0, Math.round(e.clientY - r.top))};
+  const el = e.target.closest('.bi');
+  if (!el) { boardSel = null; bd.querySelectorAll('.bi.sel').forEach(x => x.classList.remove('sel')); return; }
+  if (e.target.closest('[data-bdel]')) { e.preventDefault(); delItem(el.dataset.id); return; }
+  bd.querySelectorAll('.bi.sel').forEach(x => x.classList.remove('sel')); el.classList.add('sel'); boardSel = el.dataset.id;
+  const rz = e.target.closest('[data-rz]');
+  if (e.target.tagName === 'TEXTAREA' && !rz) return;   // typing, not dragging
+  e.preventDefault();
+  const b = leadBoard(leadClinic), it = b.find(v => v.id === el.dataset.id), sx = e.clientX, sy = e.clientY, o = {...it};
+  b.splice(b.indexOf(it), 1); b.push(it); el.style.zIndex = b.length + 1;   // bring to front
+  boardBusy = true; el.setPointerCapture(e.pointerId);
+  const move = ev => {
+    const dx = ev.clientX - sx, dy = ev.clientY - sy;
+    if (rz) { it.w = Math.max(80, Math.round(o.w + dx)); it.h = it.type === 'img' ? Math.round(it.w * o.h / o.w) : Math.max(60, Math.round(o.h + dy)); }
+    else { it.x = Math.max(0, Math.min(Math.round(o.x + dx), bd.clientWidth - 40)); it.y = Math.max(0, Math.round(o.y + dy)); }
+    Object.assign(el.style, {left: it.x + 'px', top: it.y + 'px', width: it.w + 'px', height: it.h + 'px'});
+  };
+  const up = () => { el.removeEventListener('pointermove', move); el.removeEventListener('pointerup', up); el.removeEventListener('pointercancel', up);
+    boardBusy = false; bd.style.height = boardH(b) + 'px'; if (it.x !== o.x || it.y !== o.y || it.w !== o.w || it.h !== o.h) boardCommit(); };
+  el.addEventListener('pointermove', move); el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+});
+$('#main').addEventListener('dragover', e => { if (e.target.closest('#board')) e.preventDefault(); });
+$('#main').addEventListener('drop', e => {
+  const bd = e.target.closest('#board'); if (!bd || !e.dataTransfer?.files?.length) return;
+  e.preventDefault(); const r = bd.getBoundingClientRect();
+  addImages(e.dataTransfer.files, Math.round(e.clientX - r.left), Math.round(e.clientY - r.top));
+});
+document.addEventListener('paste', e => {
+  if (view !== 'leadnote' || !$('#board')) return;
+  const files = [...(e.clipboardData?.files || [])].filter(f => /^image\//.test(f.type));
+  if (files.length) { e.preventDefault(); const p = dropPoint(); addImages(files, p.x, p.y); return; }
+  if (e.target.closest?.('textarea, input, select')) return;   // normal text paste inside a box
+  const t = e.clipboardData?.getData('text'); if (t) { e.preventDefault(); const p = dropPoint(); addText(p.x, p.y, t); }
+});
+document.addEventListener('keydown', e => {
+  if (view !== 'leadnote' || !boardSel || !['Delete', 'Backspace'].includes(e.key)) return;
+  if (/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
+  e.preventDefault(); delItem(boardSel);
+});
 function renderLog(){
   const d = logDay || TODAY, days = [];
   for (let x = TODAY; x >= LOG_START; x = shiftDay(x, -1)) days.push(x);
@@ -1219,6 +1359,7 @@ function render(){
   document.querySelector('.datebox').style.display = ['dash', 'log', 'angel', 'media', 'reports'].includes(view) ? 'none' : '';
   document.querySelectorAll('[role=tab]').forEach(b => b.setAttribute('aria-selected', b.dataset.view===view));
   // the media library is an iframe: keep it (and its scroll/filters) across the page's periodic re-renders
+  if (boardBusy) return;   // mid-drag on the notes board: a rebuild would drop the item being moved
   if (!(view === 'media' && $('#radar'))) $('#main').innerHTML = mainHTML();
   renderPanel(); checkEmptyBal();
 }
@@ -1277,7 +1418,7 @@ $('#panel').addEventListener('click', e => {
       if (view === 'today') $('#main').innerHTML = renderToday(); renderPanel(); }
     return; }
   if (e.target.closest('#mbalSave')) { saveManualBal(); return; }
-  if (e.target.closest('[data-open-lead]')) { leadClinic = cur; view = 'leadnote'; dayFrom = null; render(); $('#leadNote')?.focus(); return; }
+  if (e.target.closest('[data-open-lead]')) { leadClinic = cur; view = 'leadnote'; dayFrom = null; boardSel = boardPt = null; render(); return; }
   if (e.target.closest('#close')) { cur = null; render(); return; }
   const st = e.target.closest('[data-step]'); if (st) step(+st.dataset.step);
 });
@@ -1314,11 +1455,13 @@ $('#main').addEventListener('mouseleave', () => document.querySelectorAll('.char
 $('#main').addEventListener('change', e => {
   if (e.target.id === 'angClinic') { angelClinic = +e.target.value; render(); }
   if (e.target.id === 'angAll') { angelAll = e.target.checked; render(); }
-  if (e.target.id === 'leadClinic') { leadClinic = e.target.value; render(); $('#leadNote')?.focus(); }
+  if (e.target.id === 'leadClinic') { leadClinic = e.target.value; boardSel = boardPt = null; render(); }
+  if (e.target.id === 'bFile') { const p = dropPoint(); addImages(e.target.files, p.x, p.y); e.target.value = ''; }
 });
 $('#main').addEventListener('click', e => {
   if (e.target.closest('[data-cpr-reset]')) { rngCpr = null; render(); return; }
-  const gd = e.target.closest('[data-goday]'); if (gd) { day = gd.dataset.goday; dayFrom = null; render(); $('#leadNote')?.focus(); return; }
+  const gd = e.target.closest('[data-goday]'); if (gd) { day = gd.dataset.goday; dayFrom = null; boardSel = boardPt = null; render(); scrollTo(0, 0); return; }
+  if (e.target.closest('#bAddText')) { const p = dropPoint(); addText(p.x, p.y); return; }
   if (e.target.closest('[data-rep-run]')) {
     if (!confirm('สั่งรันรีพอร์ตจริงตอนนี้? ระบบจะสร้าง PDF อัปโหลด Drive และส่ง Telegram ให้ลูกค้าทุกคลินิกที่ถึงกำหนด')) return;
     e.target.disabled = true;
@@ -1361,7 +1504,7 @@ document.querySelectorAll('[role=tab]').forEach(b => b.onclick = () => { view = 
 $('#q').oninput = e => { q = e.target.value; if (view !== 'dash' && view !== 'text') $('#main').innerHTML = mainHTML(); };
 // daily log edits
 $('#main').addEventListener('input', e => {
-  if (e.target.dataset.lead) { topic(e.target.dataset.lead, 'lead').note = e.target.value; save(day, e.target.dataset.lead); return; }
+  if (e.target.matches('[data-bt]')) { const it = leadBoard(leadClinic).find(v => v.id === e.target.closest('.bi').dataset.id); if (it) { it.text = e.target.value; boardCommit(); } return; }
   const k = e.target.dataset.log; if (!k) return;
   const [c, t] = k.split('|'), d = logDay || TODAY;
   ((((db.days[d] ??= {})[c] ??= {})[t] ??= {}).note = e.target.value); save(d, c);
