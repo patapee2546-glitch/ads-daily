@@ -472,7 +472,8 @@ pre{white-space:pre-wrap;font:12px/1.6 var(--sans);margin:0;padding:12px;color:v
 .seg .ind{position:absolute;z-index:0;border-radius:999px;pointer-events:none;
   background:linear-gradient(180deg,oklch(30% 0.004 260),oklch(14% 0 0));
   box-shadow:inset 0 1px 0 oklch(100% 0 0 / .18),0 2px 4px oklch(0% 0 0 / .2),0 6px 16px oklch(0% 0 0 / .25);
-  transition:left .4s cubic-bezier(.3,1.35,.5,1),top .4s cubic-bezier(.3,1.35,.5,1),width .4s cubic-bezier(.3,1.35,.5,1)}
+  transition:left .45s cubic-bezier(.3,1.25,.5,1),top .45s cubic-bezier(.3,1.25,.5,1),width .45s cubic-bezier(.3,1.25,.5,1),filter .3s}
+.seg .ind.moving{z-index:2;filter:blur(.6px) brightness(1.08)}
 .ti{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 @media (prefers-color-scheme:dark){
   .seg{border-color:oklch(100% 0 0 / .28);
@@ -1689,7 +1690,13 @@ function slideSegs(){
     const b = seg.querySelector('button[aria-selected=true]'); let ind = seg.querySelector(':scope > .ind');
     if (!b) { ind?.remove(); seg.classList.remove('slid'); continue; }
     const fresh = !ind; if (fresh) { ind = document.createElement('span'); ind.className = 'ind'; ind.style.transition = 'none'; seg.prepend(ind); }
-    Object.assign(ind.style, {left: b.offsetLeft + 'px', top: b.offsetTop + 'px', width: b.offsetWidth + 'px', height: b.offsetHeight + 'px'});
+    const left = b.offsetLeft + 'px', moved = !fresh && ind.style.left !== left;
+    Object.assign(ind.style, {left, top: b.offsetTop + 'px', width: b.offsetWidth + 'px', height: b.offsetHeight + 'px'});
+    // liquid-glass hop: the pill swells into a frosted blob over the labels while it travels, then settles back
+    if (moved && !matchMedia('(prefers-reduced-motion:reduce)').matches) {
+      ind.classList.add('moving'); clearTimeout(ind._t); ind._t = setTimeout(() => ind.classList.remove('moving'), 380);
+      ind.animate([{transform: 'scale(1)'}, {transform: 'scale(1.12,1.3)', offset: .3}, {transform: 'scale(1.07,1.18)', offset: .6}, {transform: 'scale(.97,.94)', offset: .85}, {transform: 'scale(1)'}], {duration: 560, easing: 'ease-out'});
+    }
     seg.classList.add('slid'); if (fresh) requestAnimationFrame(() => ind.style.transition = '');
   }
 }
