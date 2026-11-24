@@ -585,6 +585,11 @@ tbody tr:active{background:var(--accent-tint-2)}
 .brain-side .combo{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:9px 0;border-top:1px solid var(--line)}
 .brain-side .combo small{color:var(--text-3);grid-column:1/-1;font-size:11px}
 .bp{font-weight:600;white-space:nowrap}
+.mlist{font-size:12.5px;color:var(--text-2);margin:4px 0 0;line-height:1.7}.mlist small{color:var(--text-3)}
+.reans{border:1px solid color-mix(in oklch,var(--ok) 45%,transparent);background:color-mix(in oklch,var(--ok) 8%,transparent);border-radius:14px;padding:12px 14px;margin-bottom:6px}
+.ra-h{font-size:12px;font-weight:700;color:var(--ok);margin-bottom:6px}
+.ra-l{font-size:13px;line-height:1.6;padding:4px 0}.ra-l > span{display:block;font-size:11px;color:var(--text-3)}
+.ra-t{margin-top:8px}.ra-t td small{font-size:11px}.ra-n{font-size:10.5px;color:var(--text-3);margin-top:8px}
 .rtab{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}
 .rtab th{font-weight:500;color:var(--text-3);text-align:right;padding:4px 4px}.rtab th:first-child{text-align:left}
 .rtab td{padding:6px 4px;border-top:1px solid var(--line);text-align:right;white-space:nowrap}.rtab td:first-child{text-align:left;white-space:normal}
@@ -1603,14 +1608,15 @@ function audFromName(t){
   const n = String(t || '').toLowerCase(), out = [], d = (n.match(/(\d{2,3})\s*(วัน|d\b|day)/) || n.match(/\b(30|60|90|180|365)\b/) || [])[1];
   if (/inbox|แชท|ข้อความ|ทัก/.test(n)) out.push({src: 'chat', days: d ? +d : null});
   if (/ส่วนร่วม|engag|เอนเกจ/.test(n)) out.push({src: 'engage', days: d ? +d : null});
-  if (/วิดีโอ|วีดีโอ|vdo|video|คลิป/.test(n)) out.push({src: 'video', days: d ? +d : null});
+  if (/วิดีโอ|วีดีโอ|vdo|video|คลิป/.test(n)) out.push({src: 'video', days: d ? +d : null, name: t});
   return out;
 }
+const vpct = x => x.src === 'video' ? +((String(x.name || '').match(/(\d{2,3})\s*%/) || [])[1] || 0) || null : null;
 const recipeOf = a => { const au = (a.aud.length ? a.aud : audFromName(a.adset)).filter(x => !['customer', 'other', 'lookalike'].includes(x.src) || a.aud.length === 1);
-  const parts = [...new Set(au.map(x => `${AUD_SRC[x.src] || x.src} ${x.days ? x.days + ' วัน' : '(ไม่ระบุวัน)'}`))].sort();
+  const parts = [...new Set(au.map(x => `${AUD_SRC[x.src] || x.src}${vpct(x) ? ' ' + vpct(x) + '%' : ''} ${x.days ? x.days + ' วัน' : '(ไม่ระบุวัน)'}`))].sort();
   return parts.length ? parts.join(' + ') : 'ไม่รู้กลุ่ม'; };
 console.assert(recipeOf({aud: [{src: 'engage', days: 365}, {src: 'chat', days: 365}], adset: ''}) === 'มีส่วนร่วม 365 วัน + ส่งข้อความ 365 วัน'
-  && recipeOf({aud: [], adset: 'RE : ส่วนร่วมเพจ 60 วัน'}) === 'มีส่วนร่วม 60 วัน', 'RE recipe');
+  && recipeOf({aud: [], adset: 'RE : ส่วนร่วมเพจ 60 วัน'}) === 'มีส่วนร่วม 60 วัน' && recipeOf({aud: [{src: 'video', days: 365, name: 'คนดูวิดีโอเกิน 75% ใน 365 วัน'}], adset: ''}) === 'ดูวิดีโอ 75% 365 วัน', 'RE recipe');
 function reGraph(ads, MIN){
   const nodes = new Map(), links = [], small = Math.max(2000, MIN / 2);   // only recipes/angles with real spend become cells
   const add = (id, kind, xs) => nodes.set(id, {id, kind, ads: xs, spend: xs.reduce((a, x) => a + x.s, 0), i: bIdx(xs)});
@@ -1645,12 +1651,79 @@ function reSummary(ads){
   const wins = [...new Set(re.map(win).filter(Boolean))].sort((x, y) => x - y).map(d => row(d + ' วัน', re.filter(a => win(a) === d)));
   const top = [...d3.group(re, recipeOf)].map(([k, xs]) => ({k, xs, sp: xs.reduce((t, a) => t + a.s, 0)})).filter(x => x.sp >= 1000 && x.xs.reduce((t, a) => t + a.r, 0) >= 5)
     .sort((x, y) => bIdx(x.xs) - bIdx(y.xs)).slice(0, 5).map(x => row(x.k, x.xs));
-  return `${tbl('ตัวเปิด vs RE', [row('ตัวเปิด (Inbox)', op), row('RE', re), row('ไม่ระบุในชื่อ', ads.filter(a => !a.kind))])}
+  // ---- the answer, first: best RE overall, best video depth, and per treatment which RE to run ----
+  const ok = xs => xs.reduce((t, a) => t + a.s, 0) >= 3000 && xs.reduce((t, a) => t + a.r, 0) >= 10;
+  // purchases first (the team's rule): among recipes with ≥3 buys take the cheapest chats; only if none sold, the cheapest chats
+  const best = groups => { const gs = [...groups].map(([k, xs]) => ({k, xs, i: bIdx(xs), b: xs.reduce((t, a) => t + a.p, 0)})).filter(g => ok(g.xs) && g.i != null);
+    const sold = gs.filter(g => g.b >= 3); return (sold.length ? sold : gs).sort((a, b) => a.i - b.i)[0]; };
+  const say = g => `<b>${esc(g.k)}</b> <span style="color:${bCol(g.i)}">${vsNormal(g.i)}</span> · ${baht(g.xs.reduce((t, a) => t + a.s, 0) / g.xs.reduce((t, a) => t + a.r, 0))}/แชท · ซื้อ ${int(g.xs.reduce((t, a) => t + a.p, 0))}`;
+  const bestAll = best(d3.group(re, recipeOf));
+  const depthOf = a => { const v = (a.aud.length ? a.aud : audFromName(a.adset)).map(vpct).filter(Boolean); return v.length ? Math.max(...v) + '%' : null; };
+  const bestDepth = best(d3.group(re.filter(depthOf), depthOf));
+  const perTr = [...d3.group(re.filter(a => a.tr !== 'อื่นๆ'), a => a.tr)].map(([t, xs]) => ({t, xs, b: best(d3.group(xs, recipeOf)), v: best(d3.group(xs.filter(depthOf), depthOf))}))
+    .filter(x => x.b).sort((a, b) => b.xs.reduce((q, a) => q + a.s, 0) - a.xs.reduce((q, a) => q + a.s, 0));
+  const answer = !re.length ? '' : `<div class="reans"><div class="ra-h">คำตอบ</div>
+    ${bestAll ? `<div class="ra-l"><span>RE ที่ดีที่สุด</span>${say(bestAll)}</div>` : '<div class="ra-l">ข้อมูล RE ยังน้อยเกินไป</div>'}
+    ${bestDepth ? `<div class="ra-l"><span>RE คนดูวิดีโอ ควรดูถึง</span>${say(bestDepth)}</div>` : ''}
+    ${perTr.length ? `<table class="rtab ra-t"><tr><th>หัตถการ</th><th>ควร RE แบบนี้</th><th>วิดีโอ %</th></tr>${perTr.map(x => `<tr><td>${esc(x.t)}</td>
+      <td style="text-align:left;white-space:normal">${esc(x.b.k)}<br><small style="color:${bCol(x.b.i)}">${vsNormal(x.b.i)}</small> <small>· ซื้อ ${int(x.b.xs.reduce((t, a) => t + a.p, 0))}</small></td>
+      <td>${x.v ? `${esc(x.v.k)}<br><small style="color:${bCol(x.v.i)}">${vsNormal(x.v.i)}</small>` : '–'}</td></tr>`).join('')}</table>` : ''}
+    <div class="ra-n">เลือกสูตรที่มียอดซื้อ ≥3 ก่อน แล้วดู ฿/แชทถูกสุด · นับสูตรที่ใช้ ≥฿3,000 และได้ ≥10 แชท · "เทียบปกติ" = ฿/แชทเทียบค่าปกติของคลินิกนั้น · ข้อมูลน้อยให้ใช้เป็นแนวทาง ไม่ใช่กฎตายตัว</div></div>`;
+  return `${answer}${tbl('ตัวเปิด vs RE', [row('ตัวเปิด (Inbox)', op), row('RE', re), row('ไม่ระบุในชื่อ', ads.filter(a => !a.kind))])}
     ${tbl('RE แบบรวมกลุ่ม vs แยกกลุ่ม', [row('รวม (2+ กลุ่มในชุดเดียว)', re.filter(a => srcs(a).length >= 2)), row('แยก (กลุ่มเดียว)', re.filter(a => srcs(a).length === 1))])}
     ${tbl('RE แยก: รีจากกลุ่มไหนดี', bySrc)}
     ${tbl('RE: จำนวนวันย้อนหลัง', wins)}
     ${tbl('สูตร RE ที่ได้ผลดีที่สุด', top)}
     <p class="muted" style="font-size:11px">RE = ชื่อแคมเปญ/ชุดโฆษณา/แอดมีคำว่า RE หรือ Re · ตัวเปิด = มีคำว่า Inbox หรือตัวเปิด · กลุ่มเป้าหมายอ่านจากการตั้งค่าชุดโฆษณาใน Meta (ถ้าอ่านไม่ได้ ใช้ชื่อชุดโฆษณา) · 90 วันล่าสุด · "เทียบปกติ" = เทียบ ฿/แชทปกติของแต่ละคลินิก</p>`;
+}
+
+// ---- image vs video: each ad's media from its creative type, the ad name when Meta's type says nothing useful ----
+// VIDEO = video · PHOTO / SHARE = image · STATUS / deleted / unknown -> the name (Reel, VDO, คลิป = video; PIC, ภาพ, รูป = image)
+function mediaOf(a){
+  if (a.type === 'VIDEO') return 'video'; if (a.type === 'PHOTO' || a.type === 'SHARE') return 'image';
+  const n = String(a.name || ''); return /reel|vdo|video|วิดีโอ|วีดีโอ|คลิป|ไลฟ์|live/i.test(n) ? 'video' : /\bpic\b|ภาพ|รูป|carousel|อัลบั้ม|album|โปสเตอร์/i.test(n) ? 'image' : null;
+}
+console.assert(mediaOf({type: 'VIDEO'}) === 'video' && mediaOf({type: 'STATUS', name: 'PIC / Program Botox'}) === 'image' && mediaOf({type: 'STATUS', name: 'Reel / เคยเป็นไหม'}) === 'video' && mediaOf({type: 'STATUS', name: 'x'}) === null, 'media type');
+// a clinic's mix by spend: under 10% video = images only, over 90% = video only, else both
+const MIX = {both: 'ภาพ + วิดีโอ', image: 'มีแต่ภาพ', video: 'มีแต่วิดีโอ'};
+function clinicMix(ads){
+  const by = d3.group(ads.filter(a => a.type), a => a.c), out = new Map();
+  for (const [c, xs] of by) { const sp = xs.reduce((t, a) => t + a.s, 0), v = xs.filter(a => a.type === 'video').reduce((t, a) => t + a.s, 0);
+    if (sp > 0) out.set(c, {mix: v / sp < .1 ? 'image' : v / sp > .9 ? 'video' : 'both', vshare: v / sp, ads: xs}); }
+  return out;
+}
+function mediaGraph(ads){
+  const nodes = new Map(), links = [], mix = clinicMix(ads);
+  const add = (id, kind, xs) => nodes.set(id, {id, kind, ads: xs, spend: xs.reduce((a, x) => a + x.s, 0), i: bIdx(xs)});
+  const link = (a, b, xs) => xs.length && links.push({source: a, target: b, ads: xs, spend: xs.reduce((t, x) => t + x.s, 0), i: bIdx(xs), clinics: new Set(xs.map(x => x.c)).size});
+  for (const k of Object.keys(MIX)) { const xs = [...mix.values()].filter(m => m.mix === k).flatMap(m => m.ads); if (xs.length) add('g:' + MIX[k], 'hub', xs); }
+  const img = ads.filter(a => a.type === 'image'), vid = ads.filter(a => a.type === 'video');
+  if (img.length) add('t:แอดภาพ', 'tr', img); if (vid.length) add('t:แอดวิดีโอ', 'tr', vid);
+  for (const [c, m] of mix) {
+    add('c:' + c, 'ang', m.ads); link('g:' + MIX[m.mix], 'c:' + c, m.ads);
+    link('c:' + c, 't:แอดภาพ', m.ads.filter(a => a.type === 'image')); link('c:' + c, 't:แอดวิดีโอ', m.ads.filter(a => a.type === 'video'));
+  }
+  return {nodes, links};
+}
+function mediaSummary(ads){
+  const mix = clinicMix(ads), sum = (xs, k) => xs.reduce((t, a) => t + a[k], 0);
+  const row = (label, xs, extra = '') => { if (!xs.length) return ''; const sp = sum(xs, 's'), ch = sum(xs, 'r'), buy = sum(xs, 'p'), i = bIdx(xs);
+    return `<tr><td>${label}${extra}</td><td>${baht(sp)}</td><td>${ch ? baht(sp / ch) : '–'}</td><td style="color:${bCol(i)}">${vsNormal(i)}</td><td>${int(buy)}</td></tr>`; };
+  const tbl = (title, rows, note = '') => `<h3>${title}</h3><table class="rtab"><tr><th></th><th>ใช้</th><th>฿/แชท</th><th>เทียบปกติ</th><th>ซื้อ</th></tr>${rows.join('')}</table>${note}`;
+  const both = [...mix.values()].filter(m => m.mix === 'both').flatMap(m => m.ads);
+  const names = k => [...mix].filter(([, m]) => m.mix === k).sort((a, b) => b[1].ads.length - a[1].ads.length)
+    .map(([c, m]) => `${esc(c)} <small>(วิดีโอ ${Math.round(m.vshare * 100)}%)</small>`).join(' · ') || '–';
+  const win = [...mix].filter(([, m]) => m.mix === 'both').map(([c, m]) => { const im = m.ads.filter(a => a.type === 'image'), vd = m.ads.filter(a => a.type === 'video');
+    return {c, d: im.length && vd.length && sum(im, 'r') >= 5 && sum(vd, 'r') >= 5 ? bIdx(vd) - bIdx(im) : null}; }).filter(x => x.d != null);
+  const vWin = win.filter(x => x.d < -0.05).length, iWin = win.filter(x => x.d > 0.05).length;
+  return `${tbl('แบบไหนดีกว่า (เทียบในคลินิกเดียวกัน)', [row('แอดภาพ', both.filter(a => a.type === 'image')), row('แอดวิดีโอ', both.filter(a => a.type === 'video'))],
+      `<p class="muted" style="font-size:11px">นับเฉพาะคลินิกที่มีทั้งภาพและวิดีโอ จึงเทียบกันได้ยุติธรรม · วิดีโอถูกกว่าภาพใน ${vWin} คลินิก · ภาพถูกกว่าใน ${iWin} คลินิก · ใกล้กันใน ${win.length - vWin - iWin} คลินิก</p>`)}
+    ${tbl('3 กลุ่มคลินิก', Object.keys(MIX).map(k => row(MIX[k], [...mix.values()].filter(m => m.mix === k).flatMap(m => m.ads), ` <small>(${[...mix.values()].filter(m => m.mix === k).length} คลินิก)</small>`)),
+      '<p class="muted" style="font-size:11px">"เทียบปกติ" เทียบกับ ฿/แชทปกติของแต่ละคลินิก เลยใกล้ปกติทั้งกลุ่มเป็นธรรมดา ใช้ดูว่ากลุ่มไหนมีคลินิกไหนบ้าง</p>')}
+    <h3>${MIX.both}</h3><p class="mlist">${names('both')}</p>
+    <h3>${MIX.image}</h3><p class="mlist">${names('image')}</p>
+    <h3>${MIX.video}</h3><p class="mlist">${names('video')}</p>
+    <p class="muted" style="font-size:11px">แบ่งกลุ่มจากสัดส่วนเงินที่ใช้: วิดีโอต่ำกว่า 10% = มีแต่ภาพ · เกิน 90% = มีแต่วิดีโอ · ประเภทแอดจาก Meta (VIDEO / PHOTO) ถ้า Meta ไม่บอก ใช้ชื่อแอด (Reel, VDO = วิดีโอ · PIC, ภาพ = ภาพ)</p>`;
 }
 
 // ---- angle brain: every snapshot ad tagged by sales angle (from its hook) + treatment, scored vs its clinic's normal ฿/chat
@@ -1678,7 +1751,7 @@ function brainData(){
   for (const sn of snaps) { const avg = sn.data.avg; if (!avg) continue;
     for (const a of sn.data.ads || []) {
       const hook = (a.name + '\n' + (a.body || '').slice(0, 140)), all = a.name + '\n' + (a.body || '');
-      brainAds.push({kind: a.kind || null, aud: (a.aud || []).map(id => sn.data.auds?.[id]).filter(Boolean), adset: a.adset || '', aset: a.adset_id || a.adset || a.name, c: sn.data.clinic, n: a.name, h: hook.slice(0, 220), s: a.spend, r: a.results, p: a.purchases, e: a.results * avg,
+      brainAds.push({type: mediaOf(a), kind: a.kind || null, aud: (a.aud || []).map(id => sn.data.auds?.[id]).filter(Boolean), adset: a.adset || '', aset: a.adset_id || a.adset || a.name, c: sn.data.clinic, n: a.name, h: hook.slice(0, 220), s: a.spend, r: a.results, p: a.purchases, e: a.results * avg,
         ang: Object.keys(ANGLES).filter(k => ANGLES[k].test(hook)), tr: (TREATS.find(([, rx]) => rx.test(all)) || ['อื่นๆ'])[0]}); } }
   return brainAds;
 }
@@ -1689,11 +1762,12 @@ function renderBrain(){
   if (!snaps) { loadSnaps(); return '<div class="card pad muted">กำลังโหลดแอดของทุกคลินิก…</div>'; }
   const cl = [...new Set(brainData().map(a => a.c))].sort();
   const BM = {angle: ['สมองมุมขาย', 'มุมขายไหนได้แชทถูก กับหัตถการไหน · 90 วันล่าสุด · เทียบ ฿/แชทปกติของแต่ละคลินิก'],
-    re: ['สมอง RE / ตัวเปิด', 'ตัวเปิดเปิดด้วยมุมไหน เรื่องอะไร · RE รีจากกลุ่มไหน กี่วัน รวมหรือแยก · 90 วันล่าสุด']};
+    re: ['สมอง RE / ตัวเปิด', 'ตัวเปิดเปิดด้วยมุมไหน เรื่องอะไร · RE รีจากกลุ่มไหน กี่วัน รวมหรือแยก · 90 วันล่าสุด'],
+    media: ['สมอง ภาพ / วิดีโอ', 'คลินิกไหนมีภาพ+วิดีโอ มีแต่ภาพ หรือมีแต่วิดีโอ · แบบไหนได้ผลดีกว่า · 90 วันล่าสุด']};
   return `<div class="dash-h"><h2><select id="brainMode" class="bmode" aria-label="เลือกสมอง">${Object.entries(BM).map(([k, [t]]) => `<option value="${k}" ${k === brainMode ? 'selected' : ''}>${t}</option>`).join('')}</select></h2><p>${BM[brainMode][1]}</p><span class="spacer"></span>
     <select id="brainClin" class="bsel" aria-label="เลือกคลินิก"><option value="">ทุกคลินิก (${cl.length})</option>${cl.map(c => `<option ${c === brainClinic ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></div>
   <div class="brain-wrap"><div class="brain-stage"><svg id="brain" role="img" aria-label="กราฟเซลล์: วงใหญ่คือมุมขาย วงเล็กคือหัตถการ"></svg>
-    <div class="brain-legend"><span><i style="background:${bCol(.8)}"></i>ถูกกว่าปกติ ≥15%</span><span><i style="background:${bCol(.9)}"></i>ถูกกว่า 5–15%</span><span><i style="background:${bCol(1)}"></i>ใกล้ปกติ</span><span><i style="background:${bCol(1.1)}"></i>แพงกว่า 5–20%</span><span><i style="background:${bCol(1.3)}"></i>แพงกว่า &gt;20%</span><span>${brainMode === 're' ? 'วงใหญ่สุด = ตัวเปิด / RE · วงกลาง = มุมขาย หรือสูตรกลุ่ม RE · วงเล็ก = หัตถการ' : 'วงใหญ่ = มุมขาย · วงเล็ก = หัตถการ'} · กดวงเพื่อดูแอดจริง</span></div></div>
+    <div class="brain-legend"><span><i style="background:${bCol(.8)}"></i>ถูกกว่าปกติ ≥15%</span><span><i style="background:${bCol(.9)}"></i>ถูกกว่า 5–15%</span><span><i style="background:${bCol(1)}"></i>ใกล้ปกติ</span><span><i style="background:${bCol(1.1)}"></i>แพงกว่า 5–20%</span><span><i style="background:${bCol(1.3)}"></i>แพงกว่า &gt;20%</span><span>${brainMode === 're' ? 'วงใหญ่สุด = ตัวเปิด / RE · วงกลาง = มุมขาย หรือสูตรกลุ่ม RE · วงเล็ก = หัตถการ' : brainMode === 'media' ? 'วงใหญ่สุด = กลุ่มคลินิก · วงกลาง = คลินิก · วงเล็ก = แอดภาพ / แอดวิดีโอ · สีเส้น = ภาพหรือวิดีโอของคลินิกนั้นถูก/แพงกว่าปกติของคลินิกเอง' : 'วงใหญ่ = มุมขาย · วงเล็ก = หัตถการ'} · กดวงเพื่อดูแอดจริง</span></div></div>
     <div class="brain-side" id="brainSide"></div></div>`;
 }
 const loadD3 = () => window.d3 ? Promise.resolve() : new Promise((ok, no) => { const sc = document.createElement('script');
@@ -1702,7 +1776,7 @@ async function drawBrain(){
   const el = document.getElementById('brain'); if (!el || !brainData()) return;
   try { await loadD3(); } catch { el.outerHTML = '<div class="muted pad">โหลดตัววาดกราฟไม่ได้ ลองรีเฟรช</div>'; return; }
   const ads = brainAds.filter(a => !brainClinic || a.c === brainClinic), MIN = brainClinic ? 3000 : 15000;
-  const {nodes, links} = brainMode === 're' ? reGraph(ads, MIN) : angleGraph(ads, MIN);
+  const {nodes, links} = brainMode === 're' ? reGraph(ads, MIN) : brainMode === 'media' ? mediaGraph(ads) : angleGraph(ads, MIN);
   const N = [...nodes.values()].filter(n => n.kind !== 'tr' || links.some(l => l.target === n.id));
   const svg = d3.select(el), W = el.clientWidth, H = el.clientHeight, still = calm();
   svg.selectAll('*').remove(); brainSim?.stop(); brainSel = null; svg.attr('viewBox', [0, 0, W, H]);
@@ -1761,6 +1835,7 @@ const bAd = a => { const i = bIdx([a]); return `<div class="bad-ad"><span style=
 const bCombo = l => `<div class="combo"><b>${esc(l.source.id.slice(2))} × ${esc(l.target.id.slice(2))}</b><span class="bp" style="color:${bCol(l.i)}">${vsNormal(l.i)}</span><small>${baht(l.spend)} · ${l.ads.length} แอด · ${l.clinics} คลินิก</small></div>`;
 function brainPanel(n, links){
   const side = document.getElementById('brainSide'); if (!side) return;
+  if (!n && brainMode === 'media') { side.innerHTML = mediaSummary(brainAds.filter(a => !brainClinic || a.c === brainClinic)); return; }
   if (!n && brainMode === 're') { side.innerHTML = reSummary(brainAds.filter(a => !brainClinic || a.c === brainClinic)); return; }
   if (!n) { const ls = links.filter(l => brainClinic || l.clinics >= 2).sort((a, b) => a.i - b.i);
     side.innerHTML = `<h3>คู่ที่ได้ผลดีที่สุด</h3>${ls.slice(0, 6).map(bCombo).join('') || '<div class="muted">ข้อมูลยังน้อยเกินไป</div>'}
