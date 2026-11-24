@@ -286,6 +286,11 @@ aside{border-left:1px solid var(--line);background:var(--surface);backdrop-filte
 .bi-arrow .hit{pointer-events:stroke;cursor:grab;stroke:transparent;stroke-width:18}
 .bi-arrow .hd{position:absolute;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:var(--pop);border:2px solid var(--accent);cursor:move;pointer-events:auto;opacity:0}
 .bi-arrow:hover .hd,.bi-arrow.sel .hd{opacity:1}.bi-arrow .bx{pointer-events:auto}
+.bmenu{position:fixed;z-index:10000;min-width:200px;padding:6px;border-radius:12px;border:1px solid var(--line-2);background:var(--pop);box-shadow:0 12px 32px rgba(0,0,0,.35);display:flex;flex-direction:column;font-size:14px}
+.bmenu button{display:flex;justify-content:space-between;gap:18px;align-items:center;border:0;background:none;color:var(--text);font:inherit;text-align:left;padding:7px 10px;border-radius:8px;cursor:pointer}
+.bmenu button:hover,.bmenu button:focus-visible{background:var(--surface-2);outline:none}.bmenu button:disabled{opacity:.4;cursor:default;background:none}
+.bmenu kbd{font:12px var(--mono,monospace);color:var(--text-3)}.bmenu hr{border:0;border-top:1px solid var(--line);margin:4px 2px}
+.bmenu .del{color:#ff6369}.bmenu .cols{display:flex;gap:8px;padding:6px 10px}.bmenu .cols button{width:20px;height:20px;padding:0;border-radius:50%;border:2px solid transparent}
 .marq{position:absolute;border:1px dashed var(--accent);background:color-mix(in oklab,var(--accent) 12%,transparent);pointer-events:none;z-index:9999}
 .bcols{display:inline-flex;gap:4px;align-items:center}.bcols button{width:18px;height:18px;border-radius:50%;border:2px solid transparent;padding:0;cursor:pointer}
 .bcols button[aria-pressed="true"]{border-color:var(--text)}
@@ -1210,7 +1215,7 @@ function renderLeadNote(){
       <button class="ghost" id="bAddText">+ ข้อความ</button><label class="ghost btnlike">+ รูป<input type="file" id="bFile" accept="image/*" multiple hidden></label>
       <button class="ghost" data-bvec="arrow" title="เพิ่มลูกศร ลากจุดที่ปลายเพื่อชี้">↗ ลูกศร</button><button class="ghost" data-bvec="box" title="เพิ่มกรอบ">▭ กรอบ</button><button class="ghost" data-bvec="ell" title="เพิ่มวงกลม">◯ วงกลม</button>
       <span class="bcols" role="group" aria-label="สีลูกศร/กรอบ">${BCOLS.map(c => `<button data-bcol="${c}" style="background:${c}" aria-pressed="${c === bColor}" aria-label="สี ${c}"></button>`).join('')}</span>
-      <span class="spacer"></span><span class="muted" id="bState"></span><span class="muted">วางรูป ⌘V · ลากย้าย · ลากมุมขวาล่างย่อ/ขยาย · Delete ลบ · ลากที่ว่างเพื่อเลือกหลายชิ้น · ⌘Z ย้อน · ⌘D ทำซ้ำ · ⌘C/⌘V คัดลอก · บันทึกอัตโนมัติ</span></div>
+      <span class="spacer"></span><span class="muted" id="bState"></span><span class="muted">วางรูป ⌘V · ลากย้าย · ลากมุมขวาล่างย่อ/ขยาย · Delete ลบ · ลากที่ว่างเพื่อเลือกหลายชิ้น · ⌘Z ย้อน · ⌘D ทำซ้ำ · ⌘C/⌘V คัดลอก · คลิกขวาเปิดเมนู · บันทึกอัตโนมัติ</span></div>
     <div class="board" id="board" tabindex="0" aria-label="กระดานโน้ต ${esc(c.name)} ${thDate(day)}" style="height:${boardH(leadBoard(c.name))}px">${boardHTML()}</div></div>
   ${past.length ? `<div class="card"><div class="card-h"><b>โน้ตวันก่อนๆ</b><span>${past.length} วัน</span></div>
     <ul class="leadpast">${past.map(d => `<li><button class="ghost" data-goday="${d}">${thLong(d, true)}</button><p>${esc(rec(d, c.name).lead.note)}</p></li>`).join('')}</ul></div>` : ''}`;
@@ -1253,13 +1258,57 @@ function groupDrag(e, bd){
 const BCLIP = 'ADSBOARD:';
 let bPasteN = 0;
 function boardSelected(){ return leadBoard(leadClinic).filter(i => boardMulti.has(i.id)); }
-function boardPaste(items, off){
+function boardPaste(items, off, dx = off, dy = off){
   const add = items.map(i => { const c = {...i, id: crypto.randomUUID()};
-    if (c.type === 'arrow') Object.assign(c, {x1: c.x1 + off, y1: c.y1 + off, x2: c.x2 + off, y2: c.y2 + off}); else Object.assign(c, {x: c.x + off, y: c.y + off});
+    if (c.type === 'arrow') Object.assign(c, {x1: c.x1 + dx, y1: c.y1 + dy, x2: c.x2 + dx, y2: c.y2 + dy}); else Object.assign(c, {x: Math.max(0, c.x + dx), y: Math.max(0, c.y + dy)});
     return c; });
   if (!add.length) return;
   leadBoard(leadClinic).push(...add); boardSel = null; boardCommit(); drawBoard(); selectOnly($('#board'), add.map(i => i.id));
 }
+// right-click menu on the board: the same actions as the shortcuts, for mouse users
+let bClip = null;
+function closeBMenu(){ document.querySelector('.bmenu')?.remove(); }
+function bMenuHTML(onItem){
+  const sel = boardSelected(), vec = sel.some(i => i.color), mac = /Mac/.test(navigator.platform), K = k => `<kbd>${mac ? '⌘' : 'Ctrl+'}${k}</kbd>`;
+  const b = (act, label, kbd = '', dis = false, cls = '') => `<button data-bm="${act}" ${dis ? 'disabled' : ''} class="${cls}">${label}${kbd}</button>`;
+  const undo = b('undo', '↶ ย้อนกลับ', K('Z'), bHist.stack.length < 2) + b('redo', '↷ ทำซ้ำสิ่งที่ย้อน', K('⇧Z'), !bHist.redo.length);
+  if (!onItem) return b('paste', 'วางที่นี่', K('V'), !bClip?.length) + '<hr>' + b('text', '+ ข้อความ') + b('arrow', '↗ ลูกศร') + b('box', '▭ กรอบ') + b('ell', '◯ วงกลม') + '<hr>' + undo;
+  return b('dup', 'ทำซ้ำ', K('D')) + b('copy', 'คัดลอก', K('C')) + b('paste', 'วาง', K('V'), !bClip?.length) + '<hr>'
+    + (vec ? `<div class="cols" role="group" aria-label="เปลี่ยนสี">${BCOLS.map(c => `<button data-bm="color" data-c="${c}" style="background:${c}" aria-label="สี ${c}"></button>`).join('')}</div><hr>` : '')
+    + b('front', 'ไว้หน้าสุด') + b('back', 'ไว้หลังสุด') + '<hr>' + undo + '<hr>' + b('del', `ลบ${sel.length > 1 ? ` ${sel.length} ชิ้น` : ''}`, '<kbd>Delete</kbd>', false, 'del');
+}
+$('#main').addEventListener('contextmenu', e => {
+  const bd = e.target.closest('#board'); if (!bd || e.target.closest('textarea')) return;   // in a text box keep the browser menu (spelling, paste)
+  e.preventDefault(); closeBMenu(); histEnsure();
+  const el = e.target.closest('.bi'), r = bd.getBoundingClientRect();
+  if (el && !boardMulti.has(el.dataset.id)) selectOnly(bd, [el.dataset.id]); else if (!el) selectOnly(bd, []);
+  const pt = {x: Math.round(e.clientX - r.left), y: Math.round(e.clientY - r.top)};
+  const m = document.createElement('div'); m.className = 'bmenu'; m.setAttribute('role', 'menu'); m.innerHTML = bMenuHTML(!!el); m.dataset.x = pt.x; m.dataset.y = pt.y;
+  document.body.append(m);
+  m.style.left = Math.min(e.clientX, innerWidth - m.offsetWidth - 8) + 'px'; m.style.top = Math.min(e.clientY, innerHeight - m.offsetHeight - 8) + 'px';
+  m.querySelector('button:not(:disabled)')?.focus();
+});
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.bmenu [data-bm]');
+  if (!btn) { if (!e.target.closest('.bmenu')) closeBMenu(); return; }
+  const m = btn.closest('.bmenu'), pt = {x: +m.dataset.x, y: +m.dataset.y}, act = btn.dataset.bm, b = leadBoard(leadClinic), sel = boardSelected();
+  closeBMenu();
+  if (act === 'dup') boardPaste(sel, 24);
+  else if (act === 'copy') { bClip = sel.map(i => ({...i})); bPasteN = 0; navigator.clipboard?.writeText(BCLIP + JSON.stringify(bClip)).catch(() => {}); }
+  else if (act === 'paste' && bClip?.length) {   // land the copy where the menu was opened
+    const q = bClip.map(itemBox), mx = Math.min(...q.map(v => v.x)), my = Math.min(...q.map(v => v.y));
+    boardPaste(bClip, 0, pt.x - mx, pt.y - my);
+  }
+  else if (act === 'color') { sel.forEach(i => { if (i.color) i.color = btn.dataset.c; }); boardCommit(); drawBoard(); selectOnly($('#board'), sel.map(i => i.id)); }
+  else if (act === 'front' || act === 'back') { const rest = b.filter(i => !boardMulti.has(i.id)); b.length = 0; b.push(...(act === 'front' ? [...rest, ...sel] : [...sel, ...rest])); boardCommit(); drawBoard(); selectOnly($('#board'), sel.map(i => i.id)); }
+  else if (act === 'del') { sel.forEach(i => delItem(i.id)); boardMulti = new Set(); }
+  else if (act === 'undo') boardUndo();
+  else if (act === 'redo') boardRedo();
+  else if (act === 'text') addText(pt.x, pt.y);
+  else if (['arrow', 'box', 'ell'].includes(act)) { boardPt = pt; addVector(act); }
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeBMenu(); });
+addEventListener('scroll', closeBMenu, true);
 // board pointer work: drag an item (images anywhere, text boxes by their top grip), resize from the corner, select, delete
 $('#main').addEventListener('pointerdown', e => {
   const bd = e.target.closest('#board'); if (!bd) return;
@@ -1302,7 +1351,7 @@ $('#main').addEventListener('drop', e => {
 });
 document.addEventListener('copy', e => {
   if (view !== 'leadnote' || !$('#board') || !boardMulti.size || /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
-  e.preventDefault(); e.clipboardData.setData('text/plain', BCLIP + JSON.stringify(boardSelected())); bPasteN = 0;
+  e.preventDefault(); bClip = boardSelected().map(i => ({...i})); e.clipboardData.setData('text/plain', BCLIP + JSON.stringify(bClip)); bPasteN = 0;
 });
 document.addEventListener('paste', e => {
   if (view !== 'leadnote' || !$('#board')) return;
