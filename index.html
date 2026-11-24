@@ -922,10 +922,10 @@ const rec = (d, c) => db.days[d]?.[c] || {};
 // header date: a single day (dayFrom null) or a range dayFrom..day. Statuses/notes always belong to `day` (the last day);
 // numbers are summed over the range. Reach and frequency are per-day only (Meta's unique reach does not add up).
 let dayFrom = null;
-// the dates the viewer picked last are kept in this browser, so other tabs, the Spe Din / Spe Mai switch (a page reload)
-// and the next visit open on the same range; first visit = today / the last 14 days up to today
-const DATES_KEY = 'ads-daily-dates';
-try { const v = JSON.parse(localStorage.getItem(DATES_KEY) || 'null'), ok = d => /^\d{4}-\d\d-\d\d$/.test(d || '') && d <= TODAY;
+// the dates the viewer picked last are kept in this browser, separately for each name, so other tabs and the next visit
+// open on that name's range; first visit = today / the last 14 days up to today
+const DATES_KEY = 'ads-daily-dates|' + OWNER;   // per browser AND per name: Spe Din and Spe Mai each keep their own range
+try { const v = JSON.parse(localStorage.getItem(DATES_KEY) || localStorage.getItem('ads-daily-dates') || 'null'), ok = d => /^\d{4}-\d\d-\d\d$/.test(d || '') && d <= TODAY;
   if (ok(v?.rng?.from) && ok(v?.rng?.to) && v.rng.from <= v.rng.to) rng = {from: v.rng.from, to: v.rng.to};
   if (ok(v?.day)) { day = v.day; dayFrom = ok(v.dayFrom) && v.dayFrom < v.day ? v.dayFrom : null; } } catch {}
 const saveDates = () => { try { localStorage.setItem(DATES_KEY, JSON.stringify({rng, day, dayFrom})); } catch {} };
