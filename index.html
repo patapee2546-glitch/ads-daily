@@ -240,7 +240,14 @@ aside{border-left:1px solid var(--line);background:var(--surface);backdrop-filte
 .body:not(.open) aside{visibility:hidden}
 .ph{position:sticky;top:0;background:var(--surface-2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);z-index:2;padding:12px 16px;border-bottom:1px solid var(--line)}
 .ph .row{display:flex;align-items:center;gap:8px}
-.ph h2{margin:0;font-size:18px;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Meta-style on/off switch: "monitored the ads today" per clinic per day (checks.data.ads.monitored) */
+.sw{display:inline-flex;align-items:center;gap:8px;margin-right:auto;font-size:13px;color:var(--text-3);cursor:pointer;white-space:nowrap}
+.sw input{appearance:none;-webkit-appearance:none;flex:none;width:40px;height:24px;margin:0;border-radius:12px;border:1.5px solid var(--text-3);background:transparent;position:relative;cursor:pointer;transition:background .15s,border-color .15s}
+.sw input::before{content:'';position:absolute;top:2px;left:2px;width:17px;height:17px;border-radius:50%;background:var(--text-2);transition:transform .15s,background .15s}
+.sw input:checked{background:#1877f2;border-color:#1877f2}.sw input:checked::before{transform:translateX(16px);background:#fff}
+.sw input:focus-visible{outline:2px solid #1877f2;outline-offset:2px}.sw:has(:checked){color:var(--text)}
+.mon{color:#1877f2;font-weight:500}
+.ph h2{margin:0;font-size:18px;font-weight:600;flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ph .meta{display:flex;gap:12px;align-items:center;font-size:12px;color:var(--text-3);margin-top:4px;flex-wrap:wrap}
 .ph a{color:var(--accent)}
 .sec{margin:12px;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--tint)}
@@ -706,7 +713,7 @@ function renderToday(){
         const r = sumRec(c.name), k = calc(r), cap = capOf(r, c.name), pct = +r.budget?.spend && +cap ? r.budget.spend/cap*100 : null;
         const m = sumMeta(c.name), err = m.error;  // raw Meta numbers (reach / frequency / 3-s plays)
         return `<tr tabindex="0" data-c="${esc(c.name)}" aria-selected="${c.name===cur}">
-          <td class="name">${esc(c.name)}<small>${r.ads?.state ? esc(r.ads.state) : r._history ? 'ย้อนหลังจาก Meta' : err ? 'ดึงจาก Meta ไม่ได้' : 'กรอกเอง'}</small></td>
+          <td class="name">${esc(c.name)}<small>${r.ads?.monitored ? '<span class="mon">✓ มอนิเตอร์แล้ว</span> · ' : ''}${r.ads?.state ? esc(r.ads.state) : r._history ? 'ย้อนหลังจาก Meta' : err ? 'ดึงจาก Meta ไม่ได้' : 'กรอกเอง'}</small></td>
           <td><span class="dots">${TOPICS.map(t => `<span class="dot d-${r[t.id]?.status||''}" title="${t.name}: ${ST[r[t.id]?.status]||'ยังไม่เช็ค'}"></span>`).join('')}</span></td>
           <td class="num"><div class="cap"><span>${baht(r.budget?.spend)} <span class="muted">/ ${baht(cap)}</span></span>
             ${pct != null ? `<span class="bar" title="${pct.toFixed(0)}% ของเพดาน"><b class="${pct>100?'over':''}" style="width:${Math.min(pct,100)/1.25}%"></b><i style="left:80%"></i></span>` : ''}</div></td>
@@ -1100,6 +1107,7 @@ function renderPanel(){
   const r = rec(day, cur), k = calc(r), fed = !!r._why, meta = window.ADS_DATA?.[day], err = meta?.clinics?.[cur]?.error;
   p.innerHTML = `
     <div class="ph"><div class="row"><h2>${esc(c.name)}</h2>
+      <label class="sw" title="ติ๊กเมื่อเช็คแอดของวันนี้แล้ว"><input type="checkbox" role="switch" id="monChk" ${r.ads?.monitored ? 'checked' : ''}>${r.ads?.monitored ? 'มอนิเตอร์แอดแล้ว' : 'ยังไม่มอนิเตอร์'}</label>
       <button class="ghost icon" data-step="-1" aria-label="คลินิกก่อนหน้า" title="ก่อนหน้า (K)">↑</button>
       <button class="ghost icon" data-step="1" aria-label="คลินิกถัดไป" title="ถัดไป (J)">↓</button>
       <button class="ghost icon" id="close" aria-label="ปิดแผง" title="ปิด (Esc)">×</button></div>
@@ -1140,6 +1148,8 @@ const open = c => { cur = c; render(); document.querySelector(`tr[data-c="${CSS.
 // edits write straight into db; only the table + header area re-render so the focused field keeps focus
 let savedT;
 $('#panel').addEventListener('input', e => {
+  if (e.target.id === 'monChk') { topic(cur, 'ads').monitored = e.target.checked; save(day, cur);
+    if (view === 'today') $('#main').innerHTML = renderToday(); renderPanel(); $('#monChk')?.focus(); return; }
   const k = e.target.dataset.k; if (!k) return;
   const [t, f] = k.split('.');
   topic(cur, t)[f] = e.target.value;
