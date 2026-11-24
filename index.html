@@ -271,11 +271,24 @@ aside{border-left:1px solid var(--line);background:var(--surface);backdrop-filte
 .bi-text{background:var(--surface-2);border-color:var(--line);display:flex;flex-direction:column}
 .bi-text .grip{height:14px;flex:none;cursor:grab;border-radius:9px 9px 0 0;background:linear-gradient(var(--line-2),var(--line-2)) center/32px 3px no-repeat}
 .bi-text textarea{flex:1;min-height:0;resize:none;border:0;background:transparent;color:var(--text);font:15px/1.6 var(--sans);padding:2px 12px 10px;outline:none}
-.bx{position:absolute;top:-10px;right:-10px;width:24px;height:24px;border-radius:50%;border:1px solid var(--line);background:var(--pop);color:var(--text);font-size:14px;line-height:1;cursor:pointer;opacity:0;padding:0}
+.bx{position:absolute;top:-12px;right:-12px;width:26px;height:26px;border-radius:50%;border:2px solid #fff;background:#e5484d;color:#fff;font:700 17px/1 var(--sans);cursor:pointer;opacity:0;padding:0;box-shadow:0 2px 6px rgba(0,0,0,.35);z-index:2}
+.bx:hover{background:#c62f34;transform:scale(1.08)}
 .bi:hover .bx,.bi.sel .bx{opacity:1}
 .rz{position:absolute;right:-6px;bottom:-6px;width:14px;height:14px;border-radius:4px;background:var(--accent);cursor:nwse-resize;opacity:0}
 .bi:hover .rz,.bi.sel .rz{opacity:1}
 .btnlike{display:inline-flex;align-items:center;cursor:pointer}
+/* board vectors: arrow (two draggable ends), box and ellipse outlines for marking up chat screenshots */
+.bi-shape{pointer-events:none;border:0!important;box-shadow:none!important}   /* only the outline takes clicks, so things inside stay clickable */
+.bi-shape svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.bi-shape .hit{pointer-events:stroke;cursor:grab;stroke:transparent;stroke-width:16;fill:none}
+.bi-shape.sel .edge{stroke-dasharray:8 5}.bi-shape .bx,.bi-shape .rz{pointer-events:auto}
+.bi-arrow{pointer-events:none;border:0!important;box-shadow:none!important}.bi-arrow svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.bi-arrow .hit{pointer-events:stroke;cursor:grab;stroke:transparent;stroke-width:18}
+.bi-arrow .hd{position:absolute;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:var(--pop);border:2px solid var(--accent);cursor:move;pointer-events:auto;opacity:0}
+.bi-arrow:hover .hd,.bi-arrow.sel .hd{opacity:1}.bi-arrow .bx{pointer-events:auto}
+.marq{position:absolute;border:1px dashed var(--accent);background:color-mix(in oklab,var(--accent) 12%,transparent);pointer-events:none;z-index:9999}
+.bcols{display:inline-flex;gap:4px;align-items:center}.bcols button{width:18px;height:18px;border-radius:50%;border:2px solid transparent;padding:0;cursor:pointer}
+.bcols button[aria-pressed="true"]{border-color:var(--text)}
 .leadpast{list-style:none;margin:0;padding:0}.leadpast li{padding:10px 16px;border-top:1px solid var(--line)}.leadpast p{margin:4px 0 0;white-space:pre-wrap;color:var(--text-2)}
 .bell{position:relative;margin-left:4px}.bell b[hidden]{display:none}.bell b{position:absolute;top:-4px;right:-4px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:oklch(58% 0.2 25);color:#fff;font:600 11px/17px var(--sans);text-align:center}
 .mbal{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px;margin:8px 0}.mbal label{display:grid;gap:4px;font-size:12px;color:var(--text-2);flex:1 1 220px}.mbal small{flex-basis:100%;font-size:12px}
@@ -1065,15 +1078,53 @@ function leadBoard(name){
   if (!t.board) t.board = t.note ? [{id: crypto.randomUUID(), type: 'text', x: 24, y: 24, w: 560, h: 220, text: t.note}] : [];
   return t.board;
 }
-function boardCommit(){
+// undo / redo: snapshots of the board per clinic+day; a burst of typing folds into one step
+let bHist = {key: '', stack: [], redo: [], t: 0};
+function histEnsure(){ const k = leadClinic + '|' + day; if (bHist.key !== k) bHist = {key: k, stack: [JSON.stringify(leadBoard(leadClinic))], redo: [], t: 0}; }
+function histRestore(s){ topic(leadClinic, 'lead').board = JSON.parse(s); boardSel = null; boardMulti = new Set(); boardCommit(true); drawBoard(); }
+function boardUndo(){ histEnsure(); const st = bHist.stack; if (st.length < 2) return; bHist.redo.push(st.pop()); histRestore(st.at(-1)); }
+function boardRedo(){ histEnsure(); const s = bHist.redo.pop(); if (!s) return; bHist.stack.push(s); histRestore(s); }
+function boardCommit(noHist, typing){
+  if (!noHist) { histEnsure(); const st = bHist.stack, snap = JSON.stringify(topic(leadClinic, 'lead').board);
+    if (st.at(-1) !== snap) { if (typing && Date.now() - bHist.t < 1500 && st.length > 1) st[st.length - 1] = snap; else st.push(snap);
+      if (st.length > 50) st.shift(); bHist.redo = []; bHist.t = Date.now(); } }
   const t = topic(leadClinic, 'lead'), texts = t.board.filter(i => i.type === 'text').map(i => (i.text || '').trim()).filter(Boolean);
   const n = t.board.filter(i => i.type === 'img').length;
   t.note = texts.join('\n\n') || (n ? `รูป ${n} รูป` : '');
   save(day, leadClinic);
 }
-const boardH = b => Math.max(640, ...b.map(i => i.y + i.h + 160));
+const boardH = b => Math.max(640, ...b.map(i => (i.type === 'arrow' ? Math.max(i.y1, i.y2) : i.y + i.h) + 160));
+// vectors: 'arrow' {x1,y1,x2,y2,color}, 'box' / 'ell' {x,y,w,h,color}
+const BCOLS = ['#ff3b30', '#ffcc00', '#0a84ff', '#34c759'];
+let bColor = BCOLS[0];
+const AP = 14;   // padding around an arrow's bounding box so the head and handles stay inside it
+function arrowGeom(it){
+  const l = Math.min(it.x1, it.x2) - AP, t = Math.min(it.y1, it.y2) - AP;
+  return {l, t, w: Math.abs(it.x2 - it.x1) + 2 * AP, h: Math.abs(it.y2 - it.y1) + 2 * AP, a: [it.x1 - l, it.y1 - t], b: [it.x2 - l, it.y2 - t]};
+}
+function paintArrow(el, it){
+  const g = arrowGeom(it);
+  Object.assign(el.style, {left: g.l + 'px', top: g.t + 'px', width: g.w + 'px', height: g.h + 'px'});
+  el.querySelectorAll('line').forEach(ln => { ln.setAttribute('x1', g.a[0]); ln.setAttribute('y1', g.a[1]); ln.setAttribute('x2', g.b[0]); ln.setAttribute('y2', g.b[1]); });
+  const [h1, h2] = el.querySelectorAll('.hd'); Object.assign(h1.style, {left: g.a[0] + 'px', top: g.a[1] + 'px'}); Object.assign(h2.style, {left: g.b[0] + 'px', top: g.b[1] + 'px'});
+}
 function itemHTML(it, z){
+  if (it.type === 'arrow') {
+    const g = arrowGeom(it), c = esc(it.color || BCOLS[0]), mk = 'ah-' + it.id.slice(0, 8);
+    return `<div class="bi bi-arrow${boardSel === it.id ? ' sel' : ''}" data-id="${it.id}" style="left:${g.l}px;top:${g.t}px;width:${g.w}px;height:${g.h}px;z-index:${z}">
+      <svg aria-label="ลูกศร"><defs><marker id="${mk}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="${c}"/></marker></defs>
+      <line x1="${g.a[0]}" y1="${g.a[1]}" x2="${g.b[0]}" y2="${g.b[1]}" stroke="${c}" stroke-width="4" stroke-linecap="round" marker-end="url(#${mk})"/>
+      <line class="hit" x1="${g.a[0]}" y1="${g.a[1]}" x2="${g.b[0]}" y2="${g.b[1]}"/></svg>
+      <span class="hd" data-end="1" style="left:${g.a[0]}px;top:${g.a[1]}px" title="ลากปลายลูกศร"></span><span class="hd" data-end="2" style="left:${g.b[0]}px;top:${g.b[1]}px" title="ลากหัวลูกศร"></span>
+      <button class="bx" data-bdel aria-label="ลบ" title="ลบ" style="left:${(g.a[0] + g.b[0]) / 2 - 12}px;top:${(g.a[1] + g.b[1]) / 2 - 30}px;right:auto">×</button></div>`;
+  }
   const box = `left:${it.x}px;top:${it.y}px;width:${it.w}px;height:${it.h}px;z-index:${z}`;
+  if (it.type === 'box' || it.type === 'ell')
+    return `<div class="bi bi-shape${boardSel === it.id ? ' sel' : ''}" data-id="${it.id}" style="${box}">
+      <svg aria-label="${it.type === 'ell' ? 'วงกลม' : 'กรอบ'}">${['edge', 'hit'].map(k => it.type === 'ell'
+        ? `<ellipse class="${k}" cx="50%" cy="50%" rx="50%" ry="50%" fill="none" stroke="${esc(it.color || BCOLS[0])}" stroke-width="3"/>`
+        : `<rect class="${k}" x="0" y="0" width="100%" height="100%" rx="6" fill="none" stroke="${esc(it.color || BCOLS[0])}" stroke-width="3"/>`).join('')}</svg>
+      <button class="bx" data-bdel aria-label="ลบ" title="ลบ">×</button><span class="rz" data-rz title="ลากเพื่อย่อ/ขยาย"></span></div>`;
   const inner = it.type === 'img'
     ? `<img data-path="${esc(it.path)}" src="${esc(urlCache[it.path]?.url || '')}" alt="รูปที่แปะไว้" draggable="false">`
     : `<div class="grip" title="ลากเพื่อย้าย"></div><textarea data-bt placeholder="พิมพ์ข้อความ" aria-label="กล่องข้อความ">${esc(it.text)}</textarea>`;
@@ -1125,13 +1176,22 @@ async function addImages(files, x, y){
 // the board of a given day/clinic even if the user moved on while an upload was running
 function topicAt(d, name){ const e = ((db.days[d] ??= {})[name] ??= {}), t = (e.lead ??= {}); t.board ??= []; return t; }
 function addText(x, y, text = ''){
-  const id = crypto.randomUUID(); boardSel = id;
+  const id = crypto.randomUUID(); boardSel = id; boardMulti = new Set([id]);
   leadBoard(leadClinic).push({id, type: 'text', x, y, w: 320, h: 140, text});
   boardCommit(); drawBoard(); document.querySelector(`.bi[data-id="${id}"] textarea`)?.focus();
 }
+function addVector(type){
+  const n = leadBoard(leadClinic).filter(v => v.color).length % 6, p0 = dropPoint(), p = {x: p0.x + n * 24, y: p0.y + n * 24}, id = crypto.randomUUID(); boardSel = id; boardMulti = new Set([id]);   // fan out so new ones don't stack
+  leadBoard(leadClinic).push(type === 'arrow' ? {id, type, x1: p.x + 20, y1: p.y + 60, x2: p.x + 200, y2: p.y + 60, color: bColor}
+    : {id, type, x: p.x + 20, y: p.y + 20, w: type === 'ell' ? 180 : 220, h: type === 'ell' ? 120 : 120, color: bColor});
+  boardCommit(); drawBoard();
+}
 function delItem(id){
   const b = leadBoard(leadClinic), i = b.findIndex(v => v.id === id); if (i < 0) return;
-  const [it] = b.splice(i, 1); if (it.type === 'img') sb.storage.from(BUCKET).remove([it.path]);
+  const [it] = b.splice(i, 1);
+  // ponytail: the screenshot file is removed 60 s later unless an undo put it back; undoing after that leaves a blank image
+  const d = day, n = leadClinic;
+  if (it.type === 'img') setTimeout(() => { if (!JSON.stringify(topicAt(d, n).board).includes(it.path)) sb.storage.from(BUCKET).remove([it.path]); }, 60e3);
   boardSel = null; boardCommit(); drawBoard();
 }
 // where a pasted item lands: the last click on the board, else the top-left of what is on screen
@@ -1142,16 +1202,63 @@ function dropPoint(){
 function renderLeadNote(){
   const c = db.clinics.find(x => x.name === (leadClinic || cur)) || db.clinics[0];
   if (!c) return '<p class="muted">ยังไม่มีคลินิก</p>';
-  leadClinic = c.name; setTimeout(signImgs);
+  leadClinic = c.name; histEnsure(); setTimeout(signImgs);
   const past = Object.keys(db.days).filter(d => d !== day && rec(d, c.name).lead?.note).sort().reverse().slice(0, 30);
   return `<div class="card leadnote"><div class="card-h"><b>โน้ตคุณภาพแชท/ลีด</b>
       <select id="leadClinic" aria-label="เลือกคลินิก">${db.clinics.map(x => `<option ${x.name === c.name ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select>
       <span class="mono">${thDate(day)}</span>
       <button class="ghost" id="bAddText">+ ข้อความ</button><label class="ghost btnlike">+ รูป<input type="file" id="bFile" accept="image/*" multiple hidden></label>
-      <span class="spacer"></span><span class="muted" id="bState"></span><span class="muted">วางรูป ⌘V · ลากย้าย · ลากมุมขวาล่างย่อ/ขยาย · Delete ลบ · บันทึกอัตโนมัติ</span></div>
+      <button class="ghost" data-bvec="arrow" title="เพิ่มลูกศร ลากจุดที่ปลายเพื่อชี้">↗ ลูกศร</button><button class="ghost" data-bvec="box" title="เพิ่มกรอบ">▭ กรอบ</button><button class="ghost" data-bvec="ell" title="เพิ่มวงกลม">◯ วงกลม</button>
+      <span class="bcols" role="group" aria-label="สีลูกศร/กรอบ">${BCOLS.map(c => `<button data-bcol="${c}" style="background:${c}" aria-pressed="${c === bColor}" aria-label="สี ${c}"></button>`).join('')}</span>
+      <span class="spacer"></span><span class="muted" id="bState"></span><span class="muted">วางรูป ⌘V · ลากย้าย · ลากมุมขวาล่างย่อ/ขยาย · Delete ลบ · ลากที่ว่างเพื่อเลือกหลายชิ้น · ⌘Z ย้อน · ⌘D ทำซ้ำ · ⌘C/⌘V คัดลอก · บันทึกอัตโนมัติ</span></div>
     <div class="board" id="board" tabindex="0" aria-label="กระดานโน้ต ${esc(c.name)} ${thDate(day)}" style="height:${boardH(leadBoard(c.name))}px">${boardHTML()}</div></div>
   ${past.length ? `<div class="card"><div class="card-h"><b>โน้ตวันก่อนๆ</b><span>${past.length} วัน</span></div>
     <ul class="leadpast">${past.map(d => `<li><button class="ghost" data-goday="${d}">${thLong(d, true)}</button><p>${esc(rec(d, c.name).lead.note)}</p></li>`).join('')}</ul></div>` : ''}`;
+}
+// multi-select: drag on empty board space draws a selection box; items it touches move and delete together
+let boardMulti = new Set();
+function selectOnly(bd, ids){
+  boardMulti = new Set(ids); boardSel = ids.length === 1 ? ids[0] : null;
+  bd.querySelectorAll('.bi').forEach(x => x.classList.toggle('sel', boardMulti.has(x.dataset.id)));
+}
+const itemBox = i => i.type === 'arrow' ? {x: Math.min(i.x1, i.x2), y: Math.min(i.y1, i.y2), w: Math.abs(i.x2 - i.x1), h: Math.abs(i.y2 - i.y1)} : i;
+function marquee(e, bd, r){
+  e.preventDefault();
+  const sx = e.clientX - r.left, sy = e.clientY - r.top, m = document.createElement('div'); m.className = 'marq'; bd.append(m);
+  let box = {x: sx, y: sy, w: 0, h: 0}; bd.setPointerCapture(e.pointerId); boardBusy = true;
+  const move = ev => { const x = ev.clientX - r.left, y = ev.clientY - r.top;
+    box = {x: Math.min(sx, x), y: Math.min(sy, y), w: Math.abs(x - sx), h: Math.abs(y - sy)};
+    Object.assign(m.style, {left: box.x + 'px', top: box.y + 'px', width: box.w + 'px', height: box.h + 'px'}); };
+  const up = () => { bd.removeEventListener('pointermove', move); bd.removeEventListener('pointerup', up); bd.removeEventListener('pointercancel', up);
+    m.remove(); boardBusy = false;
+    if (box.w < 4 && box.h < 4) return;   // a plain click on the board, nothing to select
+    selectOnly(bd, leadBoard(leadClinic).filter(i => { const q = itemBox(i); return q.x < box.x + box.w && q.x + q.w > box.x && q.y < box.y + box.h && q.y + q.h > box.y; }).map(i => i.id)); };
+  bd.addEventListener('pointermove', move); bd.addEventListener('pointerup', up); bd.addEventListener('pointercancel', up);
+}
+function groupDrag(e, bd){
+  const items = leadBoard(leadClinic).filter(i => boardMulti.has(i.id)), orig = items.map(i => ({...i})), sx = e.clientX, sy = e.clientY;
+  const els = items.map(i => bd.querySelector(`.bi[data-id="${i.id}"]`)), cap = e.target;
+  boardBusy = true; cap.setPointerCapture(e.pointerId);
+  const move = ev => { const dx = Math.round(ev.clientX - sx), dy = Math.round(ev.clientY - sy);
+    items.forEach((it, k) => { const o = orig[k];
+      if (it.type === 'arrow') { Object.assign(it, {x1: o.x1 + dx, y1: o.y1 + dy, x2: o.x2 + dx, y2: o.y2 + dy}); paintArrow(els[k], it); }
+      else { it.x = Math.max(0, o.x + dx); it.y = Math.max(0, o.y + dy); Object.assign(els[k].style, {left: it.x + 'px', top: it.y + 'px'}); } }); };
+  const up = () => { cap.removeEventListener('pointermove', move); cap.removeEventListener('pointerup', up); cap.removeEventListener('pointercancel', up);
+    boardBusy = false; bd.style.height = boardH(leadBoard(leadClinic)) + 'px'; if (ev0moved()) boardCommit(); };
+  const ev0moved = () => items.some((it, k) => it.x !== orig[k].x || it.y !== orig[k].y || it.x1 !== orig[k].x1 || it.y1 !== orig[k].y1);
+  cap.addEventListener('pointermove', move); cap.addEventListener('pointerup', up); cap.addEventListener('pointercancel', up);
+}
+// duplicate (⌘D) and copy/paste (⌘C/⌘V): copies get new ids and land a little offset; the clipboard carries them as text
+// ponytail: a pasted screenshot shares its storage file with the original; deleting the original on another day/clinic removes that file
+const BCLIP = 'ADSBOARD:';
+let bPasteN = 0;
+function boardSelected(){ return leadBoard(leadClinic).filter(i => boardMulti.has(i.id)); }
+function boardPaste(items, off){
+  const add = items.map(i => { const c = {...i, id: crypto.randomUUID()};
+    if (c.type === 'arrow') Object.assign(c, {x1: c.x1 + off, y1: c.y1 + off, x2: c.x2 + off, y2: c.y2 + off}); else Object.assign(c, {x: c.x + off, y: c.y + off});
+    return c; });
+  if (!add.length) return;
+  leadBoard(leadClinic).push(...add); boardSel = null; boardCommit(); drawBoard(); selectOnly($('#board'), add.map(i => i.id));
 }
 // board pointer work: drag an item (images anywhere, text boxes by their top grip), resize from the corner, select, delete
 $('#main').addEventListener('pointerdown', e => {
@@ -1159,24 +1266,33 @@ $('#main').addEventListener('pointerdown', e => {
   const r = bd.getBoundingClientRect();
   boardPt = {x: Math.max(0, Math.round(e.clientX - r.left)), y: Math.max(0, Math.round(e.clientY - r.top))};
   const el = e.target.closest('.bi');
-  if (!el) { boardSel = null; bd.querySelectorAll('.bi.sel').forEach(x => x.classList.remove('sel')); return; }
+  if (!el) { selectOnly(bd, []); if (e.target === bd) marquee(e, bd, r); return; }
   if (e.target.closest('[data-bdel]')) { e.preventDefault(); delItem(el.dataset.id); return; }
-  bd.querySelectorAll('.bi.sel').forEach(x => x.classList.remove('sel')); el.classList.add('sel'); boardSel = el.dataset.id;
   const rz = e.target.closest('[data-rz]');
+  if (boardMulti.size > 1 && boardMulti.has(el.dataset.id) && !rz && !e.target.closest('[data-end]') && e.target.tagName !== 'TEXTAREA') { e.preventDefault(); groupDrag(e, bd); return; }
+  selectOnly(bd, [el.dataset.id]);
   if (e.target.tagName === 'TEXTAREA' && !rz) return;   // typing, not dragging
   e.preventDefault();
   const b = leadBoard(leadClinic), it = b.find(v => v.id === el.dataset.id), sx = e.clientX, sy = e.clientY, o = {...it};
   b.splice(b.indexOf(it), 1); b.push(it); el.style.zIndex = b.length + 1;   // bring to front
-  boardBusy = true; el.setPointerCapture(e.pointerId);
+  // arrows and outlines take clicks only on their line / handles, so capture on the element actually pressed
+  const cap = el.matches('.bi-arrow, .bi-shape') ? e.target : el;
+  boardBusy = true; cap.setPointerCapture(e.pointerId);
+  const end = e.target.closest('[data-end]')?.dataset.end, cx = v => Math.max(0, Math.min(Math.round(v), bd.clientWidth - 8)), cy = v => Math.max(0, Math.round(v));
   const move = ev => {
     const dx = ev.clientX - sx, dy = ev.clientY - sy;
-    if (rz) { it.w = Math.max(80, Math.round(o.w + dx)); it.h = it.type === 'img' ? Math.round(it.w * o.h / o.w) : Math.max(60, Math.round(o.h + dy)); }
+    if (it.type === 'arrow') {   // drag one end, or the whole arrow from its line
+      if (end !== '2') { it.x1 = cx(o.x1 + dx); it.y1 = cy(o.y1 + dy); }
+      if (end !== '1') { it.x2 = cx(o.x2 + dx); it.y2 = cy(o.y2 + dy); }
+      paintArrow(el, it); return;
+    }
+    if (rz) { it.w = Math.max(it.type === 'text' || it.type === 'img' ? 80 : 30, Math.round(o.w + dx)); it.h = it.type === 'img' ? Math.round(it.w * o.h / o.w) : Math.max(it.type === 'text' ? 60 : 30, Math.round(o.h + dy)); }
     else { it.x = Math.max(0, Math.min(Math.round(o.x + dx), bd.clientWidth - 40)); it.y = Math.max(0, Math.round(o.y + dy)); }
     Object.assign(el.style, {left: it.x + 'px', top: it.y + 'px', width: it.w + 'px', height: it.h + 'px'});
   };
-  const up = () => { el.removeEventListener('pointermove', move); el.removeEventListener('pointerup', up); el.removeEventListener('pointercancel', up);
-    boardBusy = false; bd.style.height = boardH(b) + 'px'; if (it.x !== o.x || it.y !== o.y || it.w !== o.w || it.h !== o.h) boardCommit(); };
-  el.addEventListener('pointermove', move); el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+  const up = () => { cap.removeEventListener('pointermove', move); cap.removeEventListener('pointerup', up); cap.removeEventListener('pointercancel', up);
+    boardBusy = false; bd.style.height = boardH(b) + 'px'; if (['x', 'y', 'w', 'h', 'x1', 'y1', 'x2', 'y2'].some(k => it[k] !== o[k])) boardCommit(); };
+  cap.addEventListener('pointermove', move); cap.addEventListener('pointerup', up); cap.addEventListener('pointercancel', up);
 });
 $('#main').addEventListener('dragover', e => { if (e.target.closest('#board')) e.preventDefault(); });
 $('#main').addEventListener('drop', e => {
@@ -1184,17 +1300,32 @@ $('#main').addEventListener('drop', e => {
   e.preventDefault(); const r = bd.getBoundingClientRect();
   addImages(e.dataTransfer.files, Math.round(e.clientX - r.left), Math.round(e.clientY - r.top));
 });
+document.addEventListener('copy', e => {
+  if (view !== 'leadnote' || !$('#board') || !boardMulti.size || /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
+  e.preventDefault(); e.clipboardData.setData('text/plain', BCLIP + JSON.stringify(boardSelected())); bPasteN = 0;
+});
 document.addEventListener('paste', e => {
   if (view !== 'leadnote' || !$('#board')) return;
+  const bt = e.clipboardData?.getData('text') || '';
+  if (bt.startsWith(BCLIP) && !e.target.closest?.('textarea, input, select')) {
+    e.preventDefault(); try { boardPaste(JSON.parse(bt.slice(BCLIP.length)), 24 * ++bPasteN); } catch {}
+    return; }
   const files = [...(e.clipboardData?.files || [])].filter(f => /^image\//.test(f.type));
   if (files.length) { e.preventDefault(); const p = dropPoint(); addImages(files, p.x, p.y); return; }
   if (e.target.closest?.('textarea, input, select')) return;   // normal text paste inside a box
   const t = e.clipboardData?.getData('text'); if (t) { e.preventDefault(); const p = dropPoint(); addText(p.x, p.y, t); }
 });
 document.addEventListener('keydown', e => {
-  if (view !== 'leadnote' || !boardSel || !['Delete', 'Backspace'].includes(e.key)) return;
+  if (view !== 'leadnote' || !$('#board') || !(e.metaKey || e.ctrlKey) || /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;   // inside a text box the browser's own undo runs
+  const k = e.key.toLowerCase();
+  if (k === 'z' && !e.shiftKey) { e.preventDefault(); boardUndo(); }
+  else if (k === 'd') { e.preventDefault(); boardPaste(boardSelected(), 24); }
+  else if ((k === 'z' && e.shiftKey) || k === 'y') { e.preventDefault(); boardRedo(); }
+});
+document.addEventListener('keydown', e => {
+  if (view !== 'leadnote' || !boardMulti.size || !['Delete', 'Backspace'].includes(e.key)) return;
   if (/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
-  e.preventDefault(); delItem(boardSel);
+  e.preventDefault(); [...boardMulti].forEach(delItem); boardMulti = new Set();
 });
 function renderLog(){
   const d = logDay || TODAY, days = [];
@@ -1552,6 +1683,11 @@ $('#main').addEventListener('click', e => {
   if (e.target.closest('[data-cpr-reset]')) { rngCpr = null; render(); return; }
   const gd = e.target.closest('[data-goday]'); if (gd) { day = gd.dataset.goday; dayFrom = null; boardSel = boardPt = null; render(); scrollTo(0, 0); return; }
   if (e.target.closest('#bAddText')) { const p = dropPoint(); addText(p.x, p.y); return; }
+  const bv = e.target.closest('[data-bvec]'); if (bv) { addVector(bv.dataset.bvec); return; }
+  const bc = e.target.closest('[data-bcol]'); if (bc) {   // pick the colour for new vectors, and recolour the selected one
+    bColor = bc.dataset.bcol; document.querySelectorAll('[data-bcol]').forEach(x => x.setAttribute('aria-pressed', x === bc));
+    const it = leadBoard(leadClinic).find(v => v.id === boardSel && v.color); if (it) { it.color = bColor; boardCommit(); drawBoard(); }
+    return; }
   if (e.target.closest('[data-rep-run]')) {
     if (!confirm('สั่งรันรีพอร์ตจริงตอนนี้? ระบบจะสร้าง PDF อัปโหลด Drive และส่ง Telegram ให้ลูกค้าทุกคลินิกที่ถึงกำหนด')) return;
     e.target.disabled = true;
@@ -1595,7 +1731,7 @@ document.querySelectorAll('[role=tab]').forEach(b => b.onclick = () => { view = 
 $('#q').oninput = e => { q = e.target.value; if (view !== 'dash' && view !== 'text') $('#main').innerHTML = mainHTML(); };
 // daily log edits
 $('#main').addEventListener('input', e => {
-  if (e.target.matches('[data-bt]')) { const it = leadBoard(leadClinic).find(v => v.id === e.target.closest('.bi').dataset.id); if (it) { it.text = e.target.value; boardCommit(); } return; }
+  if (e.target.matches('[data-bt]')) { const it = leadBoard(leadClinic).find(v => v.id === e.target.closest('.bi').dataset.id); if (it) { it.text = e.target.value; boardCommit(false, true); } return; }
   const k = e.target.dataset.log; if (!k) return;
   const [c, t] = k.split('|'), d = logDay || TODAY;
   ((((db.days[d] ??= {})[c] ??= {})[t] ??= {}).note = e.target.value); save(d, c);
