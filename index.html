@@ -247,6 +247,7 @@ aside{border-left:1px solid var(--line);background:var(--surface);backdrop-filte
 .sw input:checked{background:#1877f2;border-color:#1877f2}.sw input:checked::before{transform:translateX(16px);background:#fff}
 .sw input:focus-visible{outline:2px solid #1877f2;outline-offset:2px}.sw:has(:checked){color:var(--text)}
 .mon{color:#1877f2;font-weight:500}
+.mbal{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px;margin:8px 0}.mbal label{display:grid;gap:4px;font-size:12px;color:var(--text-2);flex:1 1 220px}.mbal small{flex-basis:100%;font-size:12px}
 .acct-link{color:inherit;text-decoration:none;border-radius:6px}.acct-link:hover{color:#1877f2;text-decoration:underline;text-underline-offset:3px}.acct-link:focus-visible{outline:2px solid #1877f2;outline-offset:2px}
 .ph h2{margin:0;font-size:18px;font-weight:600;flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ph .meta{display:flex;gap:12px;align-items:center;font-size:12px;color:var(--text-3);margin-top:4px;flex-wrap:wrap}
@@ -541,11 +542,11 @@ async function loadMeta(){
   window.ADS_DATA = A;
 }
 async function loadAll(){
-  const {data: cl, error} = await sb.from('clinics').select('id,name,page_url,cap,sort,ad_account_id').eq('active', true).eq('owner', OWNER).order('sort');
+  const {data: cl, error} = await sb.from('clinics').select('id,name,page_url,cap,sort,ad_account_id,manual_balance,manual_balance_at,manual_balance_limit').eq('active', true).eq('owner', OWNER).order('sort');
   if (error) throw error;
   // RLS returns no rows to non-members; an owner with every clinic switched off is still a member
   if (!cl.length && !(await sb.from('members').select('user_id').limit(1)).data?.length) throw new Error('notmember');
-  db.clinics = cl.map(c => ({id: c.id, name: c.name, act: c.ad_account_id || '', page: c.page_url || '', cap: c.cap == null ? '' : +c.cap}));
+  db.clinics = cl.map(c => ({id: c.id, name: c.name, act: c.ad_account_id || '', mbal: c.manual_balance == null ? null : +c.manual_balance, mbalAt: c.manual_balance_at, mbalLim: c.manual_balance_limit == null ? null : +c.manual_balance_limit, page: c.page_url || '', cap: c.cap == null ? '' : +c.cap}));
   const byId = Object.fromEntries(db.clinics.map(c => [c.id, c.name]));
   db.days = {};
   for (const r of await fetchAll('checks', 'day,clinic_id,data')) if (byId[r.clinic_id]) (db.days[r.day] ??= {})[byId[r.clinic_id]] = r.data;
@@ -679,23 +680,39 @@ function renderMetrics(){
 function runway(name){
   const A = window.ADS_DATA || {}, d = Object.keys(A).filter(k => !A[k].history && A[k].clinics?.[name] && !A[k].clinics[name].error).sort().at(-1);
   if (!d) return null;
-  const v = A[d].clinics[name], money = [v.balance, v.limit_left].filter(x => x !== '' && x != null);
+  const v = A[d].clinics[name], c = db.clinics.find(x => x.name === name);
+  // card account holding prepaid funds: Meta's API hides that balance, so it is typed by hand together with limit_left at
+  // that moment; limit_left (spend_cap - amount_spent) moves in near real time, so its drop since = money spent since.
+  // ponytail: needs a spend cap on the account; without limit_left a typed balance is ignored.
+  const manual = c?.mbal != null && c.mbalLim != null && has(v.limit_left) && !has(v.balance) ? Math.round(c.mbal - (c.mbalLim - v.limit_left)) : null;
+  const money = [manual ?? v.balance, v.limit_left].filter(x => x !== '' && x != null);
   if (!money.length) return {card: true, asOf: d};
   const skip = A[d].partial ? 1 : 0;  // today's spend so far is not a full day
   const spends = Array.from({length: 7}, (_,i) => +rec(shiftDay(d, -i - skip), name).budget?.spend).filter(x => x > 0);
   const avg = spends.length ? spends.reduce((a,b) => a+b, 0) / spends.length : 0, left = Math.min(...money);
-  return {left, avg, days: avg ? left/avg : null, asOf: d, kind: left === v.limit_left && left !== v.balance ? 'วงเงินบัญชี' : 'เงินเติม', balance: v.balance, limit: v.limit_left};
+  return {left, avg, days: avg ? left/avg : null, asOf: d, kind: manual != null && left === manual ? 'เงินเติม (กรอกเอง)' : left === v.limit_left && left !== v.balance ? 'วงเงินบัญชี' : 'เงินเติม',
+    balance: manual ?? v.balance, limit: v.limit_left, metaBalance: v.balance, manual: manual != null && {typed: c.mbal, at: c.mbalAt, used: c.mbalLim - v.limit_left}};
 }
 const runTone = w => w.days == null ? '' : w.days < 2 ? 't-bad' : w.days < 5 ? 't-warn' : '';
 // money line shown everywhere. Prepaid: Meta deducts the balance about once a day, while amount_spent (behind
 // spend_cap - amount_spent = limit) is near real time, so the lower figure is the money really left; the gap ≈ spend
 // not yet deducted (checked 11-24 on Lalida: gap ฿1,884 vs ฿1,881 spent the day before).
 const has = v => v != null && v !== '';
-const runMoney = w => has(w.balance)
+const runMoney = w => w.manual ? `ยอดเงิน ${baht(w.balance)} <span class="muted" title="กรอกเอง ${esc(new Date(w.manual.at).toLocaleString('th-TH', {timeZone: 'Asia/Bangkok'}))}">· กรอกเอง ${baht(w.manual.typed)} − ใช้ไป ${baht(w.manual.used)}</span>`
+  : has(w.balance)
   ? (has(w.limit) && w.limit < w.balance
       ? `เหลือจริง ${baht(w.limit)} <span class="muted">· Meta ยังโชว์ ${baht(w.balance)} (ยังไม่หักยอดใช้ล่าสุด ${baht(w.balance - w.limit)})</span>`
       : `ยอดเงิน ${baht(w.balance)}`)
   : `วงเงินบัญชีเหลือ ${baht(w.limit)} <span class="muted" title="บัญชีที่ผูกบัตร: Meta ไม่ส่งยอดเงินที่เติมไว้ผ่าน API ดูยอดเงินจริงในหน้าการชำระเงินของ Meta">· ไม่ใช่ยอดเงิน (บัญชีบัตร ดูยอดใน Meta)</span>`;
+// typed balance for card accounts (Meta hides their prepaid funds); shown only where Meta sends no balance
+function manualBalHTML(c){
+  const w = runway(c.name);
+  if (!w || w.card || has(w.metaBalance)) return '';
+  return `<div class="mbal"><label>ยอดเงินในบัญชี (ดูจากหน้าการชำระเงิน Meta · กรอกใหม่เมื่อเติมเงิน)
+    <input type="number" id="mbalIn" min="0" step="0.01" inputmode="decimal" placeholder="${w.manual ? Math.round(w.balance) : 'เช่น 11068.50'}"></label>
+    <button class="ghost" id="mbalSave">บันทึกยอด</button>
+    <small class="muted">${w.manual ? `ตอนนี้เหลือ ${baht(w.balance)} (กรอก ${baht(w.manual.typed)} − ใช้ไป ${baht(w.manual.used)})` : 'ยังไม่ได้กรอก · ตอนนี้ "รันได้อีก" คิดจากวงเงินบัญชี'}</small></div>`;
+}
 function runwayCell(name){
   const w = runway(name);
   if (!w) return '<span class="muted">–</span>';
@@ -1130,6 +1147,7 @@ function renderPanel(){
         ${kv}
         <div class="fields">${[...manual, ...t.fields].map(f => field(t.id, f, d[f[0]] ?? '')).join('')}</div>
         ${t.id==='budget' && k.pct != null ? `<p class="why"><span>ใช้ ${k.pct.toFixed(0)}% ของเพดาน</span></p>` : ''}
+        ${t.id==='budget' ? manualBalHTML(c) : ''}
         <textarea data-k="${t.id}.note" placeholder="สิ่งที่เจอ / ต้องทำ" aria-label="สิ่งที่เจอ ${t.name}">${esc(d.note)}</textarea>
       </section>`;
     }).join('')}
@@ -1159,6 +1177,15 @@ $('#panel').addEventListener('input', e => {
   if (view === 'today') $('#main').innerHTML = renderToday();
   if (f === 'status') renderPanel();
 });
+async function saveManualBal(){
+  const c = db.clinics.find(x => x.name === cur), w = runway(cur), v = +$('#mbalIn').value;
+  if (!c || !(v > 0)) return alert('ใส่ยอดเงินเป็นตัวเลข');
+  if (!has(w?.limit)) return alert('บัญชีนี้ไม่มีวงเงินบัญชีใน Meta เลยหักยอดใช้อัตโนมัติไม่ได้');
+  const row = {manual_balance: v, manual_balance_at: new Date().toISOString(), manual_balance_limit: w.limit};
+  const {error} = await sb.from('clinics').update(row).eq('id', c.id);
+  if (error) return alert('บันทึกไม่ได้: ' + error.message);
+  Object.assign(c, {mbal: v, mbalAt: row.manual_balance_at, mbalLim: w.limit}); render();
+}
 $('#panel').addEventListener('click', e => {
   // กดสถานะเดิมซ้ำ = ล้างติ๊ก (radio ปกติเอาออกไม่ได้; ตอน click ค่าที่เก็บไว้ยังเป็นค่าเก่า)
   const rd = e.target.closest('input[type=radio][data-k$=".status"]');
@@ -1168,6 +1195,7 @@ $('#panel').addEventListener('click', e => {
       save(day, cur);
       if (view === 'today') $('#main').innerHTML = renderToday(); renderPanel(); }
     return; }
+  if (e.target.closest('#mbalSave')) { saveManualBal(); return; }
   if (e.target.closest('#close')) { cur = null; render(); return; }
   const st = e.target.closest('[data-step]'); if (st) step(+st.dataset.step);
 });
