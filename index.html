@@ -6,29 +6,28 @@
 <title>อัปเดตแอดรายวัน</title>
 <link rel="icon" href="icon.svg" type="image/svg+xml"><link rel="icon" href="favicon-32.png" sizes="32x32"><link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700&family=Anuphan:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  /* glassmorphism: colour lives in the page background, surfaces are frosted layers above it */
-  --bg:oklch(95% 0.02 280);
-  --blob1:oklch(80% 0.12 290 / .55); --blob2:oklch(85% 0.09 200 / .5); --blob3:oklch(88% 0.08 340 / .45);
-  --surface:rgba(255,255,255,.58); --surface-2:rgba(255,255,255,.78); --tint:rgba(255,255,255,.5); --hover:rgba(255,255,255,.55);
-  --line:rgba(255,255,255,.7); --line-2:rgba(60,50,110,.14); --edge:rgba(60,50,110,.08);
-  --text:oklch(24% 0.03 280); --text-2:oklch(42% 0.03 280); --text-3:oklch(52% 0.025 280);
-  --accent:oklch(52% 0.19 285); --accent-tint:oklch(60% 0.17 285 / .12); --accent-tint-2:oklch(60% 0.17 285 / .25);
-  --ok:oklch(55% 0.13 155); --warn:oklch(64% 0.14 70); --bad:oklch(56% 0.17 25); --none:rgba(60,50,110,.18);
-  --shadow:0 8px 32px rgba(70,50,140,.10); --pop:oklch(99% 0.006 285); --blur:blur(18px) saturate(150%);
-  --sans:"IBM Plex Sans Thai",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,monospace;
+  /* minimal: neutral greys, solid surfaces, colour only where it means something (status) or where you press (accent) */
+  --bg:oklch(97.6% 0.002 260);
+  --blob1:transparent; --blob2:transparent; --blob3:transparent;
+  --surface:#fff; --surface-2:#fff; --tint:oklch(96.5% 0.002 260); --hover:oklch(95.5% 0.003 260);
+  --line:oklch(91.5% 0.003 260); --line-2:oklch(85% 0.004 260); --edge:oklch(93% 0.003 260);
+  --text:oklch(21% 0.006 260); --text-2:oklch(44% 0.008 260); --text-3:oklch(55% 0.008 260);
+  --accent:oklch(52% 0.19 285); --accent-tint:oklch(55% 0.17 285 / .08); --accent-tint-2:oklch(55% 0.17 285 / .18);
+  --ok:oklch(55% 0.13 155); --warn:oklch(64% 0.14 70); --bad:oklch(56% 0.17 25); --none:oklch(85% 0.004 260);
+  --shadow:0 1px 2px oklch(0% 0 0 / .04); --pop:#fff; --blur:none;
+  --sans:"Inter","Anuphan",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,monospace;
 }
 @media (prefers-color-scheme:dark){:root{
-  --bg:oklch(17% 0.03 280);
-  --blob1:oklch(45% 0.16 290 / .55); --blob2:oklch(42% 0.10 210 / .45); --blob3:oklch(40% 0.12 340 / .40);
-  --surface:rgba(255,255,255,.07); --surface-2:rgba(30,26,52,.82); --tint:rgba(255,255,255,.06); --hover:rgba(255,255,255,.07);
-  --line:rgba(255,255,255,.12); --line-2:rgba(255,255,255,.18); --edge:rgba(255,255,255,.08);
-  --text:oklch(96% 0.008 280); --text-2:oklch(80% 0.02 280); --text-3:oklch(68% 0.02 280);
-  --accent:oklch(78% 0.13 285); --accent-tint:oklch(70% 0.15 285 / .16); --accent-tint-2:oklch(70% 0.15 285 / .32);
-  --ok:oklch(76% 0.13 155); --warn:oklch(82% 0.12 75); --bad:oklch(72% 0.15 25); --none:rgba(255,255,255,.18);
-  --shadow:0 8px 32px rgba(0,0,0,.35); --pop:oklch(22% 0.03 282);
+  --bg:oklch(15.5% 0.003 260);
+  --surface:oklch(19.5% 0.003 260); --surface-2:oklch(21.5% 0.003 260); --tint:oklch(22.5% 0.003 260); --hover:oklch(24% 0.004 260);
+  --line:oklch(27% 0.004 260); --line-2:oklch(34% 0.005 260); --edge:oklch(25% 0.004 260);
+  --text:oklch(96% 0.002 260); --text-2:oklch(78% 0.005 260); --text-3:oklch(64% 0.006 260);
+  --accent:oklch(64% 0.17 285); --accent-tint:oklch(70% 0.15 285 / .12); --accent-tint-2:oklch(70% 0.15 285 / .24);
+  --ok:oklch(76% 0.13 155); --warn:oklch(82% 0.12 75); --bad:oklch(72% 0.15 25); --none:oklch(36% 0.005 260);
+  --shadow:none; --pop:oklch(21.5% 0.003 260);
 }}
 *{box-sizing:border-box}
 html,body{height:100%}
@@ -45,7 +44,7 @@ kbd{font:11px var(--mono);color:var(--text-3);border:1px solid var(--line-2);bor
 /* app frame */
 .app{display:grid;grid-template-rows:auto 1fr;height:100vh}
 header{display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--surface);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);flex-wrap:wrap;position:relative;z-index:3}
-header h1{font-size:16px;font-weight:600;margin:0 8px 0 0;white-space:nowrap}
+header h1{font-size:16px;font-weight:700;letter-spacing:-.01em;margin:0 8px 0 0;white-space:nowrap}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:12px;padding:3px;gap:2px;background:var(--tint)}
 .seg button{border:0;background:none;padding:4px 12px;border-radius:9px;cursor:pointer;color:var(--text-2);height:28px}
 .seg button[aria-selected=true]{background:var(--accent-tint-2);color:var(--text);font-weight:500}
@@ -103,8 +102,8 @@ main{overflow:auto;padding:20px;scrollbar-gutter:stable}
 /* scrollbars blend with the glass theme (the default light track glared in dark mode) */
 :root{color-scheme:light dark}
 /* solid colours, not transparent: Chrome on Windows swaps a transparent track for its default white one on hover */
-:root{--sb-thumb:oklch(78% 0.02 280);--sb-track:oklch(95% 0.008 280)}
-@media (prefers-color-scheme:dark){:root{--sb-thumb:oklch(42% 0.03 280);--sb-track:oklch(19% 0.025 280)}}
+:root{--sb-thumb:oklch(82% 0.004 260);--sb-track:var(--bg)}
+@media (prefers-color-scheme:dark){:root{--sb-thumb:oklch(34% 0.005 260);--sb-track:var(--bg)}}
 *{scrollbar-width:thin;scrollbar-color:var(--sb-thumb) var(--sb-track)}
 ::-webkit-scrollbar{width:10px;height:10px;background:var(--sb-track)}::-webkit-scrollbar-track{background:var(--sb-track)}
 ::-webkit-scrollbar-thumb{background:var(--sb-thumb);border-radius:10px;border:3px solid var(--sb-track)}
@@ -114,9 +113,9 @@ main{overflow:auto;padding:20px;scrollbar-gutter:stable}
 .metrics{display:grid;grid-template-columns:1.3fr 1fr 1fr 1fr;gap:12px;margin-bottom:16px}
 .metric{border:1px solid var(--line);border-radius:16px;padding:14px 16px;background:var(--surface);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);box-shadow:var(--shadow);min-width:0}
 .metric .lb{font-size:12px;color:var(--text-2);font-weight:500}
-.metric .v{font-size:24px;font-weight:600;letter-spacing:-.02em;line-height:1.3}
+.metric .v{font-size:26px;font-weight:700;letter-spacing:-.025em;line-height:1.3}
 .metric .sub{font-size:12px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.metric.hero{background:linear-gradient(135deg,var(--accent-tint-2),var(--accent-tint));border-color:var(--accent-tint-2)}
+.metric.hero{background:var(--surface);border-color:var(--line-2)}
 .metric.hero .v{font-size:32px;color:var(--bad)}
 .metric.hero .v.zero{color:var(--ok)}
 .metric.hero .names{display:flex;flex-wrap:wrap;gap:4px 8px;font-size:12px;margin-top:4px}
@@ -413,8 +412,8 @@ pre{white-space:pre-wrap;font:12px/1.6 var(--sans);margin:0;padding:12px;color:v
 .dash-h h2{margin:0;font-size:20px;font-weight:600}
 .dash-h p{margin:0;color:var(--text-3);font-size:13px}
 .stat-card{display:flex;gap:14px;align-items:flex-start;padding:16px;transition:transform .2s ease,box-shadow .2s ease}
-.stat-card:hover{transform:translateY(-3px);box-shadow:0 14px 40px rgba(90,60,180,.18)}
-.ico{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;flex:none;background:linear-gradient(135deg,var(--accent-tint-2),var(--accent-tint));color:var(--accent);border:1px solid var(--accent-tint-2)}
+.stat-card:hover{transform:translateY(-2px);border-color:var(--line-2)}
+.ico{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;flex:none;background:var(--tint);color:var(--text-2);border:1px solid var(--line)}
 .ico svg{width:20px;height:20px}
 .stat-card .lb{font-size:12px;color:var(--text-2)}
 .stat-card .v{font-size:26px;font-weight:600;letter-spacing:-.02em;line-height:1.25}
@@ -437,7 +436,7 @@ pre{white-space:pre-wrap;font:12px/1.6 var(--sans);margin:0;padding:12px;color:v
 .brow{display:grid;grid-template-columns:120px minmax(0,1fr) 72px;gap:10px;align-items:center;font-size:12px}
 .brow .n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-2)}
 .brow .tr{position:relative;height:10px;border-radius:5px;background:var(--tint)}
-.brow .tr b{display:block;height:100%;border-radius:5px;background:linear-gradient(90deg,var(--accent-tint-2),var(--accent))}
+.brow .tr b{display:block;height:100%;border-radius:5px;background:var(--text-3)}
 .brow .tr i{position:absolute;top:-3px;bottom:-3px;width:2px;border-radius:1px;background:var(--text-2)}
 .brow .val{text-align:right;font-weight:500}
 .brow.over .val{color:var(--bad)}
@@ -456,13 +455,13 @@ pre{white-space:pre-wrap;font:12px/1.6 var(--sans);margin:0;padding:12px;color:v
 }
 @media (max-width:560px){header h1{display:none}.metrics{grid-template-columns:1fr}main{padding:8px}}
 /* ---- inviting + lively layer: colour on what you can press, motion only in answer to what you do ---- */
-:root{--grad:linear-gradient(135deg,oklch(58% 0.21 292),oklch(62% 0.15 220));--glow:0 6px 20px oklch(58% 0.21 292 / .32)}
+:root{--grad:var(--accent);--glow:none}
 .seg button{transition:background .15s,color .15s,transform .1s,box-shadow .15s}
 .seg button:hover{background:var(--accent-tint);color:var(--text)}
 .seg button[aria-selected=true]{background:var(--grad);color:#fff;box-shadow:var(--glow)}
 .seg button:active{transform:scale(.94)}
 .ghost{transition:background .15s,border-color .15s,color .15s,transform .12s,box-shadow .15s}
-.ghost:hover{border-color:var(--accent);background:var(--accent-tint);color:var(--text);transform:translateY(-1px);box-shadow:0 4px 14px oklch(58% 0.21 292 / .2)}
+.ghost:hover{border-color:var(--line-2);background:var(--hover);color:var(--text);transform:translateY(-1px)}
 .ghost:active{transform:translateY(0) scale(.95)}
 #pull{background:var(--grad);border-color:transparent;color:#fff;box-shadow:var(--glow)}
 #pull:hover{color:#fff;filter:brightness(1.1)}
@@ -470,19 +469,19 @@ pre{white-space:pre-wrap;font:12px/1.6 var(--sans);margin:0;padding:12px;color:v
 .live[hidden]{display:none}
 @keyframes live{0%{box-shadow:0 0 0 0 oklch(80% 0.17 155 / .7)}100%{box-shadow:0 0 0 9px oklch(80% 0.17 155 / 0)}}
 tbody tr{transition:background .12s,box-shadow .12s}
-tbody tr:hover{background:var(--accent-tint);box-shadow:inset 3px 0 0 var(--accent)}
+tbody tr:hover{background:var(--hover);box-shadow:inset 2px 0 0 var(--accent)}
 tbody tr:active{background:var(--accent-tint-2)}
 .dots .dot{transition:transform .15s}tbody tr:hover .dots .dot{transform:scale(1.3)}
 .metric{transition:transform .2s,box-shadow .2s,border-color .2s}
-.metric:hover{transform:translateY(-3px);border-color:var(--accent-tint-2);box-shadow:var(--shadow),0 12px 32px oklch(58% 0.21 292 / .18)}
+.metric:hover{transform:translateY(-2px);border-color:var(--line-2)}
 .meter b{background:var(--grad);transition:width .6s cubic-bezier(.2,.8,.2,1)}
-.stat label{transition:background .15s,transform .1s}.stat label:hover{background:var(--accent-tint)}.stat label:active{transform:scale(.94)}
+.stat label{transition:background .15s,transform .1s}.stat label:hover{background:var(--hover)}.stat label:active{transform:scale(.94)}
 .flash{animation:flash 1.4s ease-out}
 @keyframes flash{0%{background:oklch(76% 0.15 155 / .38)}100%{background:transparent}}
 .sw input.pop{animation:pop .35s ease-out}@keyframes pop{45%{transform:scale(1.18)}}
 .confetti{position:fixed;width:7px;height:7px;border-radius:2px;pointer-events:none;z-index:200;animation:conf .9s cubic-bezier(.2,.7,.3,1) forwards}
 @keyframes conf{to{transform:translate(var(--dx),var(--dy)) rotate(var(--r));opacity:0}}
-.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:var(--grad);color:#fff;padding:10px 20px;border-radius:999px;box-shadow:var(--glow);z-index:200;font-weight:500;animation:toastIn .35s cubic-bezier(.2,.8,.2,1)}
+.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 20px;border-radius:999px;box-shadow:var(--glow);z-index:200;font-weight:500;animation:toastIn .35s cubic-bezier(.2,.8,.2,1)}
 @keyframes toastIn{from{opacity:0;transform:translate(-50%,12px)}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important}.metric:hover,.ghost:hover,.ghost:active,.seg button:active,tbody tr:hover .dots .dot{transform:none}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
