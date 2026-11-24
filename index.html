@@ -130,7 +130,7 @@ tbody tr[aria-selected=true]{background:var(--accent-tint);box-shadow:inset 2px 
 .cap{display:flex;flex-direction:column;align-items:flex-end;gap:4px;min-width:120px}
 .cap .bar{width:100%;height:4px;border-radius:2px;background:var(--line);overflow:hidden;position:relative}
 .cap .bar b{display:block;height:100%;background:var(--text-3)}
-.cap .bar b.over{background:var(--bad)}
+.cap .bar b.warn{background:var(--warn)}.cap .bar b.over{background:var(--bad)}
 .cap .bar i{position:absolute;top:0;bottom:0;width:1px;background:var(--text-2)}
 .run{display:inline-flex;flex-direction:column;align-items:flex-end;line-height:1.3}.run b{font-weight:600}.run small{font-size:11px;color:var(--text-3)}
 .runlist{padding:8px 16px 14px;display:grid;gap:10px}
@@ -794,7 +794,7 @@ function renderToday(){
           <td class="name">${adsLink(c, esc(c.name))}<small>${r.ads?.monitored ? '<span class="mon">✓ มอนิเตอร์แล้ว</span> · ' : ''}${r.ads?.state ? esc(r.ads.state) : r._history ? 'ย้อนหลังจาก Meta' : err ? 'ดึงจาก Meta ไม่ได้' : 'กรอกเอง'}</small></td>
           <td><span class="dots">${TOPICS.map(t => `<span class="dot d-${r[t.id]?.status||''}" title="${t.name}: ${ST[r[t.id]?.status]||'ยังไม่เช็ค'}"></span>`).join('')}</span></td>
           <td class="num"><div class="cap"><span>${baht(r.budget?.spend)} <span class="muted">/ ${baht(cap)}</span></span>
-            ${pct != null ? `<span class="bar" title="${pct.toFixed(0)}% ของเพดาน"><b class="${pct>100?'over':''}" style="width:${Math.min(pct,100)/1.25}%"></b><i style="left:80%"></i></span>` : ''}</div></td>
+            ${pct != null ? `<span class="bar" title="${pct.toFixed(0)}% ของเพดาน"><b class="${pct>120?'over':pct>100?'warn':''}" style="width:${Math.min(pct,125)/1.25}%"></b><i style="left:80%"></i></span>` : ''}</div></td>
           <td class="num">${int(r.ads?.results)}</td>
           <td class="num">${k.cpr ? baht(k.cpr) : '–'}</td>
           <td class="num">${r.ads?.purchases != null ? `<span class="run"><b>${+r.ads.purchases ? int(r.ads.purchases) : '–'}</b>${+r.ads.purchase_value ? `<small>${baht(r.ads.purchase_value)}</small>` : ''}</span>` : '<span class="muted">–</span>'}</td>
