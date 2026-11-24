@@ -2363,8 +2363,12 @@ function slideSegs(){
     const b = seg.querySelector('button[aria-selected=true]'); let ind = seg.querySelector(':scope > .ind');
     if (!b) { ind?.remove(); seg.classList.remove('slid'); continue; }
     const fresh = !ind; if (fresh) { ind = document.createElement('span'); ind.className = 'ind'; ind.style.transition = 'none'; seg.prepend(ind); }
-    const left = b.offsetLeft + 'px', moved = !fresh && ind.style.left !== left;
-    Object.assign(ind.style, {left, top: b.offsetTop + 'px', width: b.offsetWidth + 'px', height: b.offsetHeight + 'px'});
+    // hop only when the selection itself changed; font loads / data renders / resizes just re-measure, no animation
+    const sel = [...seg.querySelectorAll('button')].indexOf(b), moved = !fresh && +ind.dataset.sel !== sel;
+    ind.dataset.sel = sel;
+    if (!fresh && !moved) ind.style.transition = 'none';
+    Object.assign(ind.style, {left: b.offsetLeft + 'px', top: b.offsetTop + 'px', width: b.offsetWidth + 'px', height: b.offsetHeight + 'px'});
+    if (!fresh && !moved) { ind.offsetWidth; ind.style.transition = ''; }
     // liquid-glass hop: the pill swells into a frosted blob over the labels while it travels, then settles back
     if (moved && !matchMedia('(prefers-reduced-motion:reduce)').matches) {
       ind.classList.add('moving'); clearTimeout(ind._t); ind._t = setTimeout(() => ind.classList.remove('moving'), 380);
