@@ -634,14 +634,19 @@ tbody tr:active{background:var(--accent-tint-2)}
 .ang-funnel .fh{font-size:12px;color:var(--text-3);margin-bottom:8px}
 .funnel{width:100%;height:auto;display:block}
 .fb{cursor:pointer}.fb path{stroke:oklch(100% 0 0 / .25);stroke-width:1;transition:filter .15s,opacity .15s}
-.fb.s1 path{fill:oklch(55% 0.13 250)}.fb.s2 path{fill:oklch(55% 0.13 200)}.fb.s3 path{fill:oklch(60% 0.12 75)}.fb.s4 path{fill:oklch(58% 0.15 30)}
 .fb:hover path,.fb:focus-visible path{filter:brightness(1.15)}.fb.on path{stroke:#fff;stroke-width:2.5}
 .funnel:has(.fb.on) .fb:not(.on) path{opacity:.45}
 .fb .ft{fill:#fff;font:600 12.5px var(--sans);text-anchor:middle}.fb .fs{fill:oklch(100% 0 0 / .85);font:11px var(--sans);text-anchor:middle}
 .fnote{font-size:11px;color:var(--text-3);margin-top:8px}
+.fedit{margin-top:10px;font-size:12px}
+.fform{margin-top:12px;display:grid;gap:8px}.fform .fh{margin:0}
+.frow{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:6px;align-items:center}
+.frow textarea{grid-column:2/-1;font:12px var(--sans);border:1px solid var(--line-2);border-radius:8px;background:var(--tint);color:var(--text);padding:6px 8px;resize:vertical}
+.frow input{height:30px;border:1px solid var(--line-2);border-radius:8px;background:var(--tint);color:var(--text);padding:0 8px;font:13px var(--sans);min-width:0}
+.fdot{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;color:#fff;font:600 11px var(--sans)}
+.fbtns{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .score{display:inline-grid;place-items:center;min-width:34px;height:24px;padding:0 6px;border-radius:999px;font:700 12px var(--sans);color:#fff;background:linear-gradient(135deg,oklch(60% 0.17 285),oklch(55% 0.15 250))}
 .stepc{font-size:11px;font-weight:600;padding:1px 8px;border-radius:999px;color:#fff}
-.stepc.s1{background:oklch(55% 0.13 250)}.stepc.s2{background:oklch(55% 0.13 200)}.stepc.s3{background:oklch(60% 0.12 75)}.stepc.s4{background:oklch(58% 0.15 30)}
 .parts{display:flex;gap:10px;margin-top:6px;font-size:11px;color:var(--text-3)}
 .parts span{position:relative;width:86px;height:16px;border-radius:4px;background:var(--hover);overflow:hidden;padding-left:6px;line-height:16px}
 .parts i{position:absolute;left:0;top:0;bottom:0;background:var(--accent-tint-2)}
@@ -836,11 +841,11 @@ async function loadMeta(){
   window.ADS_DATA = A;
 }
 async function loadAll(){
-  const {data: cl, error} = await sb.from('clinics').select('id,name,page_url,cap,sort,ad_account_id,manual_balance,manual_balance_at,manual_balance_limit').eq('active', true).eq('owner', OWNER).order('sort');
+  const {data: cl, error} = await sb.from('clinics').select('id,name,page_url,cap,sort,ad_account_id,manual_balance,manual_balance_at,manual_balance_limit,funnel').eq('active', true).eq('owner', OWNER).order('sort');
   if (error) throw error;
   // RLS returns no rows to non-members; an owner with every clinic switched off is still a member
   if (!cl.length && !(await sb.from('members').select('user_id').limit(1)).data?.length) throw new Error('notmember');
-  db.clinics = cl.map(c => ({id: c.id, name: c.name, act: c.ad_account_id || '', mbal: c.manual_balance == null ? null : +c.manual_balance, mbalAt: c.manual_balance_at, mbalLim: c.manual_balance_limit == null ? null : +c.manual_balance_limit, page: c.page_url || '', cap: c.cap == null ? '' : +c.cap}));
+  db.clinics = cl.map(c => ({id: c.id, name: c.name, act: c.ad_account_id || '', mbal: c.manual_balance == null ? null : +c.manual_balance, mbalAt: c.manual_balance_at, mbalLim: c.manual_balance_limit == null ? null : +c.manual_balance_limit, page: c.page_url || '', cap: c.cap == null ? '' : +c.cap, funnel: c.funnel}));
   const byId = Object.fromEntries(db.clinics.map(c => [c.id, c.name]));
   db.days = {};
   for (const r of await fetchAll('checks', 'day,clinic_id,data')) if (byId[r.clinic_id]) (db.days[r.day] ??= {})[byId[r.clinic_id]] = r.data;
@@ -2070,37 +2075,71 @@ function renderPosts(){
 // ---- angel ads: per clinic, ads with cheap cost per result AND purchases, over 30/60/90/365 days (angel-ads function) ----
 const ANGEL = {};                       // 'clinicId|days' -> result | 'loading' | {error}
 let angelClinic = null, angelDays = 30, angelAll = false, angelStep = 0;
-// funnel step of an ad from its name + copy (same journey as the Mediren retarget funnel). Checked in this order:
-// a concern/FAQ hook beats a result hook, a result hook beats a price line, anything about the doctor/standard is step 1.
-// ponytail: keyword rules on the hook; an ad that mixes steps gets the first match.
-const FUNNEL = [
-  {n: 1, name: 'มั่นใจในหมอ', sub: 'หมอ · มาตรฐาน · เคสยาก'},
-  {n: 2, name: 'ผลลัพธ์จริง', sub: 'รีวิว · ผลหลังทำ'},
-  {n: 3, name: 'ตอบข้อกังวล', sub: 'ข้อควรระวัง · เจ็บไหม · ราคาถูกเสี่ยงไหม'},
-  {n: 4, name: 'แจ้งราคา + จองคิว', sub: 'ราคา · โปร · จองคิว'},
+// funnel steps per clinic (clinics.funnel = [{name, sub, kw}], top -> bottom); no setting = this general 5-step funnel.
+// An ad goes to a step when its NAME has one of the step's words, checked from the bottom step up (an offer or an
+// objection line is more specific than "doctor"); only if the name says nothing, the opening of the copy is read the same way.
+// ponytail: keyword rules; edit the words per clinic in the editor under the funnel.
+const FUNNEL_DEFAULT = [
+  {name: 'ดึงความสนใจ', sub: 'ให้ความรู้ · ปัญหาที่เจอ', kw: 'รู้หรือไม่|สาเหตุ|เคล็ดลับ|ให้ความรู้|ep|ปัญหา|เทรนด์|ทำไม'},
+  {name: 'สร้างความเชื่อมั่น', sub: 'หมอ · มาตรฐาน · เครื่อง', kw: 'หมอ|แพทย์|ผู้เชี่ยวชาญ|มาตรฐาน|เคสยาก|ประสบการณ์|รางวัล|เทคโนโลยี|เครื่อง|ของแท้'},
+  {name: 'ผลลัพธ์จริง', sub: 'รีวิว · เคสจริง', kw: 'รีวิว|review|ผลลัพธ์|อัปเดต|อัพเดท|เคสจริง|คนไข้|ลูกค้าจริง|หลังทำ'},
+  {name: 'ตอบข้อกังวล', sub: 'เจ็บไหม · พักฟื้น · ความเสี่ยง', kw: 'ข้อควรระวัง|ระวัง|เจ็บ|พักฟื้น|เสี่ยง|กังวล|ความจริง|เข้าใจผิด|ต่างกันยังไง|ผลข้างเคียง'},
+  {name: 'ปิดการขาย', sub: 'ราคา · โปร · จองคิว', kw: 'ราคา|฿|บาท|โปร|เริ่มต้น|จองคิว|ผ่อน|ส่วนลด|ลด'},
 ];
-const STEP_RX = [[3, /ข้อควรระวัง|ระวัง|เหมา|ไม่ได้ดี|ทำไม|เสี่ยง|เจ็บไหม|ต้องเจ็บ|พักฟื้น|กังวล|ความจริง|เข้าใจผิด|faq|ต่างกันยังไง|ปลูกไม่ได้|ทำไม่ได้/i],
-  [2, /รีวิว|review|ผลลัพธ์|อัปเดต|อัพเดท|เคสจริง|คนไข้|ลูกค้า|หลังทำ|หลังปลูก|เดือนหน้า|ก่อน.?หลัง|เปลี่ยนไป/i],
-  [4, /ราคา|฿|\d[\d,]{2,}\s*\.?-|บาท|โปร|เริ่มต้น|จองคิว|ผ่อน|ส่วนลด|ลด\s*\d/i],
-  [1, /หมอ|แพทย์|ผู้เชี่ยวชาญ|ประธาน|มาตรฐาน|เคสยาก|ประสบการณ์|ระดับเอเชีย|ทีมแพทย์|bn\b/i]];
-// the ad name is the editor's own label of the angle: trust it first, fall back to the copy's opening only when the name says nothing
-const stepIn = t => (STEP_RX.find(([, rx]) => rx.test(t)) || [0])[0];
-const stepOf = a => stepIn(a.name || '') || stepIn((a.body || '').slice(0, 160));
-console.assert(stepOf({name: 'VDO I เคสยากแบบนี้... ต้องจบที่หมอเบญ', body: 'ผลลัพธ์ที่ได้ ปรึกษาสอบถาม'}) === 1 && stepOf({name: 'อัปเดตผลลัพธ์ 5 เดือน!'}) === 2
-  && stepOf({name: 'Reel ปลูกผมเหมากราฟไม่ได้ดีอย่างที่คิด'}) === 3 && stepOf({name: 'โปร Botox 50u ราคา 1,910.-'}) === 4, 'funnel steps');
-function funnelSVG(ads){
-  const W = 300, H = 330, rows = FUNNEL.map(f => { const xs = ads.filter(a => a.step === f.n);
-    return {...f, n2: xs.length, spend: xs.reduce((t, a) => t + a.spend, 0), buys: xs.reduce((t, a) => t + a.purchases, 0)}; });
-  const none = ads.filter(a => !a.step).length, bh = (H - 12) / 4;
-  return `<svg class="funnel" viewBox="0 0 ${W} ${H}" role="group" aria-label="Funnel แอดนางฟ้า 4 ขั้น">${rows.map((r, i) => {
-      const t = i * bh + 2, b = t + bh - 6, inset = k => 12 + k * 26, x1 = inset(i), x2 = inset(i + 1) - 6;   // inverted triangle: each band narrower
-      const on = angelStep === r.n, mid = (t + b) / 2;
-      return `<g class="fb ${on ? 'on' : ''} s${r.n}" data-astep="${r.n}" tabindex="0" role="button" aria-pressed="${on}" aria-label="Step ${r.n} ${r.name}: ${r.n2} แอด">
-        <path d="M${x1},${t}H${W - x1}L${W - x2},${b}H${x2}Z"/>
-        <text x="${W / 2}" y="${mid - 9}" class="ft">Step ${r.n} · ${r.name}</text>
-        <text x="${W / 2}" y="${mid + 9}" class="fs">${r.n2} แอด · ${baht(r.spend)}${r.buys ? ` · ซื้อ ${int(r.buys)}` : ''}</text></g>`; }).join('')}</svg>
-    <div class="fnote">${none ? `ไม่ระบุขั้น ${none} แอด · ` : ''}กดขั้นเพื่อกรองรายการ${angelStep ? ' · <button class="link" data-astep="0">ดูทุกขั้น</button>' : ''}</div>`;
+const funnelOf = c => c?.funnel?.length ? c.funnel : FUNNEL_DEFAULT;
+const kwRx = kw => { const ws = String(kw || '').split(/[|,\n]/).map(w => w.trim()).filter(Boolean).map(w => w.replace(/[.*+?^${}()[\]\\]/g, '\\$&'));
+  return ws.length ? new RegExp(ws.join('|'), 'i') : null; };
+function stepOf(a, steps){
+  const rxs = steps.map(st => kwRx(st.kw)), find = t => { for (let i = rxs.length - 1; i >= 0; i--) if (rxs[i]?.test(t)) return i + 1; return 0; };
+  return find(a.name || '') || find((a.body || '').slice(0, 160));
 }
+{ const M = [{kw: 'หมอ|เคสยาก'}, {kw: 'ผลลัพธ์|อัปเดต'}, {kw: 'เหมา|ไม่ได้ดี'}, {kw: 'ราคา|โปร'}];
+  console.assert(stepOf({name: 'VDO I เคสยากแบบนี้... ต้องจบที่หมอเบญ', body: 'ผลลัพธ์ ราคา'}, M) === 1 && stepOf({name: 'อัปเดตผลลัพธ์ 5 เดือน!'}, M) === 2
+    && stepOf({name: 'Reel ปลูกผมเหมากราฟไม่ได้ดีอย่างที่คิด'}, M) === 3 && stepOf({name: 'โปร 50u ราคา 1,910.-'}, M) === 4 && stepOf({name: 'x', body: 'ผลลัพธ์'}, M) === 2, 'funnel steps'); }
+let funnelDraft = null;   // array while the editor is open
+const STEP_COL = ['oklch(55% 0.13 250)', 'oklch(55% 0.13 200)', 'oklch(56% 0.12 160)', 'oklch(60% 0.12 75)', 'oklch(58% 0.15 30)', 'oklch(55% 0.15 340)'];
+function funnelSVG(ads, steps){
+  const W = 300, N = steps.length, bh = 76, H = N * bh + 4, step = (W / 2 - 46 - 10) / N;
+  const rows = steps.map((f, i) => { const xs = ads.filter(a => a.step === i + 1);
+    return {...f, n: i + 1, cnt: xs.length, spend: xs.reduce((t, a) => t + a.spend, 0), buys: xs.reduce((t, a) => t + a.purchases, 0)}; });
+  const none = ads.filter(a => !a.step).length;
+  const fit = (txt, px, w) => txt.length * px * 0.58 > w ? ` textLength="${Math.round(w)}" lengthAdjust="spacingAndGlyphs"` : '';
+  return `<svg class="funnel" viewBox="0 0 ${W} ${H}" role="group" aria-label="Funnel แอด ${N} ขั้น">${rows.map((r, i) => {
+      const t = i * bh + 2, b = t + bh - 6, x1 = 10 + i * step, x2 = 10 + (i + 1) * step, inner = W - 2 * x2 - 16, mid = (t + b) / 2, on = angelStep === r.n;
+      const l1 = `Step ${r.n} · ${r.name}`, l2 = `${r.cnt} แอด · ${baht(r.spend)}${r.buys ? ` · ซื้อ ${int(r.buys)}` : ''}`;
+      return `<g class="fb ${on ? 'on' : ''}" data-astep="${r.n}" tabindex="0" role="button" aria-pressed="${on}" aria-label="${esc(l1)}: ${r.cnt} แอด">
+        <path d="M${x1},${t}H${W - x1}L${W - x2},${b}H${x2}Z" fill="${STEP_COL[i % STEP_COL.length]}"/>
+        <text x="${W / 2}" y="${mid - 8}" class="ft"${fit(l1, 12.5, inner)}>${esc(l1)}</text>
+        <text x="${W / 2}" y="${mid + 10}" class="fs"${fit(l2, 11, inner)}>${esc(l2)}</text></g>`; }).join('')}</svg>
+    <div class="fnote">${none ? `ไม่เข้าขั้นไหน ${none} แอด · ` : ''}กดขั้นเพื่อกรองรายการ${angelStep ? ' · <button class="link" data-astep="0">ดูทุกขั้น</button>' : ''}</div>`;
+}
+function funnelEditHTML(c){
+  if (!funnelDraft) return `<button class="link fedit" id="fnEdit">แก้ขั้น funnel ของ ${esc(c?.name || 'คลินิกนี้')}</button>${c?.funnel?.length ? '' : '<div class="fnote">ตอนนี้ใช้ funnel ทั่วไป 5 ขั้น</div>'}`;
+  return `<div class="fform"><div class="fh">ขั้นของ ${esc(c.name)} (บนลงล่าง)</div>${funnelDraft.map((st, i) => `<div class="frow">
+      <span class="fdot" style="background:${STEP_COL[i % STEP_COL.length]}">${i + 1}</span>
+      <input data-fn="${i}" data-fk="name" value="${esc(st.name)}" placeholder="ชื่อขั้น" aria-label="ชื่อขั้นที่ ${i + 1}">
+      <button class="link" data-fdel="${i}" aria-label="ลบขั้นที่ ${i + 1}">ลบ</button>
+      <textarea data-fn="${i}" data-fk="kw" rows="2" placeholder="คำในชื่อแอดที่นับเป็นขั้นนี้ คั่นด้วย |" aria-label="คำของขั้นที่ ${i + 1}">${esc(st.kw)}</textarea></div>`).join('')}
+    ${funnelDraft.length < 6 ? '<button class="link" id="fnAdd">+ เพิ่มขั้น</button>' : ''}
+    <div class="fbtns"><button class="btn-primary" id="fnSave">บันทึก</button><button class="ghost" id="fnCancel">ยกเลิก</button><button class="link" id="fnReset">ใช้ funnel ทั่วไป</button></div>
+    <div class="fnote">ระบบดูคำในชื่อแอดก่อน ไล่จากขั้นล่างขึ้นบน ถ้าชื่อไม่บอก ค่อยดูต้นข้อความแอด</div></div>`;
+}
+async function saveFunnel(steps){
+  const c = db.clinics.find(x => x.id === angelClinic); if (!c) return;
+  const {error} = await sb.from('clinics').update({funnel: steps}).eq('id', c.id);
+  if (error) { toast('บันทึกไม่ได้: ' + error.message); return; }
+  c.funnel = steps; funnelDraft = null; angelStep = 0; toast('บันทึก funnel ของ ' + c.name + ' แล้ว'); render();
+}
+document.addEventListener('input', e => { const i = e.target.dataset?.fn; if (i != null && funnelDraft) funnelDraft[+i][e.target.dataset.fk] = e.target.value; });
+document.addEventListener('click', e => {
+  const id = e.target.id, c = () => db.clinics.find(x => x.id === angelClinic);
+  if (id === 'fnEdit') { funnelDraft = structuredClone(funnelOf(c())); render(); }
+  else if (id === 'fnCancel') { funnelDraft = null; render(); }
+  else if (id === 'fnAdd') { funnelDraft.push({name: '', sub: '', kw: ''}); render(); }
+  else if (id === 'fnSave') saveFunnel(funnelDraft.filter(st => st.name.trim()).map(st => ({name: st.name.trim(), sub: st.sub || '', kw: st.kw || ''})));
+  else if (id === 'fnReset') saveFunnel(null);
+  else if (e.target.dataset?.fdel != null) { funnelDraft.splice(+e.target.dataset.fdel, 1); render(); }
+});
 
 async function loadAngel(id, d){
   const k = id + '|' + d; if (ANGEL[k]) return; ANGEL[k] = 'loading';
@@ -2120,7 +2159,8 @@ function renderAngel(){
   if (!A || A === 'loading') return `<div class="card">${head}${ctl}<div class="ang-sum">กำลังดึงจาก Meta… (1 ปีอาจใช้เวลาครึ่งนาที)</div></div>`;
   if (A.error) return `<div class="card">${head}${ctl}<div class="ang-sum">ดึงไม่ได้: ${esc(A.error)}</div></div>`;
   const label = {angel: '👼 นางฟ้า', sold: 'มียอดซื้อ', cheap: 'แชทถูก'};
-  for (const a of A.ads) a.step ??= stepOf(a);
+  const clinic = db.clinics.find(x => x.id === angelClinic), steps = funnelOf(clinic);
+  for (const a of A.ads) a.step = stepOf(a, steps);
   const pool = angelAll ? A.ads : A.ads.filter(a => a.tier), ads = angelStep ? pool.filter(a => a.step === angelStep) : pool;
   const unit = A.step === 'month' ? 'เดือน' : 'สัปดาห์';
   const pd = p => `${+p.from.slice(8)}/${+p.from.slice(5,7)}–${+p.to.slice(8)}/${+p.to.slice(5,7)}`;
@@ -2128,7 +2168,7 @@ function renderAngel(){
     <div class="ang-sum"><span>${thDate(A.since)} – ${thDate(A.until)}</span><span>ค่าเฉลี่ยบัญชี <b>${baht(A.avg)}</b>/ผลลัพธ์</span>
       <span>นางฟ้า <b>${A.ads.filter(a => a.tier === 'angel').length}</b> จาก ${A.total_ads} แอดที่ใช้เงิน</span></div>
     <div class="ang-wrap"><div class="ang-list">${ads.map(a => `<div class="ang">${a.thumb ? `<img src="${esc(a.thumb)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : '<div class="noimg"></div>'}
-      <div><div class="nm"><span class="score" title="ยอดซื้อ ${Math.round((a.parts?.buy || 0) * 100)} · ต้นทุนต่อแชท ${Math.round((a.parts?.cpr || 0) * 100)} · เอนเกจ ${Math.round((a.parts?.eng || 0) * 100)} (เทียบแอดอื่นในบัญชี)">${a.score ?? '–'}</span>${esc(a.name)}${a.tier ? `<span class="tier ${a.tier}">${label[a.tier]}</span>` : ''}${a.step ? `<span class="stepc s${a.step}">Step ${a.step} ${FUNNEL[a.step - 1].name}</span>` : ''}${a.status && a.status !== 'ACTIVE' ? `<span class="tier">${esc(a.status === 'PAUSED' || a.status === 'CAMPAIGN_PAUSED' || a.status === 'ADSET_PAUSED' ? 'ปิดอยู่' : a.status)}</span>` : ''}</div>
+      <div><div class="nm"><span class="score" title="ยอดซื้อ ${Math.round((a.parts?.buy || 0) * 100)} · ต้นทุนต่อแชท ${Math.round((a.parts?.cpr || 0) * 100)} · เอนเกจ ${Math.round((a.parts?.eng || 0) * 100)} (เทียบแอดอื่นในบัญชี)">${a.score ?? '–'}</span>${esc(a.name)}${a.tier ? `<span class="tier ${a.tier}">${label[a.tier]}</span>` : ''}${a.step ? `<span class="stepc" style="background:${STEP_COL[(a.step - 1) % STEP_COL.length]}">Step ${a.step} ${esc(steps[a.step - 1].name)}</span>` : ''}${a.status && a.status !== 'ACTIVE' ? `<span class="tier">${esc(a.status === 'PAUSED' || a.status === 'CAMPAIGN_PAUSED' || a.status === 'ADSET_PAUSED' ? 'ปิดอยู่' : a.status)}</span>` : ''}</div>
         <div class="sub">${esc(a.campaign || '')} › ${esc(a.adset || '')}${a.post ? ` · <a href="${esc(a.post)}" target="_blank" rel="noopener">ดูโพสต์</a>` : ''}</div>
         <div class="kv"><span>ใช้ <b>${baht(a.spend)}</b></span><span>ผลลัพธ์ <b>${int(a.results)}</b></span><span>ต้นทุน <b>${a.cpr ? baht(a.cpr) : '–'}</b></span>
           <span>ซื้อ <b>${int(a.purchases)}</b>${a.value ? ` · ${baht(a.value)}` : ''}</span>
@@ -2137,7 +2177,7 @@ function renderAngel(){
         <div class="strip" aria-label="ช่วงที่แอดนี้ต้นทุนถูกกว่าค่าเฉลี่ย">${a.periods.map(p => `<i class="${p.good ? 'on' : 'sp'}" title="${pd(p)}: ใช้ ${baht(p.spend)} · ผลลัพธ์ ${int(p.results)}${p.results ? ' · ' + baht(p.spend / p.results) + '/ผลลัพธ์' : ''}${p.purchases ? ' · ซื้อ ' + int(p.purchases) : ''}"></i>`).join('')}
           <small>${(() => { const g = a.periods.filter(p => p.good); return g.length ? `ถูกช่วง ${pd(g[0]).split('–')[0]} – ${pd(g[g.length-1]).split('–')[1]} (${g.length}/${a.periods.length} ${unit})` : 'ยังไม่มีช่วงที่ต้นทุนต่ำกว่าค่าเฉลี่ย'; })()}</small></div></div></div>`).join('')
       || '<div class="ang-sum">ช่วงนี้ยังไม่มีแอดที่ทั้งต้นทุนถูกและมียอดซื้อ ติ๊ก "แสดงทุกแอด" เพื่อดูทั้งหมด</div>'}</div>
-    <div class="ang-funnel"><div class="fh">Funnel ของแอดที่แสดง</div>${funnelSVG(pool)}</div></div>
+    <div class="ang-funnel"><div class="fh">Funnel ของ ${esc(clinic?.name || '')}</div>${funnelSVG(pool, steps)}${funnelEditHTML(clinic)}</div></div>
     <div class="log-note">ช่องสี่เหลี่ยม = ${unit}ที่แอดใช้เงิน · เขียว = ${unit}นั้นต้นทุนต่ำกว่าค่าเฉลี่ยบัญชี · ชี้ที่ช่องเพื่อดูตัวเลข · ผลลัพธ์ = แชท + ลีด · ยอดซื้อตามที่ Meta นับ</div></div>`;
 }
 // ---- Social Listening: what customers ask in the comments of the posts behind the clinic's biggest ads ----
@@ -2386,7 +2426,7 @@ function render(){
   // the media library is an iframe: keep it (and its scroll/filters) across the page's periodic re-renders
   if (boardBusy) return;   // mid-drag on the notes board: a rebuild would drop the item being moved
   const key = `${view}|${OWNER}|${dayFrom}|${day}`, same = key === fxKey, before = same ? snapNums() : null; fxEnter = !same;
-  if (!(view === 'media' && $('#radar')) && !(view === 'brain' && $('#brain') && same) && !(view === 'policy' && $('#polText') && same) && !(view === 'running' && $('#polUrl') && same)) { $('#main').innerHTML = mainHTML(); if (view === 'brain') drawBrain(); }
+  if (!(view === 'media' && $('#radar')) && !(view === 'brain' && $('#brain') && same) && !(view === 'policy' && $('#polText') && same) && !(view === 'running' && $('#polUrl') && same) && !(view === 'angel' && funnelDraft && same)) { $('#main').innerHTML = mainHTML(); if (view === 'brain') drawBrain(); }
   if (before) flashChanged(before); else countUp();
   fxKey = key; slideSegs();
   renderPanel(); checkEmptyBal();
