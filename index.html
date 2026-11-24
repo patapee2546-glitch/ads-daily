@@ -1,0 +1,1438 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>อัปเดตแอดรายวัน</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* glassmorphism: colour lives in the page background, surfaces are frosted layers above it */
+  --bg:oklch(95% 0.02 280);
+  --blob1:oklch(80% 0.12 290 / .55); --blob2:oklch(85% 0.09 200 / .5); --blob3:oklch(88% 0.08 340 / .45);
+  --surface:rgba(255,255,255,.58); --surface-2:rgba(255,255,255,.78); --tint:rgba(255,255,255,.5); --hover:rgba(255,255,255,.55);
+  --line:rgba(255,255,255,.7); --line-2:rgba(60,50,110,.14); --edge:rgba(60,50,110,.08);
+  --text:oklch(24% 0.03 280); --text-2:oklch(42% 0.03 280); --text-3:oklch(52% 0.025 280);
+  --accent:oklch(52% 0.19 285); --accent-tint:oklch(60% 0.17 285 / .12); --accent-tint-2:oklch(60% 0.17 285 / .25);
+  --ok:oklch(55% 0.13 155); --warn:oklch(64% 0.14 70); --bad:oklch(56% 0.17 25); --none:rgba(60,50,110,.18);
+  --shadow:0 8px 32px rgba(70,50,140,.10); --pop:oklch(99% 0.006 285); --blur:blur(18px) saturate(150%);
+  --sans:"IBM Plex Sans Thai",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:oklch(17% 0.03 280);
+  --blob1:oklch(45% 0.16 290 / .55); --blob2:oklch(42% 0.10 210 / .45); --blob3:oklch(40% 0.12 340 / .40);
+  --surface:rgba(255,255,255,.07); --surface-2:rgba(30,26,52,.82); --tint:rgba(255,255,255,.06); --hover:rgba(255,255,255,.07);
+  --line:rgba(255,255,255,.12); --line-2:rgba(255,255,255,.18); --edge:rgba(255,255,255,.08);
+  --text:oklch(96% 0.008 280); --text-2:oklch(80% 0.02 280); --text-3:oklch(68% 0.02 280);
+  --accent:oklch(78% 0.13 285); --accent-tint:oklch(70% 0.15 285 / .16); --accent-tint-2:oklch(70% 0.15 285 / .32);
+  --ok:oklch(76% 0.13 155); --warn:oklch(82% 0.12 75); --bad:oklch(72% 0.15 25); --none:rgba(255,255,255,.18);
+  --shadow:0 8px 32px rgba(0,0,0,.35); --pop:oklch(22% 0.03 282);
+}}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:radial-gradient(40vw 40vw at 8% 10%,var(--blob1),transparent 70%),radial-gradient(45vw 45vw at 95% 20%,var(--blob2),transparent 70%),radial-gradient(50vw 50vw at 60% 110%,var(--blob3),transparent 70%),var(--bg);background-attachment:fixed;color:var(--text);font:14px/1.5 var(--sans);font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.mono{font-family:var(--mono);font-size:12px}
+kbd{font:11px var(--mono);color:var(--text-3);border:1px solid var(--line-2);border-bottom-width:2px;border-radius:4px;padding:0 4px;background:var(--surface)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--none);flex:none}
+.d-ok{background:var(--ok)}.d-warn{background:var(--warn)}.d-bad{background:var(--bad)}
+.t-ok{color:var(--ok)}.t-warn{color:var(--warn)}.t-bad{color:var(--bad)}
+
+/* app frame */
+.app{display:grid;grid-template-rows:auto 1fr;height:100vh}
+header{display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--surface);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);flex-wrap:wrap;position:relative;z-index:3}
+header h1{font-size:16px;font-weight:600;margin:0 8px 0 0;white-space:nowrap}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:12px;padding:3px;gap:2px;background:var(--tint)}
+.seg button{border:0;background:none;padding:4px 12px;border-radius:9px;cursor:pointer;color:var(--text-2);height:28px}
+.seg button[aria-selected=true]{background:var(--accent-tint-2);color:var(--text);font-weight:500}
+.ghost{height:32px;padding:0 12px;border:1px solid var(--line);border-radius:10px;background:var(--tint);cursor:pointer;color:var(--text-2);display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+.ghost:hover{color:var(--text);border-color:var(--line-2)}
+.ghost.icon{width:32px;padding:0;justify-content:center}
+.datebox{display:inline-flex;align-items:center;gap:4px}
+.datebox .rangebtn{height:32px;box-shadow:none;background:var(--tint)}
+.rp.left{left:0;right:auto;top:40px}
+.spacer{flex:1}
+.search{height:32px;width:200px;border:1px solid var(--line);border-radius:10px;background:var(--tint);padding:0 8px 0 28px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' stroke='%23888' stroke-width='2'%3E%3Ccircle cx='6' cy='6' r='4.5'/%3E%3Cpath d='m9.5 9.5 3 3'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:8px 50%}
+#accDlg{border:1px solid var(--line);border-radius:14px;background:var(--pop);color:var(--text);padding:20px;width:min(420px,calc(100vw - 32px));max-height:80vh;box-shadow:0 24px 60px rgba(40,20,90,.28)}
+#accDlg::backdrop{background:oklch(0% 0 0 / .4)}
+#accDlg h2{font-size:16px;margin:0 0 4px}.acc-hint{font-size:12px;color:var(--text-3);margin:0 0 12px}
+#accList{display:grid;gap:2px;max-height:55vh;overflow:auto;margin-bottom:12px}
+#accList label{display:flex;align-items:center;gap:10px;padding:8px;border-radius:8px;cursor:pointer;font-size:14px}
+#accList label:hover{background:var(--hover)}#accList input{width:18px;height:18px;margin:0;accent-color:var(--accent,#a99cff)}
+#accList label.off{color:var(--text-3)}#accDlg .btn-primary{width:100%}
+.menu{position:relative}
+/* ⋯ (account + settings) always sits in the header's top-right corner, even when the tabs wrap */
+header{padding-right:64px}
+header details.menu{position:absolute;top:10px;right:16px}
+header{z-index:30}  /* above the dashboard date-range button (.dash-h z 10) so the ⋯ list is never covered */
+header .menu .pop{background:var(--pop);min-width:240px}
+.menu .acct{padding:8px 12px 4px;display:grid}.menu .acct small{font-size:11px;color:var(--text-3)}.menu .acct b{font-size:13px;font-weight:600;overflow-wrap:anywhere}
+.menu hr{border:0;border-top:1px solid var(--line);margin:4px 0}
+#pwDlg{border:1px solid var(--line);border-radius:14px;background:var(--pop);color:var(--text);padding:20px;width:min(380px,calc(100vw - 32px))}
+#pwDlg::backdrop{background:oklch(0% 0 0 / .4)}
+#pwDlg h2{font-size:16px;margin:0 0 12px}
+#pwDlg label{display:grid;gap:4px;font-size:12px;color:var(--text-3);margin-bottom:10px}
+#pwDlg input{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 10px;color:var(--text);font:inherit}
+.pw-actions{display:flex;gap:8px;justify-content:flex-end}
+.menu summary{list-style:none}.menu summary::-webkit-details-marker{display:none}
+.menu .pop{position:absolute;right:0;top:40px;z-index:5;background:var(--surface-2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid var(--line);border-radius:8px;padding:4px;min-width:180px;box-shadow:0 8px 24px oklch(0% 0 0 / .12)}
+.menu .pop button,.menu .pop label{display:block;width:100%;text-align:left;border:0;background:none;padding:8px 12px;border-radius:6px;cursor:pointer}
+.menu .pop button:hover,.menu .pop label:hover{background:var(--hover)}
+
+.body{display:grid;grid-template-columns:minmax(0,1fr) 0;min-height:0;transition:grid-template-columns .15s}
+.body.open{grid-template-columns:minmax(0,1fr) 460px}
+main{overflow:auto;padding:20px;scrollbar-gutter:stable}
+
+/* metrics: one hero + supports */
+.metrics{display:grid;grid-template-columns:1.3fr 1fr 1fr 1fr;gap:12px;margin-bottom:16px}
+.metric{border:1px solid var(--line);border-radius:16px;padding:14px 16px;background:var(--surface);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);box-shadow:var(--shadow);min-width:0}
+.metric .lb{font-size:12px;color:var(--text-2);font-weight:500}
+.metric .v{font-size:24px;font-weight:600;letter-spacing:-.02em;line-height:1.3}
+.metric .sub{font-size:12px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.metric.hero{background:linear-gradient(135deg,var(--accent-tint-2),var(--accent-tint));border-color:var(--accent-tint-2)}
+.metric.hero .v{font-size:32px;color:var(--bad)}
+.metric.hero .v.zero{color:var(--ok)}
+.metric.hero .names{display:flex;flex-wrap:wrap;gap:4px 8px;font-size:12px;margin-top:4px}
+.link{border:0;background:none;padding:0;color:var(--text-2);cursor:pointer;text-decoration:underline;text-decoration-color:var(--line-2);text-underline-offset:3px;font-size:12px}
+.metric.hero .names button{border:0;background:none;padding:0;color:var(--text-2);cursor:pointer;text-decoration:underline;text-decoration-color:var(--line-2);text-underline-offset:3px}
+.meter{height:4px;border-radius:2px;background:var(--line);overflow:hidden;margin-top:8px}
+.meter b{display:block;height:100%;background:var(--accent)}
+
+/* table */
+.card{border:1px solid var(--line);border-radius:16px;background:var(--surface);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);box-shadow:var(--shadow);overflow:hidden}
+.card-h{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--edge);flex-wrap:wrap;font-size:13px;color:var(--text-2)}
+.card-h b{color:var(--text);font-weight:600}
+.scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{font-weight:500;color:var(--text-3);text-align:left;padding:8px 12px;border-bottom:1px solid var(--edge);white-space:nowrap;position:sticky;top:0;background:var(--surface-2);font-size:12px}
+td{padding:10px 12px;border-bottom:1px solid var(--edge);white-space:nowrap;vertical-align:middle}
+tbody tr:last-child td{border-bottom:0}
+tbody tr{cursor:pointer;transition:background .08s}
+tbody tr:hover{background:var(--hover)}
+tbody tr[aria-selected=true]{background:var(--accent-tint);box-shadow:inset 2px 0 0 var(--accent)}
+.num{text-align:right}
+.name{font-weight:500}
+.name small{display:block;font-weight:400;color:var(--text-3);font-size:11px}
+.dots{display:inline-flex;gap:4px}
+.cap{display:flex;flex-direction:column;align-items:flex-end;gap:4px;min-width:120px}
+.cap .bar{width:100%;height:4px;border-radius:2px;background:var(--line);overflow:hidden;position:relative}
+.cap .bar b{display:block;height:100%;background:var(--text-3)}
+.cap .bar b.over{background:var(--bad)}
+.cap .bar i{position:absolute;top:0;bottom:0;width:1px;background:var(--text-2)}
+.run{display:inline-flex;flex-direction:column;align-items:flex-end;line-height:1.3}.run b{font-weight:600}.run small{font-size:11px;color:var(--text-3)}
+.runlist{padding:8px 16px 14px;display:grid;gap:10px}
+.runlist .rr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 8px;align-items:baseline;font-size:13px}
+.runlist .rr .nm{text-align:left;justify-self:start;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.runlist .rr .dd{font-weight:600;font-size:15px}
+.runlist .rr .ex{grid-column:1/-1;font-size:11px;color:var(--text-3)}
+.runlist .tr{grid-column:1/-1;height:6px;border-radius:3px;background:var(--tint);overflow:hidden}
+.runlist .tr b{display:block;height:100%;border-radius:3px;background:var(--accent)}
+.runlist .t-bad .tr b,.runlist .rr.t-bad .tr b{background:var(--bad)}.runlist .rr.t-warn .tr b{background:var(--warn)}
+.issue{max-width:280px;overflow:hidden;text-overflow:ellipsis;color:var(--text-2)}
+.muted{color:var(--text-3)}
+.ang-ctl{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px}
+.ang-ctl select{background:var(--surface-2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font:inherit;font-size:13px}
+.ang-sum{display:flex;gap:18px;flex-wrap:wrap;padding:0 14px 12px;font-size:13px;color:var(--text-2)}
+.ang-sum b{color:var(--text)}
+.ang{display:grid;grid-template-columns:72px 1fr;gap:12px;padding:12px 14px;border-top:1px solid var(--edge)}
+.ang img,.ang .noimg{width:72px;height:72px;border-radius:10px;object-fit:cover;background:var(--hover)}
+.ang .nm{font-size:14px;font-weight:500;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.ang .sub{font-size:12px;color:var(--text-3);margin-top:2px}.ang a,.post a{color:var(--text-2);text-decoration:underline}
+.ang .kv{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;margin-top:6px;color:var(--text-2);font-variant-numeric:tabular-nums}
+.ang .kv b{color:var(--text);font-weight:600}
+.tier{font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--text-2);font-weight:500}
+.tier.angel{background:oklch(80% 0.12 85 / .22);color:var(--text);border-color:oklch(80% 0.12 85 / .5)}
+.tier.sold{background:oklch(70% 0.12 150 / .18)}.tier.cheap{background:oklch(70% 0.1 240 / .18)}
+.strip{display:flex;gap:2px;margin-top:8px;flex-wrap:wrap;align-items:center}
+.strip i{width:14px;height:14px;border-radius:3px;background:var(--hover)}
+.strip i.on{background:oklch(72% 0.14 150)}.strip i.sp{background:oklch(60% 0.03 280 / .45)}
+.strip small{font-size:11px;color:var(--text-3);margin-left:6px}
+#radar{display:block;width:100%;height:calc(100vh - 120px);border:0;background:transparent;color-scheme:light dark}
+.rep-top{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:14px}
+.rep-top .grow{flex:1;min-width:220px;font-size:13px;color:var(--text-2)}
+.rep-run{background:var(--accent);color:var(--pop);border:0;border-radius:10px;padding:10px 18px;font-weight:600;cursor:pointer}
+.rep-run[disabled]{opacity:.45;cursor:not-allowed}
+.wk{display:inline-flex;gap:6px;align-items:center;font-size:12px;color:var(--text-3);white-space:nowrap}.job a{color:var(--accent)}
+.job{border-top:1px solid var(--edge);padding:12px 14px}
+.job-h{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:13px}
+.job-h b{font-weight:600}.job-h .muted{font-size:12px}
+.pill{font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--line-2);color:var(--text-2)}
+.pill.ok{color:var(--ok);border-color:currentColor}.pill.bad{color:var(--bad);border-color:currentColor}.pill.warn{color:var(--warn);border-color:currentColor}
+.flow{display:flex;gap:0;margin:10px 0 4px;overflow-x:auto}
+.flow .st{flex:1;min-width:110px;position:relative;padding-top:22px;text-align:center;font-size:12px;color:var(--text-3)}
+.flow .st::before{content:'';position:absolute;top:8px;left:-50%;right:50%;height:2px;background:var(--line-2)}
+.flow .st:first-child::before{display:none}
+.flow .st i{position:absolute;top:0;left:50%;transform:translateX(-50%);width:18px;height:18px;border-radius:50%;background:var(--surface-2);border:2px solid var(--line-2);z-index:1;font-style:normal;font-size:11px;line-height:14px;color:var(--pop)}
+.flow .st.done{color:var(--text-2)}.flow .st.done i{background:var(--ok);border-color:var(--ok)}.flow .st.done::before{background:var(--ok)}
+.flow .st.now{color:var(--text);font-weight:600}.flow .st.now i{border-color:var(--accent);background:var(--accent-tint-2);animation:pulse 1.2s ease-in-out infinite}
+.flow .st.now::before{background:var(--ok)}
+.flow .st.bad{color:var(--bad);font-weight:600}.flow .st.bad i{background:var(--bad);border-color:var(--bad)}
+.flow small{display:block;font-weight:400;color:var(--text-3);font-size:11px}
+.pipe{display:grid;grid-template-columns:repeat(4,minmax(150px,1fr)) minmax(120px,.7fr);gap:20px;margin:12px 0 6px;overflow-x:auto;padding-bottom:4px}
+.pipe .ph{display:flex;flex-direction:column;gap:8px;position:relative;min-width:0}
+.pipe .ph:not(:last-child)::after{content:'→';position:absolute;right:-16px;top:50%;color:var(--text-3);font-size:14px}
+.pipe .ph h4{margin:0;font-size:11px;font-weight:500;color:var(--text-3);letter-spacing:.02em}
+.pipe .nd{border:1px solid var(--line-2);border-radius:10px;padding:8px 10px;background:var(--surface);font-size:12px;color:var(--text-3);transition:border-color .15s}
+.pipe .nd b{display:block;font-size:13px;font-weight:600;color:var(--text-2)}
+.pipe .nd small{display:block;font-size:11px;margin-top:2px}
+.pipe .nd.done{border-color:var(--ok)}.pipe .nd.done b::after{content:' ✓';color:var(--ok)}
+.pipe .nd.now{border-color:var(--accent);background:var(--accent-tint);animation:pulse 1.2s ease-in-out infinite}.pipe .nd.now b{color:var(--text)}
+.pipe .nd.bad{border-color:var(--bad);background:oklch(60% 0.15 25 / .1)}.pipe .nd.bad b{color:var(--bad)}
+.pipe .nd .cnt{color:var(--text-2);font-variant-numeric:tabular-nums}
+@media (prefers-reduced-motion:reduce){.pipe .nd.now{animation:none}}
+.wk .dot{width:8px;height:8px;flex:none;align-self:center}
+.flow-now{font-size:12px;color:var(--text-2);margin-top:4px}
+@keyframes pulse{50%{box-shadow:0 0 0 6px var(--accent-tint)}}
+@media (prefers-reduced-motion:reduce){.flow .st.now i{animation:none}}
+.job table{width:100%;border-collapse:collapse;margin-top:8px;font-size:12px}
+.job th{text-align:left;color:var(--text-3);font-weight:500;padding:4px 8px;border-bottom:1px solid var(--edge)}
+.job td{padding:6px 8px;border-bottom:1px solid var(--edge)}
+.job details summary{cursor:pointer;font-size:12px;color:var(--text-3);margin-top:6px}
+.job pre{white-space:pre-wrap;font:11px/1.45 var(--mono);color:var(--text-3);max-height:240px;overflow:auto}
+.pchips{display:flex;gap:6px;flex-wrap:wrap;padding:10px 14px}
+.pchips button{border:1px solid var(--line);background:none;color:var(--text-2);border-radius:999px;padding:5px 12px;font-size:13px;cursor:pointer;display:flex;gap:6px;align-items:center}
+.pchips button[aria-pressed=true]{background:var(--accent-tint-2);color:var(--text);border-color:transparent}
+.pchips small{color:var(--text-3)}
+.pstat{display:flex;gap:16px;flex-wrap:wrap;padding:10px 14px;font-size:13px;color:var(--text-2)}
+.pstat .names{color:var(--text-3)}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;margin-top:12px}
+.post{display:flex;flex-direction:column}
+.post .ph{display:flex;gap:8px;align-items:baseline;padding:12px 14px 8px;flex-wrap:wrap}
+.post .ph b{font-size:14px}.post .ph span{font-size:12px;color:var(--text-3)}
+.post img{width:100%;aspect-ratio:4/3;object-fit:cover;background:var(--hover);display:block}
+.post .msg{padding:10px 14px;font-size:13px;line-height:1.55;white-space:pre-wrap;display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical;overflow:hidden}
+.post .ran-h{padding:10px 14px 0;color:var(--bad);font-weight:600;font-size:13px}
+.post.ran img{filter:grayscale(1);opacity:.55}
+.post .pf{margin-top:auto;padding:8px 14px 12px;font-size:12px}
+
+/* history */
+.hist td{padding:6px 4px;text-align:center}
+/* daily log */
+.log{display:grid;grid-template-columns:220px minmax(0,1fr);gap:16px;align-items:start}
+.log-days{padding:8px;display:grid;gap:2px;max-height:calc(100vh - 140px);overflow:auto}
+.log-days button{display:flex;align-items:center;gap:8px;border:0;background:none;text-align:left;padding:8px 10px;border-radius:10px;cursor:pointer;color:var(--text-2);font-size:13px}
+.log-days button:hover{background:var(--hover)}
+.log-days button[aria-current=true]{background:var(--accent-tint-2);color:var(--text);font-weight:500}
+.log-days small{margin-left:auto;color:var(--text-3);font-size:11px}
+.log-days .tag{font-size:10px;color:var(--accent);border:1px solid var(--accent-tint-2);border-radius:6px;padding:0 5px}
+.logt td{vertical-align:top;white-space:normal}
+.logt .cn{min-width:150px}
+.logt .cn small{display:block;color:var(--text-3);font-size:11px;font-weight:400;margin-top:2px}
+.logt .tp{min-width:170px}
+.lst{display:inline-flex;border:1px solid var(--line-2);border-radius:8px;overflow:hidden;margin-bottom:6px}
+.lst button{border:0;background:none;padding:3px 7px;cursor:pointer;display:grid;place-items:center;border-left:1px solid var(--line-2)}
+.lst button:first-child{border-left:0}
+.lst button[aria-pressed=true]{background:var(--accent-tint-2)}
+.lst .dot{opacity:.45}.lst button[aria-pressed=true] .dot{opacity:1}
+.logt input{width:100%;height:30px;border:1px solid var(--line);border-radius:8px;background:var(--surface);padding:0 8px;font-size:12px;color:var(--text)}
+.log-note{font-size:12px;color:var(--text-3);padding:8px 14px 12px}
+@media (max-width:900px){.log{grid-template-columns:1fr}.log-days{display:flex;overflow-x:auto;max-height:none}.log-days button{white-space:nowrap}}
+.hist td:first-child{text-align:left;padding-left:12px}
+.cell{width:20px;height:20px;border-radius:4px;border:0;background:var(--none);cursor:pointer;display:inline-block}
+.cell.d-ok{background:var(--ok)}.cell.d-warn{background:var(--warn)}.cell.d-bad{background:var(--bad)}
+
+/* detail panel */
+aside{border-left:1px solid var(--line);background:var(--surface);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);overflow:auto;min-width:0;scrollbar-gutter:stable}
+.body:not(.open) aside{visibility:hidden}
+.ph{position:sticky;top:0;background:var(--surface-2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);z-index:2;padding:12px 16px;border-bottom:1px solid var(--line)}
+.ph .row{display:flex;align-items:center;gap:8px}
+.ph h2{margin:0;font-size:18px;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ph .meta{display:flex;gap:12px;align-items:center;font-size:12px;color:var(--text-3);margin-top:4px;flex-wrap:wrap}
+.ph a{color:var(--accent)}
+.sec{margin:12px;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--tint)}
+.sec-h{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.sec-h h3{margin:0;font-size:14px;font-weight:600;flex:1}
+.stat{display:inline-flex;border:1px solid var(--line-2);border-radius:10px;overflow:hidden}
+.stat label{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;font-size:12px;cursor:pointer;color:var(--text-2);border-left:1px solid var(--line-2)}
+.stat label:first-child{border-left:0}
+.stat input{position:absolute;opacity:0;pointer-events:none}
+.stat label:has(input:checked){background:var(--accent-tint-2);color:var(--text);font-weight:500}
+.stat label:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:-2px}
+.why{font-size:12px;color:var(--text-2);margin:0 0 8px;display:flex;gap:8px;align-items:baseline}
+.src{font:10px var(--mono);color:var(--accent);border:1px solid var(--accent-tint-2);border-radius:4px;padding:0 4px;flex:none}
+.kv{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:8px}
+.kv div{background:var(--surface);border:1px solid var(--edge);border-radius:10px;padding:6px 8px;min-width:0}
+.kv dt{font-size:11px;color:var(--text-3)}
+.kv dd{margin:0;font-size:15px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kv .wide{grid-column:1/-1}.kv .wide dd{font-size:13px;font-weight:500}
+.fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:8px}
+.fields label{display:flex;flex-direction:column;gap:2px;font-size:11px;color:var(--text-3);min-width:0}
+.fields input,.fields select{height:34px;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:0 10px;font-size:13px;width:100%;min-width:0}
+textarea{width:100%;min-height:56px;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:6px 8px;font-size:13px;resize:vertical}
+.probs{font-size:12px;margin:0 0 8px}
+.probs summary{cursor:pointer;color:var(--bad)}
+.probs ul{margin:4px 0 0;padding-left:16px;color:var(--text-2)}
+.probs li{margin-bottom:4px;white-space:normal}
+.saved{font-size:12px;color:var(--ok);opacity:0;transition:opacity .15s}
+.saved.on{opacity:1}
+.foot{padding:12px 16px;font-size:12px;color:var(--text-3);display:flex;gap:12px;flex-wrap:wrap}
+pre{white-space:pre-wrap;font:12px/1.6 var(--sans);margin:0;padding:12px;color:var(--text-2)}
+
+/* range picker */
+.rp-wrap{position:relative}
+.rangebtn{display:inline-flex;align-items:center;gap:10px;height:40px;padding:0 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);cursor:pointer;font-size:14px;font-weight:500;box-shadow:var(--shadow)}
+.rangebtn:hover,.rangebtn[aria-expanded=true]{border-color:var(--accent-tint-2)}
+.rangebtn svg{width:18px;height:18px;color:var(--accent)}
+.rangebtn small{font-size:12px;color:var(--text-3);font-weight:400;padding-left:10px;border-left:1px solid var(--line-2)}
+.rangebtn .chev{color:var(--text-3);font-size:11px}
+.rangebtn.sm{height:30px;padding:0 10px;gap:8px;font-size:12px;border-radius:10px;box-shadow:none;background:var(--tint)}
+.rangebtn.sm svg{width:14px;height:14px}.rangebtn.sm small{font-size:11px;padding-left:8px}
+.card-h .rp-wrap{display:inline-flex;align-items:center;gap:10px;flex-direction:row-reverse}
+.card.has-rp{overflow:visible}.card.rp-open{position:relative;z-index:11}
+.rp.up{top:auto;bottom:40px}
+.rp{position:absolute;right:0;top:48px;z-index:20;display:flex;background:var(--pop);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid var(--line);border-radius:18px;box-shadow:0 24px 60px rgba(40,20,90,.28);overflow:hidden;animation:rpIn .14s ease-out}
+@keyframes rpIn{from{opacity:0;transform:translateY(-4px)}}
+.rp-pre{display:flex;flex-direction:column;gap:2px;padding:12px;border-right:1px solid var(--edge);min-width:150px;background:var(--tint)}
+.rp-pre button{text-align:left;border:0;background:none;padding:8px 12px;border-radius:10px;cursor:pointer;color:var(--text-2);font-size:13px}
+.rp-pre button:hover{background:var(--hover);color:var(--text)}
+.rp-pre button.on{background:var(--accent-tint-2);color:var(--text);font-weight:500}
+.rp-main{padding:12px 16px 14px;position:relative}
+.rp-nav{display:flex;position:absolute;left:12px;right:12px;top:10px}
+.mons{display:grid;grid-template-columns:repeat(2,252px);gap:24px}
+.mon-h{text-align:center;font-weight:600;font-size:14px;height:32px;line-height:32px;margin-bottom:6px}
+.wk,.grid7{display:grid;grid-template-columns:repeat(7,36px)}
+.wk span{text-align:center;font-size:11px;color:var(--text-3);height:24px}
+.grid7{row-gap:4px}
+.day{position:relative;height:36px;border:0;background:none;cursor:pointer;font:13px var(--sans);font-variant-numeric:tabular-nums;color:var(--text);border-radius:10px}
+.day:hover:not(:disabled){background:var(--hover)}
+.day:disabled{color:var(--text-3);opacity:.45;cursor:default}
+.day.mid{background:var(--accent-tint-2);border-radius:0}
+.day.start,.day.end{background:var(--accent);color:#fff;font-weight:600}
+.day.start:not(.end){border-radius:10px 0 0 10px}.day.end:not(.start){border-radius:0 10px 10px 0}
+.day.start.end{border-radius:10px}
+.day.today:not(.start):not(.end){box-shadow:inset 0 0 0 1.5px var(--accent)}
+.day.has::after{content:"";position:absolute;left:50%;bottom:4px;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:var(--accent);opacity:.7}
+.day.start.has::after,.day.end.has::after{background:#fff}
+.has-dot{width:6px;height:6px;background:var(--accent);opacity:.7}
+.rp-foot{display:flex;align-items:center;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--edge)}
+.rp-sel{font-size:13px;font-weight:500;margin-right:8px}
+.gate{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:16px;background:radial-gradient(40vw 40vw at 8% 10%,var(--blob1),transparent 70%),radial-gradient(45vw 45vw at 95% 20%,var(--blob2),transparent 70%),radial-gradient(50vw 50vw at 60% 110%,var(--blob3),transparent 70%),var(--bg)}
+.gate[hidden]{display:none}
+.gate-card{width:min(380px,100%);display:grid;gap:12px;padding:28px;border:1px solid var(--line);border-radius:20px;background:var(--surface);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);box-shadow:var(--shadow)}
+.gate-card h1{margin:0;font-size:22px}
+.gate-card p{margin:0;font-size:13px;color:var(--text-2)}
+.gate-card label{display:grid;gap:4px;font-size:12px;color:var(--text-3)}
+.gate-card input{height:40px;border:1px solid var(--line-2);border-radius:10px;background:var(--surface);padding:0 12px;font-size:14px;color:var(--text)}
+.gate-card .btn-primary{height:40px}
+.gate-card label.remember{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-2);cursor:pointer}.remember input{width:18px;height:18px;margin:0;accent-color:var(--accent,#a99cff)}
+.gate-err{color:var(--bad)!important}.gate-err:empty{display:none}
+#pull.busy svg{animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+.btn-primary{height:32px;padding:0 16px;border:0;border-radius:10px;background:var(--accent);color:#fff;font-weight:500;cursor:pointer}
+@media (prefers-color-scheme:dark){.btn-primary,.day.start,.day.end{color:oklch(20% 0.03 280)}.day.start.has::after,.day.end.has::after{background:oklch(20% 0.03 280)}}
+.btn-primary:disabled{opacity:.4;cursor:default}
+@media (max-width:760px){.rp{position:fixed;left:8px;right:8px;top:72px;flex-direction:column;max-height:calc(100vh - 90px);overflow:auto}
+  .rp-pre{flex-direction:row;flex-wrap:wrap;border-right:0;border-bottom:1px solid var(--edge)}.mons{grid-template-columns:252px}.mons .mon:last-child{display:none}}
+@media (prefers-reduced-motion:reduce){.rp{animation:none}}
+
+/* dashboard */
+.dash{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:16px}
+.dash .card{padding:0}
+.span-3{grid-column:span 3}.span-4{grid-column:span 4}.span-5{grid-column:span 5}.span-6{grid-column:span 6}.span-7{grid-column:span 7}.span-8{grid-column:span 8}.span-12{grid-column:span 12}
+.dash-h{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;position:relative;z-index:10}
+.dash-h h2{margin:0;font-size:20px;font-weight:600}
+.dash-h p{margin:0;color:var(--text-3);font-size:13px}
+.stat-card{display:flex;gap:14px;align-items:flex-start;padding:16px;transition:transform .2s ease,box-shadow .2s ease}
+.stat-card:hover{transform:translateY(-3px);box-shadow:0 14px 40px rgba(90,60,180,.18)}
+.ico{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;flex:none;background:linear-gradient(135deg,var(--accent-tint-2),var(--accent-tint));color:var(--accent);border:1px solid var(--accent-tint-2)}
+.ico svg{width:20px;height:20px}
+.stat-card .lb{font-size:12px;color:var(--text-2)}
+.stat-card .v{font-size:26px;font-weight:600;letter-spacing:-.02em;line-height:1.25}
+.stat-card .chg{font-size:12px;color:var(--text-3)}
+.stat-card .chg b{font-weight:500;color:var(--text-2)}
+.chart-card .card-h{border-bottom:0;padding-bottom:0}
+.chart-card .card-h .big{font-size:20px;font-weight:600;color:var(--text);margin-left:auto}
+.chart{position:relative;padding:4px 12px 8px}
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+.chart .gl{stroke:var(--edge);stroke-width:1}
+.chart .ax{fill:var(--text-3);font:11px var(--mono)}
+.chart .hit{fill:transparent;cursor:crosshair}
+.chart .xh{stroke:var(--text-3);stroke-width:1;stroke-dasharray:3 3;opacity:0}
+.chart .pt{fill:var(--accent);stroke:var(--surface-2);stroke-width:2;opacity:0}
+.chart.on .xh,.chart.on .pt{opacity:1}
+.tip{position:absolute;pointer-events:none;background:var(--surface-2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid var(--line);border-radius:10px;padding:6px 10px;font-size:12px;box-shadow:var(--shadow);white-space:nowrap;opacity:0;transform:translate(-50%,-110%);transition:opacity .08s}
+.chart.on .tip{opacity:1}
+.tip b{display:block;font-size:14px;font-weight:600}
+.bars{padding:8px 16px 16px;display:grid;gap:10px}
+.brow{display:grid;grid-template-columns:120px minmax(0,1fr) 72px;gap:10px;align-items:center;font-size:12px}
+.brow .n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-2)}
+.brow .tr{position:relative;height:10px;border-radius:5px;background:var(--tint)}
+.brow .tr b{display:block;height:100%;border-radius:5px;background:linear-gradient(90deg,var(--accent-tint-2),var(--accent))}
+.brow .tr i{position:absolute;top:-3px;bottom:-3px;width:2px;border-radius:1px;background:var(--text-2)}
+.brow .val{text-align:right;font-weight:500}
+.brow.over .val{color:var(--bad)}
+.slist{padding:8px 16px 16px;display:grid;gap:8px}
+.slist .r{display:flex;align-items:center;gap:8px;font-size:13px}
+.slist .r .c{margin-left:auto;font-weight:600}
+.slist .names{font-size:12px;color:var(--text-3);margin:-4px 0 4px 16px;white-space:normal}
+.legend-note{font-size:11px;color:var(--text-3);padding:0 16px 12px}
+@media (max-width:1100px){.metrics{grid-template-columns:1fr 1fr}.span-3{grid-column:span 6}.span-4,.span-5,.span-7,.span-8{grid-column:span 12}.span-6{grid-column:span 12}}
+@media (max-width:560px){.span-3{grid-column:span 12}.brow{grid-template-columns:90px minmax(0,1fr) 64px}}
+@media (prefers-reduced-motion:reduce){.stat-card:hover{transform:none}}
+@media (max-width:900px){
+  .body.open{grid-template-columns:minmax(0,1fr) 0}
+  aside{position:fixed;inset:0 0 0 auto;width:min(440px,100vw);z-index:10;box-shadow:-8px 0 24px oklch(0% 0 0 / .2)}
+  .search{width:140px}
+}
+@media (max-width:560px){header h1{display:none}.metrics{grid-template-columns:1fr}main{padding:8px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@supports not (backdrop-filter:blur(1px)){:root{--surface:var(--surface-2)}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <h1>อัปเดตแอดรายวัน</h1>
+  <div class="seg" id="ownerSeg" aria-label="ลูกค้าของใคร">
+    <button data-owner="ดิน">พี่ดิน</button><button data-owner="ใหม่">พี่ใหม่</button>
+  </div>
+  <div class="datebox">
+    <button class="ghost icon" id="prev" aria-label="วันก่อนหน้า" title="วันก่อนหน้า (←)">‹</button>
+    <span id="dayslot"></span>
+    <button class="ghost icon" id="next" aria-label="วันถัดไป" title="วันถัดไป (→)">›</button>
+  </div>
+  <div class="seg" role="tablist">
+    <button role="tab" data-view="dash" aria-selected="true">ภาพรวม</button>
+    <button role="tab" data-view="log">บันทึกรายวัน</button>
+    <button role="tab" data-view="today">รายคลินิก</button>
+    <button role="tab" data-view="posts">โพสต์เพจ</button>
+    <button role="tab" data-view="angel">แอดนางฟ้า</button>
+    <button role="tab" data-view="media">คลังสื่อคู่แข่ง</button>
+    <button role="tab" data-view="reports">รีพอร์ต</button>
+    <button role="tab" data-view="history">ย้อนหลัง 14 วัน</button>
+    <button role="tab" data-view="text">ข้อความสรุป</button>
+  </div>
+  <span class="spacer"></span>
+  <input class="search" id="q" type="search" placeholder="ค้นหาคลินิก" aria-label="ค้นหาคลินิก">
+  <button class="ghost" id="pull" title="ดึงยอด 90 วัน + สถานะแอดล่าสุดจาก Meta">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>
+    <span id="pullTxt">ดึงจาก Meta</span></button>
+  <button class="ghost" id="copy">คัดลอกสรุป</button>
+  <details class="menu">
+    <summary class="ghost icon" aria-label="เมนูเพิ่มเติม">⋯</summary>
+    <div class="pop">
+      <div class="acct"><small>เข้าสู่ระบบเป็น</small><b id="acctName">–</b></div>
+      <button id="changePw">เปลี่ยนรหัสผ่าน</button>
+      <hr>
+      <button id="addClinic">เพิ่มคลินิก</button>
+      <button id="toggleClinics">เปิด/ปิดบัญชี</button>
+      <button id="export">ส่งออกไฟล์ข้อมูล (.json)</button>
+      <label>นำเข้าไฟล์ข้อมูล<input type="file" id="import" accept=".json" hidden></label>
+      <button id="logout">ออกจากระบบ</button>
+    </div>
+  </details>
+</header>
+<dialog id="accDlg" aria-labelledby="accTitle">
+  <form method="dialog">
+    <h2 id="accTitle">เปิด/ปิดบัญชี</h2>
+    <p class="acc-hint">บัญชีที่ปิดจะไม่แสดงในหน้านี้และหยุดดึงข้อมูลจาก Meta ข้อมูลเก่ายังอยู่ เปิดกลับได้ทุกเมื่อ</p>
+    <div id="accList"></div>
+    <button class="btn-primary" value="done">เสร็จ</button>
+  </form>
+</dialog>
+<dialog id="pwDlg" aria-labelledby="pwTitle">
+  <form id="pwForm">
+    <h2 id="pwTitle">เปลี่ยนรหัสผ่าน</h2>
+    <label>รหัสผ่านใหม่ (อย่างน้อย 8 ตัว)<input type="password" id="pwNew" autocomplete="new-password" minlength="8" required></label>
+    <label>พิมพ์อีกครั้ง<input type="password" id="pwNew2" autocomplete="new-password" minlength="8" required></label>
+    <p class="gate-err" id="pwErr" role="alert"></p>
+    <div class="pw-actions"><button type="button" class="ghost" id="pwCancel">ยกเลิก</button><button class="btn-primary" id="pwSave">บันทึกรหัสผ่าน</button></div>
+  </form>
+</dialog>
+<div class="body" id="body">
+  <main id="main"></main>
+  <aside id="panel" aria-label="รายละเอียดคลินิก"></aside>
+</div>
+</div>
+
+
+<div class="gate" id="gate" hidden>
+  <form class="gate-card" id="gateForm" method="post" action="" autocomplete="on">
+    <h1>อัปเดตแอดรายวัน</h1>
+    <p id="gateMsg">เข้าสู่ระบบด้วยบัญชีของทีม</p>
+    <label>อีเมลหรือชื่อผู้ใช้<input type="text" id="gEmail" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" required></label>
+    <label id="gPwRow">รหัสผ่าน<input type="password" id="gPw" name="password" autocomplete="current-password"></label>
+    <label class="remember" id="gRememberRow"><input type="checkbox" id="gRemember" checked>จำรหัสผ่านและอยู่ในระบบต่อในเครื่องนี้</label>
+    <p class="gate-err" id="gErr" role="alert"></p>
+    <button class="btn-primary" id="gGo" type="submit">เข้าสู่ระบบ</button>
+    <button class="link" id="gForgot" type="button">ตั้งรหัสผ่านครั้งแรก / ลืมรหัสผ่าน</button>
+  </form>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.js"></script>
+<script>
+// fields typed by hand; Meta-fed numbers are shown read-only in the panel (see META_KV)
+const TOPICS = [
+  {id:'ads', name:'แอด', fields:[]},
+  {id:'page', name:'เพจ/หน้าเว็บ', fields:[
+    ['posts','โพสต์ใหม่','number'], ['comments','คอมเมนต์ค้างตอบ','number'],
+    ['inbox','ข้อความค้างตอบ','number'], ['web','หน้าเว็บ/ลิงก์','select',['','ใช้งานได้','ช้า','เข้าไม่ได้','ไม่มีหน้าเว็บ']]]},
+  {id:'budget', name:'งบ', fields:[['cap','เพดาน (฿/วัน)','number'], ['change','ปรับงบวันนี้','select',['','ไม่ปรับ','เพิ่ม','ลด','หยุด']]]},
+  {id:'lead', name:'คุณภาพแชท/ลีด', fields:[
+    ['level','ระดับ','select',['','ดี','กลาง','แย่']], ['match','แชทตรงกลุ่ม (%)','number'],
+    ['booked','นัดหมาย','number'], ['reply','เวลาตอบเฉลี่ย (นาที)','number']]},
+];
+const META_KV = {
+  ads: [['results','ผลลัพธ์'], ['purchases','การซื้อ'], ['purchase_value','มูลค่าการซื้อ','฿'], ['rejected','ถูกปฏิเสธ'], ['issues','ติดปัญหา']],
+  budget: [['spend','ใช้วันนั้น','฿'], ['balance','prepaid เหลือ','฿'], ['limit_left','วงเงินเหลือ','฿']],
+};
+const ST = {ok:'ปกติ', warn:'เฝ้าดู', bad:'มีปัญหา'};
+const RANK = {'':0, ok:1, warn:2, bad:3};
+
+
+const dayBefore = k => new Date(Date.parse(k) - 864e5).toISOString().slice(0,10);
+// ---- Supabase: team data lives on the server ----
+const SB_URL = 'https://djkbipyedlypzzxwgxsa.supabase.co';
+const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqa2JpcHllZGx5cHp6eHdneHNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTU0MDI2MTcsImV4cCI6MjExMDk3ODYxN30.8hBLalpyonvLHc4oOOGQOLVRhRB-DgqjGnaJW6hxM8Y';  // public anon key: every table is locked to team members by RLS
+// "remember me" off = the login lives in sessionStorage and ends when the browser closes
+const REMEMBER_KEY = 'ads-daily-remember';
+const authStore = () => { try { return localStorage.getItem(REMEMBER_KEY) === '0' ? sessionStorage : localStorage; } catch { return localStorage; } };
+// each person has their own clinic list; the whole page shows one list at a time (?owner=ใหม่ or the last one picked)
+const OWNERS = ['ดิน', 'ใหม่'];
+const OWNER = (() => { const u = new URLSearchParams(location.search).get('owner'); let s = null; try { s = localStorage.getItem('ads-daily-owner'); } catch {}
+  return OWNERS.includes(u) ? u : OWNERS.includes(s) ? s : OWNERS[0]; })();
+const sb = supabase.createClient(SB_URL, SB_ANON, {auth: {storage: {
+  getItem: k => authStore().getItem(k), setItem: (k, v) => authStore().setItem(k, v), removeItem: k => authStore().removeItem(k)}}});
+let me = null;
+let db = {v: 2, clinics: [], days: {}}, saveOk = true;
+// edits are queued per (day, clinic) and written to public.checks shortly after typing stops
+const dirty = new Set(); let saveT;
+function save(d, c){ if (!d || !c) return; dirty.add(d + '|' + c); clearTimeout(saveT); saveT = setTimeout(flush, 600); }
+const forServer = e => { const {_why, _problems, _history, ...keep} = e; return keep; };  // derived fields are rebuilt on load
+async function flush(){
+  const rows = [...dirty].map(k => { const [d, c] = k.split('|'), cl = db.clinics.find(x => x.name === c), e = db.days[d]?.[c];
+    return cl && e ? {day: d, clinic_id: cl.id, data: forServer(e)} : null; }).filter(Boolean);
+  dirty.clear(); if (!rows.length) return;
+  const {error} = await sb.from('checks').upsert(rows, {onConflict: 'day,clinic_id'});
+  saveOk = !error;
+  const s = $('#saved'); if (s) { s.textContent = error ? 'บันทึกไม่ได้ ลองใหม่' : '✓ บันทึกแล้ว'; s.classList.add('on'); clearTimeout(savedT); savedT = setTimeout(() => s.classList.remove('on'), 1400); }
+  if (error) { console.error(error); rows.forEach(r => dirty.add(r.day + '|' + db.clinics.find(x => x.id === r.clinic_id).name)); }
+}
+window.addEventListener('beforeunload', e => { if (dirty.size) { flush(); e.preventDefault(); } });
+// PostgREST returns at most 1000 rows per call
+async function fetchAll(table, cols){
+  const out = [];
+  for (let i = 0; ; i += 1000) {
+    const {data, error} = await sb.from(table).select(cols).range(i, i + 999);
+    if (error) throw error; out.push(...data); if (data.length < 1000) return out;
+  }
+}
+const bkkTime = t => new Date(t).toLocaleTimeString('th-TH', {hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok'});
+// meta_days rows -> the ADS_DATA shape the page already understands
+async function loadMeta(){
+  const rows = await fetchAll('meta_days', 'day,clinic_id,kind,fetched_at,data'), byId = Object.fromEntries(db.clinics.map(c => [c.id, c.name])), A = {};
+  for (const r of rows) {
+    const n = byId[r.clinic_id]; if (!n) continue;
+    const e = A[r.day] ??= {clinics: {}, history: r.kind === 'final', partial: r.kind === 'partial', fetched: ''};
+    e.clinics[n] = r.kind === 'final' ? {...r.data, history: true} : r.data;
+    if (r.kind === 'partial') { e.history = false; e.partial = true; }
+    const t = bkkTime(r.fetched_at); if (t > e.fetched) e.fetched = t;
+  }
+  window.ADS_DATA = A;
+}
+async function loadAll(){
+  const {data: cl, error} = await sb.from('clinics').select('id,name,page_url,cap,sort').eq('active', true).eq('owner', OWNER).order('sort');
+  if (error) throw error;
+  // RLS returns no rows to non-members; an owner with every clinic switched off is still a member
+  if (!cl.length && !(await sb.from('members').select('user_id').limit(1)).data?.length) throw new Error('notmember');
+  db.clinics = cl.map(c => ({id: c.id, name: c.name, page: c.page_url || '', cap: c.cap == null ? '' : +c.cap}));
+  const byId = Object.fromEntries(db.clinics.map(c => [c.id, c.name]));
+  db.days = {};
+  for (const r of await fetchAll('checks', 'day,clinic_id,data')) if (byId[r.clinic_id]) (db.days[r.day] ??= {})[byId[r.clinic_id]] = r.data;
+  await loadMeta(); applyAuto();
+}
+
+// Meta facts from ads-data.js always overwrite their fields; the status buttons are only set
+// while nobody has clicked one by hand (it still equals the last auto value)
+const AUTO = {spend:'budget', balance:'budget', limit_left:'budget', results:'ads', purchases:'ads', purchase_value:'ads', rejected:'ads', issues:'ads'};
+function metaState(v){
+  if (!v.campaigns) return (v.account ? v.account + ' · ' : '') + 'ไม่มีแคมเปญเปิด';
+  return [v.account, `แคมเปญเปิด ${v.campaigns}`, `แอดวิ่ง ${v.live}`, v.pending && `รอตรวจ ${v.pending}`].filter(Boolean).join(' · ');
+}
+// -> [status, reason] for the แอด and งบ topics
+function autoStatus(v, cap, avgMode = false){
+  const why = (st, ...r) => [st, r.filter(Boolean).join(', ') || 'ไม่พบปัญหา'];
+  const adsBad = [v.account, !v.campaigns && 'ไม่มีแคมเปญเปิด', v.rejected > 0 && `ถูกปฏิเสธ ${v.rejected}`, v.issues > 0 && `ติดปัญหา ${v.issues}`];
+  const adsWarn = [v.pending > 0 && `รอตรวจ ${v.pending}`, !v.spend && v.campaigns && 'วันนั้นไม่ใช้เงิน'];
+  const ads = adsBad.some(Boolean) ? why('bad', ...adsBad) : adsWarn.some(Boolean) ? why('warn', ...adsWarn) : why('ok');
+  const left = daysLeft({budget:v});
+  const pct = cap && v.spend ? v.spend / cap * 100 : null;
+  const leftTxt = left != null && `เงินพอใช้อีก ~${left.toFixed(1)} วัน`, pctTxt = pct != null && `${avgMode ? 'เฉลี่ย 7 วัน' : ''}ใช้ ${pct.toFixed(0)}% ของเพดาน`;
+  const budget = (left != null && left < 1) || pct > 120 ? why('bad', left < 1 && leftTxt, pct > 120 && pctTxt)
+    : (left != null && left < 3) || pct > 100 ? why('warn', left < 3 && leftTxt, pct > 100 && pctTxt)
+    : why('ok', pctTxt, leftTxt);
+  return {ads, budget};
+}
+function daysLeft(r){
+  const b = r.budget || {}, money = [b.balance, b.limit_left].filter(x => x !== '' && x != null);
+  return money.length && +b.spend ? Math.min(...money) / b.spend : null;
+}
+function applyAuto(){
+  for (const [d, {clinics, partial}] of Object.entries(window.ADS_DATA || {})) for (const [c, v] of Object.entries(clinics)) {
+    if (v.error || !db.clinics.some(x => x.name === c)) continue;
+    const e = ((db.days[d] ??= {})[c] ??= {}), was = e._auto ??= {};
+    for (const [f, t] of Object.entries(AUTO)) if (v[f] !== undefined) (e[t] ??= {})[f] = v[f];
+    e.ads ??= {};
+    if (v.history) e._history = true;
+    else { e.ads.state = metaState(v); e._problems = v.problems || []; delete e._history; }
+    const cap = e.budget?.cap || db.clinics.find(x => x.name === c)?.cap;
+    if (e.budget.cap == null || e.budget.cap === '') e.budget.cap = cap;
+    e._why = {};
+    // today is still running: judge money/cap on the 7 full days before it, not on the spend so far
+    let judged = v, avgMode = false;
+    if (partial) {
+      const xs = []; let k = d;
+      for (let i = 0; i < 7; i++) { k = dayBefore(k); const sp = +db.days[k]?.[c]?.budget?.spend; if (sp > 0) xs.push(sp); }
+      if (xs.length) { judged = {...v, spend: xs.reduce((a,b) => a+b, 0) / xs.length}; avgMode = true; }
+    }
+    for (const [t, [st, reason]] of Object.entries(autoStatus(judged, +cap, avgMode))) {
+      if (v.history && t === 'ads') continue;  // Meta has no past ad status
+      e._why[t] = reason;
+      if (was['cleared_' + t]) continue;  // the team cleared this topic on purpose
+      if (!e[t].status || e[t].status === was['status_' + t]) { e[t].status = st; was['status_' + t] = st; }
+    }
+  }
+}
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const iso = d => d.toISOString().slice(0,10);
+const thDate = s => { const [y,m,d] = s.split('-'); return `${+d}/${+m}/${y}`; };
+const baht = n => n === '' || n == null || isNaN(n) ? '–' : '฿' + Math.round(n).toLocaleString('th-TH');
+const int = n => n === '' || n == null || isNaN(n) ? '–' : Math.round(n).toLocaleString('th-TH');
+const todayISO = () => iso(new Date(Date.now() - new Date().getTimezoneOffset()*6e4));
+let TODAY = todayISO();
+let day = dayBefore(TODAY);   // open on yesterday: the latest day with a full day of spend
+let cur = null, view = 'dash', q = '';
+let rng = {from: iso(new Date(Date.parse(day) - 13*864e5)), to: day};   // dashboard range, both ends inclusive
+let rngCpr = null;                                // own range for the cost-per-result-by-clinic card; null = same as rng
+let rp = null;                                    // open range picker: {target, from, to, hover, month: 'YYYY-MM'}
+
+const rec = (d, c) => db.days[d]?.[c] || {};
+// header date: a single day (dayFrom null) or a range dayFrom..day. Statuses/notes always belong to `day` (the last day);
+// numbers are summed over the range. Reach and frequency are per-day only (Meta's unique reach does not add up).
+let dayFrom = null;
+const rangeDays = () => { const out = []; for (let d = dayFrom || day; d <= day; d = shiftDay(d, 1)) out.push(d); return out; };
+function sumRec(c){
+  const r = rec(day, c); if (!dayFrom) return r;
+  const n = {spend: 0, results: 0, purchases: 0, purchase_value: 0, cap: 0}; let has = false;
+  for (const d of rangeDays()) { const x = rec(d, c); if (x.budget?.spend != null && x.budget.spend !== '') has = true;
+    n.spend += +x.budget?.spend || 0; n.results += +x.ads?.results || 0; n.purchases += +x.ads?.purchases || 0;
+    n.purchase_value += +x.ads?.purchase_value || 0; n.cap += +capOf(x, c) || 0; }
+  return {...r, budget: {...r.budget, spend: has ? n.spend : '', cap: n.cap || ''}, ads: {...r.ads, results: n.results, purchases: n.purchases, purchase_value: n.purchase_value}};
+}
+function sumMeta(c){
+  const one = d => window.ADS_DATA?.[d]?.clinics?.[c] || {};
+  if (!dayFrom) return one(day);
+  return {video_3s: rangeDays().reduce((a, d) => a + (+one(d).video_3s || 0), 0), error: one(day).error, range: true};
+}
+const dayLabel = () => dayFrom ? `${thDate(dayFrom)} – ${thDate(day)} · ${rangeDays().length} วัน` : thDate(day);
+function entry(c){ db.days[day] ??= {}; return db.days[day][c] ??= {}; }
+function topic(c, t){ const e = entry(c); return e[t] ??= {}; }
+const capOf = (r, c) => r.budget?.cap || db.clinics.find(x => x.name === c)?.cap || '';
+function calc(r){
+  const spend = +r.budget?.spend, res = +r.ads?.results, cap = +r.budget?.cap;
+  return { cpr: spend && res ? spend/res : null, pct: spend && cap ? spend/cap*100 : null };
+}
+const worst = r => TOPICS.map(t => r[t.id]?.status || '').reduce((a,b)=> RANK[b]>RANK[a]?b:a, '');
+const filled = r => TOPICS.filter(t => r[t.id]?.status).length;
+const shiftDay = (d, n) => { const x = new Date(d); x.setDate(x.getDate()+n); return iso(x); };
+const visible = () => db.clinics.filter(c => c.name.toLowerCase().includes(q.toLowerCase()));
+// the one line an operator needs per clinic: the worst topic's reason
+function headline(r){
+  const w = worst(r); if (!w || w === 'ok') return '';
+  const t = TOPICS.filter(t => r[t.id]?.status === w)[0];
+  return `${t.name}: ${r._why?.[t.id] || r[t.id]?.note || ST[w]}`;
+}
+
+function renderMetrics(){
+  const rows = db.clinics.map(c => ({c, r: sumRec(c.name)}));
+  const bad = rows.filter(({r}) => worst(r) === 'bad');
+  const s = rows.reduce((a,{c,r}) => ({spend:a.spend+(+r.budget?.spend||0), cap:a.cap+(+capOf(r,c.name)||0), res:a.res+(+r.ads?.results||0), done:a.done+filled(r)}), {spend:0,cap:0,res:0,done:0});
+  const total = rows.length*4, meta = window.ADS_DATA?.[day];
+  return `<div class="metrics">
+    <div class="metric hero"><div class="lb">ต้องจัดการวันนี้</div>
+      <div class="v ${bad.length?'':'zero'}">${bad.length} <span style="font-size:14px;font-weight:500;color:var(--text-2)">คลินิก</span></div>
+      <div class="names">${bad.length ? bad.map(({c}) => `<button data-open="${esc(c.name)}">${esc(c.name)}</button>`).join('') : '<span class="muted">ไม่มีคลินิกที่มีปัญหา</span>'}</div></div>
+    <div class="metric"><div class="lb">${dayFrom ? `ใช้รวม ${rangeDays().length} วัน` : day === TODAY ? `ใช้วันนี้ถึง ${esc(window.ADS_DATA?.[day]?.fetched || '–')}` : 'ใช้รวมวันนั้น'}</div><div class="v">${baht(s.spend)}</div>
+      <div class="sub">เพดานรวม ${baht(s.cap)} · ${s.cap ? (s.spend/s.cap*100).toFixed(0)+'%' : '–'}</div></div>
+    <div class="metric"><div class="lb">ผลลัพธ์รวม (แชท/ลีด)</div><div class="v">${int(s.res)}</div>
+      <div class="sub">เฉลี่ย ${s.res ? baht(s.spend/s.res) : '–'} ต่อผลลัพธ์</div></div>
+    <div class="metric"><div class="lb">เช็คแล้ว</div><div class="v">${s.done}<span style="font-size:14px;color:var(--text-3)">/${total}</span></div>
+      <div class="sub">${!meta ? 'ยังไม่มีข้อมูลจาก Meta ของวันนี้' : meta.history ? 'ข้อมูลย้อนหลังจาก Meta' : `ดึงจาก Meta <span class="mono">${esc(meta.fetched)}</span>`}</div>
+      <div class="meter"><b style="width:${total ? s.done/total*100 : 0}%"></b></div></div>
+  </div>`;
+}
+
+// how long each account can keep running: money left at the latest Meta snapshot ÷ average daily spend of the 7 days before it.
+// Runway is "now", so it ignores the date being viewed.
+function runway(name){
+  const A = window.ADS_DATA || {}, d = Object.keys(A).filter(k => !A[k].history && A[k].clinics?.[name] && !A[k].clinics[name].error).sort().at(-1);
+  if (!d) return null;
+  const v = A[d].clinics[name], money = [v.balance, v.limit_left].filter(x => x !== '' && x != null);
+  if (!money.length) return {card: true, asOf: d};
+  const skip = A[d].partial ? 1 : 0;  // today's spend so far is not a full day
+  const spends = Array.from({length: 7}, (_,i) => +rec(shiftDay(d, -i - skip), name).budget?.spend).filter(x => x > 0);
+  const avg = spends.length ? spends.reduce((a,b) => a+b, 0) / spends.length : 0, left = Math.min(...money);
+  return {left, avg, days: avg ? left/avg : null, asOf: d, kind: left === v.limit_left && left !== v.balance ? 'วงเงินบัญชี' : 'เงินเติม', balance: v.balance, limit: v.limit_left};
+}
+const runTone = w => w.days == null ? '' : w.days < 2 ? 't-bad' : w.days < 5 ? 't-warn' : '';
+// money line shown everywhere. Prepaid: Meta deducts the balance about once a day, while amount_spent (behind
+// spend_cap - amount_spent = limit) is near real time, so the lower figure is the money really left; the gap ≈ spend
+// not yet deducted (checked 11-24 on Lalida: gap ฿1,884 vs ฿1,881 spent the day before).
+const has = v => v != null && v !== '';
+const runMoney = w => has(w.balance)
+  ? (has(w.limit) && w.limit < w.balance
+      ? `เหลือจริง ${baht(w.limit)} <span class="muted">· Meta ยังโชว์ ${baht(w.balance)} (ยังไม่หักยอดใช้ล่าสุด ${baht(w.balance - w.limit)})</span>`
+      : `ยอดเงิน ${baht(w.balance)}`)
+  : `วงเงินบัญชีเหลือ ${baht(w.limit)}`;
+function runwayCell(name){
+  const w = runway(name);
+  if (!w) return '<span class="muted">–</span>';
+  if (w.card) return '<span class="muted" title="จ่ายด้วยบัตร ไม่มีวงเงินจำกัด">บัตร</span>';
+  return `<span class="run ${runTone(w)}" title="${w.kind}เหลือ ${baht(w.left)} ÷ ใช้เฉลี่ย ${baht(w.avg)}/วัน (ข้อมูล ${thDate(w.asOf)})"><b>${w.days == null ? '–' : w.days.toFixed(1) + ' วัน'}</b><small>${runMoney(w)}</small></span>`;
+}
+
+function renderToday(){
+  const list = visible();
+  return renderMetrics() + `<div class="card">
+    <div class="card-h"><b>${dayLabel()}</b><span>${list.length} คลินิก</span>${dayFrom ? '<span class="muted">ยอดรวมทั้งช่วง · จุดสถานะเป็นของวันสุดท้าย · การเข้าถึง/ความถี่ดูได้ทีละวัน</span>' : ''}${!dayFrom && day === TODAY ? `<span class="t-warn">วันนี้ยังไม่จบ · ยอดถึง ${esc(window.ADS_DATA?.[day]?.fetched || '–')}</span>` : ''}<span class="spacer"></span>
+      <span><kbd>J</kbd> <kbd>K</kbd> เลื่อน · <kbd>Enter</kbd> เปิด · <kbd>←</kbd> <kbd>→</kbd> เปลี่ยนวัน · <kbd>/</kbd> ค้นหา</span></div>
+    <div class="scroll"><table>
+      <thead><tr><th>คลินิก</th><th>แอด · เพจ · งบ · ลีด</th><th class="num">ใช้ / เพดาน</th><th class="num">ผลลัพธ์</th><th class="num">฿/ผลลัพธ์</th><th class="num" title="จำนวนการซื้อ เหมือนช่อง การซื้อ ใน Ads Manager">การซื้อ</th><th class="num" title="การเข้าถึง (คนไม่ซ้ำ) ของวันนั้น ทั้งบัญชี">การเข้าถึง</th><th class="num" title="ความถี่ = การแสดงผล ÷ การเข้าถึง">ความถี่</th><th class="num" title="การเล่นวิดีโอนาน 3 วินาทีขึ้นไป">วิดีโอ 3 วิ</th><th class="num" title="เงินคงเหลือล่าสุด ÷ ยอดใช้เฉลี่ย 7 วัน">รันได้อีก</th><th>ประเด็น</th></tr></thead>
+      <tbody>${list.length ? list.map(c => {
+        const r = sumRec(c.name), k = calc(r), cap = capOf(r, c.name), pct = +r.budget?.spend && +cap ? r.budget.spend/cap*100 : null;
+        const m = sumMeta(c.name), err = m.error;  // raw Meta numbers (reach / frequency / 3-s plays)
+        return `<tr tabindex="0" data-c="${esc(c.name)}" aria-selected="${c.name===cur}">
+          <td class="name">${esc(c.name)}<small>${r.ads?.state ? esc(r.ads.state) : r._history ? 'ย้อนหลังจาก Meta' : err ? 'ดึงจาก Meta ไม่ได้' : 'กรอกเอง'}</small></td>
+          <td><span class="dots">${TOPICS.map(t => `<span class="dot d-${r[t.id]?.status||''}" title="${t.name}: ${ST[r[t.id]?.status]||'ยังไม่เช็ค'}"></span>`).join('')}</span></td>
+          <td class="num"><div class="cap"><span>${baht(r.budget?.spend)} <span class="muted">/ ${baht(cap)}</span></span>
+            ${pct != null ? `<span class="bar" title="${pct.toFixed(0)}% ของเพดาน"><b class="${pct>100?'over':''}" style="width:${Math.min(pct,100)/1.25}%"></b><i style="left:80%"></i></span>` : ''}</div></td>
+          <td class="num">${int(r.ads?.results)}</td>
+          <td class="num">${k.cpr ? baht(k.cpr) : '–'}</td>
+          <td class="num">${r.ads?.purchases != null ? `<span class="run"><b>${+r.ads.purchases ? int(r.ads.purchases) : '–'}</b>${+r.ads.purchase_value ? `<small>${baht(r.ads.purchase_value)}</small>` : ''}</span>` : '<span class="muted">–</span>'}</td>
+          <td class="num">${m.reach ? int(m.reach) : `<span class="muted"${m.range ? ' title="เลือกวันเดียวเพื่อดูการเข้าถึง"' : ''}>–</span>`}</td>
+          <td class="num">${m.frequency ? `<span class="${m.frequency >= 4 ? 't-warn' : ''}" title="${m.frequency >= 4 ? 'ความถี่สูง คนเดิมเห็นซ้ำบ่อย ระวังแอดล้า' : ''}">${(+m.frequency).toFixed(2)}</span>` : '<span class="muted">–</span>'}</td>
+          <td class="num">${m.video_3s ? int(m.video_3s) : '<span class="muted">–</span>'}</td>
+          <td class="num">${runwayCell(c.name)}</td>
+          <td class="issue" title="${esc(headline(r))}">${esc(headline(r)) || '<span class="muted">–</span>'}</td></tr>`;
+      }).join('') : `<tr><td colspan="11" class="muted">ไม่พบคลินิกที่ชื่อมี "${esc(q)}"</td></tr>`}</tbody>
+    </table></div></div>`;
+}
+
+// ---- dashboard -------------------------------------------------------
+const ICON = {
+  wallet:'<path d="M19 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0 0 4h14a1 1 0 0 1 1 1v3h-3a2 2 0 0 0 0 4h3v3a1 1 0 0 1-1 1H5a2 2 0 0 1-2-2V5"/>',
+  chat:'<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/>',
+  tag:'<path d="M12 2 2 12l10 10 10-10V2z"/><circle cx="16.5" cy="7.5" r="1.5"/>',
+  cart:'<circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.7 12.4a2 2 0 0 0 2 1.6h8.6a2 2 0 0 0 2-1.6L22 7H6"/>',
+};
+const icon = k => `<span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICON[k]}</svg></span>`;
+const dmy = d => `${+d.slice(8)}/${+d.slice(5,7)}`;
+const spanDays = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / 864e5) + 1;
+// totals per day across clinics from..to; a day nobody has data for stays null (a gap, not a zero)
+function daily(from, to){
+  return Array.from({length: spanDays(from, to)}, (_,i) => {
+    const d = shiftDay(from, i), t = {d, spend:0, results:0, purchases:0, purchase_value:0}; let has = false;
+    for (const c of db.clinics) { const r = rec(d, c.name); if (r.budget?.spend != null && r.budget.spend !== '') has = true;
+      t.spend += +r.budget?.spend||0; t.results += +r.ads?.results||0; t.purchases += +r.ads?.purchases||0; t.purchase_value += +r.ads?.purchase_value||0; }
+    if (!has) Object.assign(t, {spend:null, results:null, purchases:null, purchase_value:null});
+    t.cpr = t.results ? t.spend/t.results : null; return t;
+  });
+}
+const sum = (rows, k) => rows.reduce((a,r) => a + (r[k]||0), 0);
+function change(now, before){
+  if (!before) return 'ไม่มีข้อมูลช่วงก่อนหน้า';
+  const p = (now-before)/before*100;
+  return `<b>${p>=0?'+':''}${p.toFixed(1)}%</b> เทียบ ${spanDays(rng.from, rng.to)} วันก่อนหน้า`;
+}
+const niceMax = v => { if (!v) return 1; const m = 10**Math.floor(Math.log10(v)), f = v/m; return [1,1.2,1.5,2,2.5,3,4,5,6,8,10].find(s => s >= f*1.05) * m; };
+const short = n => n >= 1e6 ? (n/1e6).toFixed(1)+'M' : n >= 1e3 ? (n/1e3).toFixed(n>=1e4?0:1)+'k' : Math.round(n)+'';
+const CHARTS = {};
+// single-series area/line chart with crosshair tooltip (one y axis, no legend: the card title names it)
+function areaChart(id, rows, key, fmt, fill = true){
+  const W = 640, H = 200, L = 44, R = 8, T = 12, B = 24, n = rows.length;
+  const vals = rows.map(r => r[key]), max = niceMax(Math.max(0, ...vals.filter(v => v != null)));
+  const x = i => L + (n<2 ? 0 : i*(W-L-R)/(n-1)), y = v => T + (H-T-B)*(1 - v/max);
+  const pts = vals.map((v,i) => v == null ? null : [x(i), y(v)]);
+  const segs = []; let curSeg = [];
+  pts.forEach(p => { if (p) curSeg.push(p); else if (curSeg.length) { segs.push(curSeg); curSeg = []; } }); if (curSeg.length) segs.push(curSeg);
+  const line = segs.map(sg => 'M' + sg.map(p => p.map(v => v.toFixed(1)).join(',')).join('L')).join('');
+  const area = fill ? segs.map(sg => `M${sg[0][0].toFixed(1)},${H-B}L` + sg.map(p => p.map(v => v.toFixed(1)).join(',')).join('L') + `L${sg.at(-1)[0].toFixed(1)},${H-B}Z`).join('') : '';
+  const ticks = [0, .5, 1].map(f => max*f);
+  const xl = [0, Math.floor((n-1)/2), n-1].filter((v,i,a) => a.indexOf(v) === i);
+  CHARTS[id] = {rows, key, fmt, x, y, n, L, W, R};
+  return `<div class="chart" data-chart="${id}"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="กราฟ${({spend:'ยอดใช้',results:'ผลลัพธ์',cpr:'ต้นทุนต่อผลลัพธ์'})[key]}รายวัน ${n} วัน ล่าสุด ${vals.at(-1) == null ? 'ไม่มีข้อมูล' : fmt(vals.at(-1))}">
+    <defs><linearGradient id="g-${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--accent)" stop-opacity=".28"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>
+    ${ticks.map(t => `<line class="gl" x1="${L}" x2="${W-R}" y1="${y(t)}" y2="${y(t)}"/><text class="ax" x="${L-6}" y="${y(t)+4}" text-anchor="end">${short(t)}</text>`).join('')}
+    ${xl.map(i => `<text class="ax" x="${x(i)}" y="${H-6}" text-anchor="${i===0?'start':i===n-1?'end':'middle'}">${dmy(rows[i].d)}</text>`).join('')}
+    ${area ? `<path d="${area}" fill="url(#g-${id})"/>` : ''}
+    <path d="${line}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    <line class="xh" x1="0" x2="0" y1="${T}" y2="${H-B}"/><circle class="pt" r="4.5"/>
+    <rect class="hit" x="${L}" y="0" width="${W-L-R}" height="${H}"/></svg><div class="tip"></div></div>`;
+}
+// horizontal bars, one hue; optional marker (e.g. cap) drawn as a tick
+function hbars(items, fmt, note = ''){
+  const max = Math.max(...items.map(i => Math.max(i.v||0, i.mark||0)), 1);
+  return `<div class="bars">${items.map(i => `<div class="brow ${i.over?'over':''}" title="${esc(i.name)}: ${fmt(i.v)}${i.mark?` · เพดาน ${fmt(i.mark)}`:''}">
+    <span class="n">${esc(i.name)}</span>
+    <span class="tr"><b style="width:${(i.v||0)/max*100}%"></b>${i.mark ? `<i style="left:${i.mark/max*100}%"></i>` : ''}</span>
+    <span class="val">${i.v != null ? fmt(i.v) : '–'}</span></div>`).join('')}</div>${note ? `<div class="legend-note">${note}</div>` : ''}`;
+}
+// ---- range picker: two months, click start then end, presets on the left ----
+const TH_M = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+const TH_MS = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+const thLong = (d, year) => `${+d.slice(8)} ${TH_MS[+d.slice(5,7)-1]}${year ? ' ' + d.slice(0,4) : ''}`;
+const addMonth = (ym, n) => { const [y,m] = ym.split('-').map(Number), t = new Date(Date.UTC(y, m-1+n, 1)); return t.toISOString().slice(0,7); };
+const hasData = d => !!window.ADS_DATA?.[d] || db.clinics.some(c => rec(d, c.name).budget?.spend);
+function presets(){
+  // ranges end yesterday (today is still spending), like Meta's "last N days"
+  const t = TODAY, y = shiftDay(t,-1), ym = t.slice(0,7), pm = addMonth(ym, -1);
+  const last = ym2 => shiftDay(addMonth(ym2, 1) + '-01', -1);
+  return [['เมื่อวาน', y, y], ['7 วันล่าสุด', shiftDay(y,-6), y], ['14 วันล่าสุด', shiftDay(y,-13), y], ['30 วันล่าสุด', shiftDay(y,-29), y],
+    ['เดือนนี้', ym + '-01', y < ym + '-01' ? t : y], ['เดือนที่แล้ว', pm + '-01', last(pm)]];
+}
+function monthHTML(ym){
+  const [y,m] = ym.split('-').map(Number), first = new Date(Date.UTC(y, m-1, 1)).getUTCDay(), days = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  const a = rp.from, b = rp.to || (rp.hover && rp.hover >= a ? rp.hover : null);
+  const cells = Array(first).fill('<span></span>');
+  for (let i = 1; i <= days; i++) {
+    const d = `${ym}-${String(i).padStart(2,'0')}`, off = d > TODAY;
+    const cls = [d === a && 'start', b && d === b && 'end', b && d > a && d < b && 'mid', d === TODAY && 'today', hasData(d) && 'has'].filter(Boolean).join(' ');
+    cells.push(`<button class="day ${cls}" data-pick="${d}" ${off ? 'disabled' : ''} aria-label="${thLong(d, true)}" aria-pressed="${d === a || d === b}">${i}</button>`);
+  }
+  return `<div class="mon"><div class="mon-h">${TH_M[m-1]} ${y}</div>
+    <div class="wk">${['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.'].map(w => `<span>${w}</span>`).join('')}</div>
+    <div class="grid7">${cells.join('')}</div></div>`;
+}
+function pickerHTML(){
+  const p = rp.target === 'day' ? [['วันนี้ (ยังไม่จบวัน)', TODAY, TODAY], ...presets()] : presets(), sel = rp.to ? `${thLong(rp.from, true)} – ${thLong(rp.to, true)} · ${spanDays(rp.from, rp.to)} วัน` : `${thLong(rp.from, true)} – เลือกวันสิ้นสุด`;
+  return `<div class="rp-pre">${p.map(([l,f,t]) => `<button data-preset="${f}|${t}" class="${rp.from===f && rp.to===t ? 'on' : ''}">${l}</button>`).join('')}</div>
+    <div class="rp-main">
+      <div class="rp-nav"><button class="ghost icon" data-mnav="-1" aria-label="เดือนก่อน">‹</button><span class="spacer"></span>
+        <button class="ghost icon" data-mnav="1" aria-label="เดือนถัดไป" ${addMonth(rp.month,1) >= TODAY.slice(0,7) ? 'disabled' : ''}>›</button></div>
+      <div class="mons">${monthHTML(rp.month)}${monthHTML(addMonth(rp.month, 1))}</div>
+      <div class="rp-foot"><span class="rp-sel">${sel}</span><span class="dot has-dot"></span><span class="muted" style="font-size:11px">มีข้อมูล</span><span class="spacer"></span>
+        <button class="ghost" id="rp-cancel">ยกเลิก</button><button class="btn-primary" id="rp-apply" ${rp.to ? '' : 'disabled'}>ใช้ช่วงนี้</button></div>
+    </div>`;
+}
+const refreshPicker = () => { const el = document.querySelector('.rp'); if (el) el.innerHTML = pickerHTML(); };
+const rangeOf = t => t === 'day' ? {from: dayFrom || day, to: day} : t === 'cpr' ? (rngCpr || rng) : rng;
+function openPicker(target){ const r = rangeOf(target); rp = {target, from: r.from, to: r.to, hover: null, month: addMonth(r.to.slice(0,7), -1)}; render(); }
+function closePicker(apply){
+  const t = rp.target;
+  if (apply && rp.to) { const r = {from: rp.from, to: rp.to}; if (t === 'day') { day = r.to; dayFrom = r.from === r.to ? null : r.from; } else if (t === 'cpr') rngCpr = r; else rng = r; }
+  rp = null; render(); document.querySelector(`[data-rbtn="${t}"]`)?.focus();
+}
+function rangeButton(target, extra = ''){
+  const r = rangeOf(target), open = rp?.target === target;
+  return `<div class="rp-wrap"><button class="rangebtn ${target === 'main' ? '' : 'sm'}" data-rbtn="${target}" aria-haspopup="dialog" aria-expanded="${open}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+      ${target === 'day' && !dayFrom ? `<span>${thLong(day, true)}</span>` : `<span>${thLong(r.from)} – ${thLong(r.to, true)}</span><small>${spanDays(r.from, r.to)} วัน</small>`}<span class="chev" aria-hidden="true">▾</span></button>
+      ${extra}${open ? `<div class="rp ${({main:'', cpr:'up', day:'left'})[target]}" role="dialog" aria-label="${target === 'day' ? 'เลือกวันที่' : 'เลือกช่วงวันที่'}">${pickerHTML()}</div>` : ''}</div>`;
+}
+// spend / results / cap per clinic over a range; days without data are skipped
+function perClinic(from, to){
+  const days = Array.from({length: spanDays(from, to)}, (_,i) => shiftDay(from, i));
+  return db.clinics.map(c => {
+    let spend = 0, res = 0, cap = 0;
+    for (const d of days) { const x = rec(d, c.name); if (x.budget?.spend == null || x.budget.spend === '') continue;
+      spend += +x.budget.spend||0; res += +x.ads?.results||0; cap += +capOf(x, c.name)||0; }
+    return {name:c.name, spend, res, cap, cpr: res ? spend/res : null};
+  });
+}
+
+function renderDash(){
+  const n = spanDays(rng.from, rng.to), rows = daily(rng.from, rng.to), prev = daily(shiftDay(rng.from, -n), shiftDay(rng.from, -1));
+  const S = sum(rows,'spend'), R = sum(rows,'results'), P = sum(rows,'purchases'), V = sum(rows,'purchase_value');
+  const Sp = sum(prev,'spend'), Rp = sum(prev,'results'), Pp = sum(prev,'purchases'), Vp = sum(prev,'purchase_value');
+  const per = perClinic(rng.from, rng.to), rc = rangeOf('cpr');
+  const perCpr = rngCpr ? perClinic(rc.from, rc.to) : per;
+  const today = db.clinics.map(c => ({c, w: worst(rec(rng.to, c.name))}));
+  const by = k => today.filter(t => t.w === k);
+  return `<div class="dash-h"><h2>ภาพรวมแอด</h2><p>ทุกคลินิกรวมกัน</p><span class="spacer"></span>
+    ${rangeButton('main')}</div>
+  <div class="dash">
+    <div class="card stat-card span-3">${icon('wallet')}<div><div class="lb">ยอดใช้รวม</div><div class="v">${baht(S)}</div><div class="chg">${change(S,Sp)}</div></div></div>
+    <div class="card stat-card span-3">${icon('chat')}<div><div class="lb">ผลลัพธ์ (แชท/ลีด)</div><div class="v">${int(R)}</div><div class="chg">${change(R,Rp)}</div></div></div>
+    <div class="card stat-card span-3">${icon('tag')}<div><div class="lb">ต้นทุนต่อผลลัพธ์</div><div class="v">${R ? baht(S/R) : '–'}</div><div class="chg">${R && Rp ? change(S/R, Sp/Rp) : 'ไม่มีข้อมูลช่วงก่อนหน้า'}</div></div></div>
+    <div class="card stat-card span-3">${icon('cart')}<div><div class="lb">การซื้อ</div><div class="v">${int(P)}</div><div class="chg">${change(P,Pp)}${V ? ` · มูลค่า ${baht(V)}` : ''}</div></div></div>
+
+    <div class="card chart-card span-8"><div class="card-h"><b>ยอดใช้รายวัน</b><span>ทุกคลินิก</span></div>${areaChart('spend', rows, 'spend', baht)}</div>
+    <div class="card span-4"><div class="card-h"><b>สถานะ ณ วันสุดท้าย</b><span>${thDate(rng.to)}</span></div>
+      <div class="slist">${[['bad','มีปัญหา'],['warn','เฝ้าดู'],['ok','ปกติ'],['','ยังไม่เช็ค']].map(([k,l]) => { const xs = by(k);
+        return `<div class="r"><span class="dot d-${k}"></span>${l}<span class="c">${xs.length}</span></div>${xs.length && k ? `<div class="names">${xs.map(t => `<button class="link" data-open="${esc(t.c.name)}">${esc(t.c.name)}</button>`).join(', ')}</div>` : ''}`; }).join('')}</div></div>
+
+    <div class="card chart-card span-4"><div class="card-h"><b>ผลลัพธ์รายวัน</b><span>แชท + ลีด</span></div>${areaChart('results', rows, 'results', int)}</div>
+    <div class="card chart-card span-4"><div class="card-h"><b>ต้นทุนต่อผลลัพธ์รายวัน</b><span>ยอดใช้ ÷ ผลลัพธ์</span></div>${areaChart('cpr', rows, 'cpr', baht, false)}</div>
+    <div class="card span-4"><div class="card-h"><b>เงินพอรันอีก</b><span>บัญชีเติมเงิน/มีวงเงิน</span></div>
+      <div class="runlist">${(() => { const ws = db.clinics.map(c => ({c, w: runway(c.name)})).filter(x => x.w && !x.w.card).sort((a,b) => (a.w.days ?? 1e9) - (b.w.days ?? 1e9));
+        return ws.length ? ws.map(({c,w}) => `<div class="rr ${runTone(w)}"><button class="link nm" data-open="${esc(c.name)}">${esc(c.name)}</button>
+          <span class="dd ${runTone(w)}">${w.days == null ? 'ไม่ได้ใช้เงิน' : w.days.toFixed(1) + ' วัน'}</span>
+          <span class="tr"><b style="width:${w.days == null ? 100 : Math.min(w.days/14, 1)*100}%"></b></span>
+          <span class="ex">${runMoney(w)} · ใช้เฉลี่ย ${baht(w.avg)}/วัน</span></div>`).join('')
+          : '<span class="muted">ยังไม่มีข้อมูลเงินคงเหลือจาก Meta</span>'; })()}</div>
+      <div class="legend-note">แดง = ไม่ถึง 2 วัน · เหลือง = ไม่ถึง 5 วัน · แถบเต็ม = 14 วันขึ้นไป</div></div>
+
+    <div class="card span-6"><div class="card-h"><b>ยอดใช้ต่อคลินิก</b><span>${n} วัน</span></div>
+      ${hbars(per.filter(p => p.spend || p.cap).sort((a,b) => b.spend-a.spend).map(p => ({name:p.name, v:p.spend, mark:p.cap, over:p.cap && p.spend>p.cap})), baht, 'เส้นขีด = เพดานรวมของช่วงนี้ · ตัวเลขสีแดง = เกินเพดาน')}</div>
+    <div class="card span-6 has-rp ${rp?.target === 'cpr' ? 'rp-open' : ''}"><div class="card-h"><b>ต้นทุนต่อผลลัพธ์ต่อคลินิก</b><span>ถูกสุดอยู่บน</span><span class="spacer"></span>
+        ${rangeButton('cpr', rngCpr ? '<button class="link" data-cpr-reset title="กลับไปใช้ช่วงเดียวกับด้านบน">ใช้ช่วงด้านบน</button>' : '')}</div>
+      ${hbars(perCpr.filter(p => p.cpr).sort((a,b) => a.cpr-b.cpr).map(p => ({name:p.name, v:p.cpr})), baht)}</div>
+  </div>`;
+}
+
+// ---- daily log: one page per day for every clinic; a new empty day starts after midnight ----
+const LOG_START = '2026-11-23';
+let logDay = null;  // null = follow today (rolls over at midnight)
+const LOG_TOPICS = [['ads','แอด'], ['page','เพจ'], ['budget','งบ'], ['lead','ลีด']];
+function renderLog(){
+  const d = logDay || TODAY, days = [];
+  for (let x = TODAY; x >= LOG_START; x = shiftDay(x, -1)) days.push(x);
+  const done = x => db.clinics.filter(c => LOG_TOPICS.some(([t]) => rec(x, c.name)[t]?.status)).length;
+  return `<div class="log">
+    <div class="card"><div class="card-h"><b>วันที่บันทึก</b></div><nav class="log-days" aria-label="วันที่บันทึก">
+      ${days.map(x => `<button data-logday="${x}" aria-current="${x === d}">${thLong(x, true)}${x === TODAY ? '<span class="tag">วันนี้</span>' : ''}<small>${done(x)}/${db.clinics.length}</small></button>`).join('')}
+    </nav></div>
+    <div class="card"><div class="card-h"><b>บันทึก ${thLong(d, true)}</b>
+      <span>${d === TODAY ? 'วันนี้ · ขึ้นวันใหม่เองหลังเที่ยงคืน' : 'ย้อนหลัง · แก้ไขได้'}</span><span class="spacer"></span>
+      <span class="muted" style="font-size:12px">กรอกแล้วบันทึกเอง · ทีมเห็นทันที</span></div>
+      <div class="scroll"><table class="logt"><thead><tr><th>คลินิก</th>${LOG_TOPICS.map(([,l]) => `<th>${l}</th>`).join('')}</tr></thead>
+      <tbody>${visible().map(c => { const r = rec(d, c.name);
+        return `<tr><td class="cn"><button class="link" data-open="${esc(c.name)}" style="font-size:13px;font-weight:500">${esc(c.name)}</button>
+          <small>${r.budget?.spend != null && r.budget.spend !== '' ? `ใช้ ${baht(r.budget.spend)} · ผลลัพธ์ ${int(r.ads?.results)}` : 'ยังไม่มียอด'}</small></td>
+          ${LOG_TOPICS.map(([t, l]) => `<td class="tp"><span class="lst" role="group" aria-label="สถานะ${l} ${esc(c.name)}">${Object.entries(ST).map(([v, lab]) =>
+            `<button data-logst="${esc(c.name)}|${t}|${v}" aria-pressed="${r[t]?.status === v}" title="${lab}" aria-label="${lab}"><span class="dot d-${v}"></span></button>`).join('')}</span>
+            <input data-log="${esc(c.name)}|${t}" value="${esc(r[t]?.note)}" placeholder="โน้ต${l}" aria-label="โน้ต${l} ${esc(c.name)}"></td>`).join('')}</tr>`; }).join('')}</tbody></table></div>
+      <div class="log-note">จุดสี: เขียว = ปกติ · เหลือง = เฝ้าดู · แดง = มีปัญหา · กดจุดเดิมซ้ำเพื่อล้าง · สถานะแอด/งบที่ระบบประเมินจาก Meta จะขึ้นให้ก่อน แก้ได้</div></div>
+  </div>`;
+}
+// ---- page posts (was the local Page Hub app): pulled into Supabase every 30 min by the page-posts function ----
+const POSTS = {};          // day -> {posts, checks} | 'loading'
+let postClinic = '';       // '' = all clinics
+async function loadPosts(d, force){
+  if (POSTS[d] && !force) return;
+  POSTS[d] = 'loading';
+  const ids = db.clinics.map(c => c.id);
+  const [p, k] = await Promise.all([
+    sb.from('page_posts').select('clinic_id,page_name,created_time,message,permalink,picture,ad_status').eq('day', d).in('clinic_id', ids).order('created_time', {ascending: false}),
+    sb.from('page_checks').select('clinic_id,ok,error,checked_at').eq('day', d).in('clinic_id', ids)]);
+  POSTS[d] = {posts: p.data || [], checks: k.data || [], err: p.error?.message || k.error?.message};
+  if (view === 'posts' && day === d && !typingInMain()) render();
+}
+function renderPosts(){
+  const P = POSTS[day];
+  if (!P || P === 'loading') { loadPosts(day); return `<div class="card"><div class="card-h"><b>โพสต์เพจ ${thDate(day)}</b><span>กำลังโหลด…</span></div></div>`; }
+  if (P.err) return `<div class="card"><div class="card-h"><b>โพสต์เพจ</b><span>โหลดไม่ได้: ${esc(P.err)}</span></div></div>`;
+  const nameOf = Object.fromEntries(db.clinics.map(c => [c.id, c.name])), chk = Object.fromEntries(P.checks.map(c => [c.clinic_id, c]));
+  const count = id => P.posts.filter(x => x.clinic_id === id).length;
+  const cs = visible(), posted = cs.filter(c => count(c.id)), none = cs.filter(c => !count(c.id) && chk[c.id]?.ok), unknown = cs.filter(c => !count(c.id) && !chk[c.id]?.ok);
+  const last = P.checks.map(c => c.checked_at).sort().pop();
+  const shown = P.posts.filter(x => (!postClinic || nameOf[x.clinic_id] === postClinic) && cs.some(c => c.id === x.clinic_id));
+  const tm = t => new Date(t).toLocaleTimeString('th-TH', {hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok'});
+  const names = xs => xs.map(c => `<button class="link" data-pc="${esc(c.name)}">${esc(c.name)}</button>`).join(', ');
+  return `<div class="card"><div class="card-h"><b>โพสต์เพจ ${thDate(day)}</b><span>${P.posts.length} โพสต์ · ดึงล่าสุด ${last ? bkkTime(last) : '–'} · อัปเดตเองทุก 30 นาที</span>
+      <span class="spacer"></span><button class="ghost" data-posts-reload>ดึงโพสต์ตอนนี้</button></div>
+    <div class="pstat"><span>โพสต์แล้ว <b>${posted.length}</b>/${cs.length}</span>${P.posts.some(x => x.ad_status) ? `<span>รันแอดแล้ว <b>${P.posts.filter(x => x.ad_status && cs.some(c => c.id === x.clinic_id)).length}</b> โพสต์</span>` : ''}
+      ${none.length ? `<span>ยังไม่โพสต์: <span class="names">${names(none)}</span></span>` : ''}
+      ${unknown.length ? `<span>เช็คไม่ได้: <span class="names">${unknown.map(c => `<span title="${esc(chk[c.id]?.error || 'ยังไม่เคยดึง')}">${esc(c.name)}</span>`).join(', ')}</span></span>` : ''}</div>
+    <div class="pchips" role="group" aria-label="เลือกคลินิก"><button data-pc="" aria-pressed="${!postClinic}">ทุกเพจ <small>${P.posts.length}</small></button>
+      ${posted.map(c => `<button data-pc="${esc(c.name)}" aria-pressed="${postClinic === c.name}">${esc(c.name)} <small>${count(c.id)}</small></button>`).join('')}</div></div>
+  <div class="pgrid">${shown.map(x => `<article class="card post${x.ad_status ? ' ran' : ''}">${x.ad_status ? `<div class="ran-h">${x.ad_status === 'active' ? 'รันแล้ว · แอดกำลังวิ่ง' : 'รันแล้ว · แอดปิดอยู่'}</div>` : ''}<div class="ph"><b>${esc(nameOf[x.clinic_id])}</b><span>${tm(x.created_time)} น. · ${esc(x.page_name)}</span></div>
+      ${x.picture ? `<img src="${esc(x.picture)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ''}
+      <div class="msg">${esc(x.message || '(ไม่มีข้อความ)')}</div>
+      ${x.permalink ? `<div class="pf"><a href="${esc(x.permalink)}" target="_blank" rel="noopener">เปิดโพสต์ใน Facebook</a></div>` : ''}</article>`).join('')
+    || `<div class="card"><div class="card-h"><span>ไม่มีโพสต์${postClinic ? 'ของ ' + esc(postClinic) : ''}ในวันนี้</span></div></div>`}</div>`;
+}
+// ---- angel ads: per clinic, ads with cheap cost per result AND purchases, over 30/60/90/365 days (angel-ads function) ----
+const ANGEL = {};                       // 'clinicId|days' -> result | 'loading' | {error}
+let angelClinic = null, angelDays = 30, angelAll = false;
+async function loadAngel(id, d){
+  const k = id + '|' + d; if (ANGEL[k]) return; ANGEL[k] = 'loading';
+  const {data, error} = await sb.functions.invoke('angel-ads', {body: {clinic_id: id, days: d}});
+  ANGEL[k] = error ? {error: (await error.context?.json?.().catch(() => null))?.error || error.message} : data;
+  if (view === 'angel' && !typingInMain()) render();
+}
+function renderAngel(){
+  const cs = db.clinics.filter(c => !/google/i.test(c.name));
+  if (!cs.some(c => c.id === angelClinic)) angelClinic = cs[0]?.id;
+  const k = angelClinic + '|' + angelDays, A = ANGEL[k];
+  if (!A) loadAngel(angelClinic, angelDays);
+  const ctl = `<div class="ang-ctl"><select id="angClinic" aria-label="คลินิก">${cs.map(c => `<option value="${c.id}" ${c.id === angelClinic ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select>
+    <span class="seg" role="group" aria-label="ช่วงเวลา">${[[30,'30 วัน'],[60,'60 วัน'],[90,'90 วัน'],[365,'1 ปี']].map(([d,l]) => `<button data-angd="${d}" aria-selected="${d === angelDays}">${l}</button>`).join('')}</span>
+    <span class="spacer"></span><label class="muted" style="font-size:13px;display:flex;gap:6px;align-items:center"><input type="checkbox" id="angAll" ${angelAll ? 'checked' : ''}>แสดงทุกแอด</label></div>`;
+  const head = `<div class="card-h"><b>แอดนางฟ้า</b><span>ต้นทุน/ผลลัพธ์ต่ำกว่าค่าเฉลี่ยบัญชี และมียอดซื้อในระบบ</span></div>`;
+  if (!A || A === 'loading') return `<div class="card">${head}${ctl}<div class="ang-sum">กำลังดึงจาก Meta… (1 ปีอาจใช้เวลาครึ่งนาที)</div></div>`;
+  if (A.error) return `<div class="card">${head}${ctl}<div class="ang-sum">ดึงไม่ได้: ${esc(A.error)}</div></div>`;
+  const label = {angel: '👼 นางฟ้า', sold: 'มียอดซื้อ', cheap: 'แชทถูก'};
+  const ads = angelAll ? A.ads : A.ads.filter(a => a.tier);
+  const unit = A.step === 'month' ? 'เดือน' : 'สัปดาห์';
+  const pd = p => `${+p.from.slice(8)}/${+p.from.slice(5,7)}–${+p.to.slice(8)}/${+p.to.slice(5,7)}`;
+  return `<div class="card">${head}${ctl}
+    <div class="ang-sum"><span>${thDate(A.since)} – ${thDate(A.until)}</span><span>ค่าเฉลี่ยบัญชี <b>${baht(A.avg)}</b>/ผลลัพธ์</span>
+      <span>นางฟ้า <b>${A.ads.filter(a => a.tier === 'angel').length}</b> จาก ${A.total_ads} แอดที่ใช้เงิน</span></div>
+    ${ads.map(a => `<div class="ang">${a.thumb ? `<img src="${esc(a.thumb)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : '<div class="noimg"></div>'}
+      <div><div class="nm">${esc(a.name)}${a.tier ? `<span class="tier ${a.tier}">${label[a.tier]}</span>` : ''}${a.status && a.status !== 'ACTIVE' ? `<span class="tier">${esc(a.status === 'PAUSED' || a.status === 'CAMPAIGN_PAUSED' || a.status === 'ADSET_PAUSED' ? 'ปิดอยู่' : a.status)}</span>` : ''}</div>
+        <div class="sub">${esc(a.campaign || '')} › ${esc(a.adset || '')}${a.post ? ` · <a href="${esc(a.post)}" target="_blank" rel="noopener">ดูโพสต์</a>` : ''}</div>
+        <div class="kv"><span>ใช้ <b>${baht(a.spend)}</b></span><span>ผลลัพธ์ <b>${int(a.results)}</b></span><span>ต้นทุน <b>${a.cpr ? baht(a.cpr) : '–'}</b></span>
+          <span>ซื้อ <b>${int(a.purchases)}</b>${a.value ? ` · ${baht(a.value)}` : ''}</span></div>
+        <div class="strip" aria-label="ช่วงที่แอดนี้ต้นทุนถูกกว่าค่าเฉลี่ย">${a.periods.map(p => `<i class="${p.good ? 'on' : 'sp'}" title="${pd(p)}: ใช้ ${baht(p.spend)} · ผลลัพธ์ ${int(p.results)}${p.results ? ' · ' + baht(p.spend / p.results) + '/ผลลัพธ์' : ''}${p.purchases ? ' · ซื้อ ' + int(p.purchases) : ''}"></i>`).join('')}
+          <small>${(() => { const g = a.periods.filter(p => p.good); return g.length ? `ถูกช่วง ${pd(g[0]).split('–')[0]} – ${pd(g[g.length-1]).split('–')[1]} (${g.length}/${a.periods.length} ${unit})` : 'ยังไม่มีช่วงที่ต้นทุนต่ำกว่าค่าเฉลี่ย'; })()}</small></div></div></div>`).join('')
+      || '<div class="ang-sum">ช่วงนี้ยังไม่มีแอดที่ทั้งต้นทุนถูกและมียอดซื้อ ติ๊ก "แสดงทุกแอด" เพื่อดูทั้งหมด</div>'}
+    <div class="log-note">ช่องสี่เหลี่ยม = ${unit}ที่แอดใช้เงิน · เขียว = ${unit}นั้นต้นทุนต่ำกว่าค่าเฉลี่ยบัญชี · ชี้ที่ช่องเพื่อดูตัวเลข · ผลลัพธ์ = แชท + ลีด · ยอดซื้อตามที่ Meta นับ</div></div>`;
+}
+// ---- Run Report: queue a job for the Mac that runs ADSIDEA Reports (report-worker function + launchd worker) ----
+let REP = null;  // {jobs, worker, names}
+async function loadReports(){
+  const [j, w, m] = await Promise.all([
+    sb.from('report_jobs').select('id,requested_by,status,attempts,note,results,log,progress,created_at,started_at,finished_at').order('created_at', {ascending: false}).limit(15),
+    sb.from('report_worker').select('last_seen,host').maybeSingle(),
+    sb.from('members').select('user_id,display_name')]);
+  REP = {jobs: j.data || [], worker: w.data, names: Object.fromEntries((m.data || []).map(x => [x.user_id, x.display_name])), err: j.error?.message};
+  if (view === 'reports' && !typingInMain()) render();
+}
+// run flow: รอคิว → ตรวจ Asana → สร้าง PDF → อัปโหลด Drive → ส่ง Telegram → เสร็จ, from job.status + job.progress
+const FLOW = [['queued', 'รอคิว'], ['asana', 'ตรวจงาน Asana'], ['pdf', 'สร้าง PDF'], ['drive', 'อัปโหลด Drive'], ['telegram', 'ส่ง Telegram'], ['done', 'เสร็จ']];
+function flowHTML(j){
+  const pr = j.progress || {}, idx = k => FLOW.findIndex(([x]) => x === k);
+  const at = j.status === 'queued' ? 0 : j.status === 'done' ? FLOW.length : j.status === 'failed' ? Math.max(1, idx(pr.stage === 'failed' || !pr.stage ? 'asana' : pr.stage)) : Math.max(1, idx(pr.stage || 'asana'));
+  const n = (o, label) => o && (o.ok || o.fail || o.running) ? `<small>${o.ok || 0} ${label}${o.fail ? ` · ล้ม ${o.fail}` : ''}${o.running ? ` · กำลังทำ ${o.running}` : ''}</small>` : '';
+  const sub = {pdf: n(pr.pdf, 'สำเร็จ'), drive: n(pr.drive, 'อัปแล้ว'), telegram: n(pr.telegram, 'ส่งแล้ว')};
+  const failedAt = j.status === 'failed' ? (pr.stage === 'failed' ? FLOW.length - 1 : at) : -1;
+  return `<div class="flow" role="list" aria-label="ขั้นตอนการรัน">${FLOW.map(([k, l], i) => {
+    const cls = i === failedAt ? 'bad' : i < at || j.status === 'done' ? 'done' : i === at ? 'now' : '';
+    const mark = cls === 'done' ? '✓' : cls === 'bad' ? '!' : '';
+    return `<div class="st ${cls}" role="listitem"${cls === 'now' ? ' aria-current="step"' : ''}><i>${mark}</i>${l}${sub[k] || ''}</div>`; }).join('')}</div>
+    ${j.status === 'running' && pr.current ? `<div class="flow-now">ล่าสุด: ${esc(pr.current)}${pr.at ? ' · อัปเดต ' + bkkTime(pr.at) : ''}</div>` : ''}`;
+}
+// big pipeline for the newest job, laid out like the team's Archify diagrams: phase columns → node cards
+const PIPE = [
+  ['01 / สั่งงาน', [['queued', 'ปุ่ม Run', 'เข้าคิวบนเว็บ'], ['claim', 'เครื่อง Mac รับงาน', 'เช็กคิวทุก 20 วินาที']]],
+  ['02 / เตรียมข้อมูล', [['asana', 'ตรวจงาน Asana', 'งานที่ถึงกำหนด + ค้าง · ดึงยอด Meta']]],
+  ['03 / สร้างรีพอร์ต', [['pdf', 'สร้าง PDF', 'รีพอร์ต 10 หน้า · สรุปภาษาไทย']]],
+  ['04 / ส่งลูกค้า', [['drive', 'อัปโหลด Google Drive', 'โฟลเดอร์คลินิก/เดือน'], ['telegram', 'ส่ง Telegram', 'กลุ่มของแต่ละคลินิก · กันส่งซ้ำ']]],
+  ['ผล', [['done', 'เสร็จ', 'ดูผลรายคลินิกด้านล่าง']]],
+];
+const ORDER = ['queued', 'claim', 'asana', 'pdf', 'drive', 'telegram', 'done'];
+function pipeHTML(j){
+  const pr = j.progress || {};
+  const cur = j.status === 'queued' ? 'queued' : j.status === 'done' ? 'end' : !pr.stage ? 'claim' : pr.stage === 'failed' ? 'done' : pr.stage;
+  const at = cur === 'end' ? ORDER.length : ORDER.indexOf(cur);
+  const cnt = {pdf: pr.pdf && `${pr.pdf.ok || 0} สำเร็จ${pr.pdf.fail ? ` · ล้ม ${pr.pdf.fail}` : ''}`,
+               drive: pr.drive && `${pr.drive.ok || 0} อัปแล้ว${pr.drive.fail ? ` · ล้ม ${pr.drive.fail}` : ''}`,
+               telegram: pr.telegram && `${pr.telegram.ok || 0} ส่งแล้ว${pr.telegram.fail ? ` · ล้ม ${pr.telegram.fail}` : ''}`};
+  const failed = j.status === 'failed';
+  return `<div class="pipe" role="list" aria-label="ขั้นตอนการรันรีพอร์ต">${PIPE.map(([h, nodes]) => `<div class="ph"><h4>${h}</h4>${nodes.map(([k, t, d]) => {
+    const i = ORDER.indexOf(k);
+    let cls = i < at ? 'done' : i === at ? (failed ? 'bad' : 'now') : '';
+    if (k === 'done' && failed) { cls = 'bad'; t = 'ไม่สำเร็จ'; d = j.note || 'ดู log ด้านล่าง'; }
+    if (cls !== 'done' && cnt[k] && /[1-9]/.test(cnt[k])) cls = cls || 'done';  // a clinic already passed this step
+    return `<div class="nd ${cls}" role="listitem"${cls === 'now' ? ' aria-current="step"' : ''}><b>${t}</b><small>${esc(d)}</small>${cnt[k] ? `<small class="cnt">${cnt[k]}</small>` : ''}</div>`; }).join('')}</div>`).join('')}</div>
+    ${j.status === 'running' && pr.current ? `<div class="flow-now">ล่าสุด: ${esc(pr.current)}${pr.at ? ' · อัปเดต ' + bkkTime(pr.at) : ''}</div>` : ''}`;
+}
+const bkkDateTime = t => t ? new Date(t).toLocaleString('th-TH', {day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok'}) : '–';
+function renderReports(){
+  if (!REP) { loadReports(); return '<div class="card"><div class="card-h"><b>รีพอร์ต</b><span>กำลังโหลด…</span></div></div>'; }
+  if (REP.err) return `<div class="card"><div class="card-h"><b>รีพอร์ต</b><span>โหลดไม่ได้: ${esc(REP.err)}</span></div></div>`;
+  const seen = REP.worker?.last_seen ? Date.now() - Date.parse(REP.worker.last_seen) : Infinity, online = seen < 90e3;
+  const active = REP.jobs.find(x => x.status === 'queued' || x.status === 'running');
+  const ST_LABEL = {queued: ['รอคิว', 'warn'], running: ['กำลังรัน', 'warn'], done: ['เสร็จ', 'ok'], failed: ['ไม่สำเร็จ', 'bad']};
+  const step = (v, okv, label) => v == null ? '<span class="muted">–</span>' : `<span class="pill ${v === okv ? 'ok' : /fail|uncertain/.test(v) ? 'bad' : 'warn'}">${esc(label[v] || v)}</span>`;
+  const DRV = {uploaded: 'อัปโหลดแล้ว', failed: 'ไม่สำเร็จ', pending: 'รอ', uploading: 'กำลังอัป'}, TG = {sent: 'ส่งแล้ว', failed: 'ไม่สำเร็จ', pending: 'รอ', sending: 'กำลังส่ง', uncertain: 'ไม่แน่ใจว่าส่งถึง'};
+  return `<div class="card"><div class="card-h"><b>รีพอร์ตลูกค้า</b><span>ADSIDEA Reports บนเครื่อง Mac</span></div>
+    <div class="rep-top"><button class="rep-run" data-rep-run ${active || !online ? 'disabled' : ''}>Run Report</button>
+      <div class="grow">ตรวจงาน Asana ที่ถึงกำหนดและค้างอยู่ → สร้าง PDF → อัปโหลด Google Drive → ส่ง Telegram ของแต่ละคลินิก (ระบบเดิม กันส่งซ้ำ)
+        ${active ? '<br><b>มีงานรออยู่แล้ว รอให้เสร็จก่อน</b>' : ''}</div>
+      <span class="wk"><span class="dot ${online ? 'd-ok' : 'd-bad'}"></span>${online ? 'เครื่อง Mac ออนไลน์' : 'เครื่อง Mac ออฟไลน์' + (REP.worker?.last_seen ? ' · เห็นล่าสุด ' + bkkDateTime(REP.worker.last_seen) : '') + ' · เปิดเครื่องแล้วงานจะรันต่อเอง'}</span></div>
+    ${REP.jobs.map(j => { const [l, t] = ST_LABEL[j.status] || [j.status, ''], rs = j.results || [];
+      return `<div class="job"><div class="job-h"><span class="pill ${t}">${l}</span><b>${bkkDateTime(j.created_at)}</b>
+        <span class="muted">${esc(REP.names[j.requested_by] || (j.requested_by ? 'สมาชิก' : 'ระบบ'))}${j.finished_at ? ' · จบ ' + bkkDateTime(j.finished_at) : j.started_at ? ' · เริ่ม ' + bkkDateTime(j.started_at) : ''}</span>
+        ${j.note ? `<span class="muted">${esc(j.note)}</span>` : ''}</div>
+        ${j === REP.jobs[0] ? pipeHTML(j) : flowHTML(j)}
+        ${rs.length ? `<div class="scroll"><table><thead><tr><th>คลินิก</th><th>สร้าง PDF</th><th>Drive</th><th>Telegram</th><th>ข้อผิดพลาด</th></tr></thead><tbody>${rs.map(r => `<tr>
+          <td>${esc(r.client || r.taskGid)}</td><td>${step(r.status, 'success', {success: 'สำเร็จ', failed: 'ไม่สำเร็จ', running: 'กำลังทำ'})}</td>
+          <td>${step(r.drive, 'uploaded', DRV)}${r.driveLink ? ` <a href="${esc(r.driveLink)}" target="_blank" rel="noopener">เปิด PDF</a>` : ''}</td>
+          <td>${step(r.telegram, 'sent', TG)}</td><td class="mono">${esc(r.error || '')}</td></tr>`).join('')}</tbody></table></div>`
+          : j.status === 'done' ? '<div class="muted" style="font-size:12px;margin-top:6px">ไม่มีรีพอร์ตที่ถึงกำหนดในรอบนี้</div>' : ''}
+        ${j.log ? `<details><summary>ดู log</summary><pre>${esc(j.log)}</pre></details>` : ''}</div>`; }).join('') || '<div class="job muted">ยังไม่เคยกด Run จากเว็บ</div>'}</div>`;
+}
+const mainHTML = () => view === 'dash' ? renderDash() : view === 'reports' ? renderReports() : view === 'posts' ? renderPosts() : view === 'angel' ? renderAngel() : view === 'media' ? `<iframe id="radar" src="radar/index.html" title="คลังสื่อคู่แข่ง (Competitor Ad Radar)"></iframe>` : view === 'log' ? renderLog() : view === 'today' ? renderToday() : view === 'history' ? renderHistory()
+  : `<div class="card"><div class="card-h"><b>ข้อความสรุป ${thDate(day)}</b><span>วางใน LINE หรือ Obsidian ได้</span></div><pre>${esc(summaryText(day))}</pre></div>`;
+const typingInMain = () => /INPUT|TEXTAREA/.test(document.activeElement?.tagName) && document.activeElement.closest('#main');
+
+function renderHistory(){
+  const days = Array.from({length:14}, (_,i) => shiftDay(day, i-13));
+  return `<div class="card"><div class="card-h"><b>ย้อนหลัง 14 วัน</b><span>สี = หัวข้อที่แย่ที่สุดของวันนั้น · กดช่องเพื่อเปิดวันนั้น</span>
+    <span class="spacer"></span><span class="dots" style="gap:12px">${Object.entries(ST).map(([k,l])=>`<span><span class="dot d-${k}"></span> ${l}</span>`).join('')}<span><span class="dot"></span> ยังไม่เช็ค</span></span></div>
+    <div class="scroll"><table class="hist"><thead><tr><th>คลินิก</th>${days.map(d=>`<th class="mono" style="text-align:center">${+d.slice(8)}/${+d.slice(5,7)}</th>`).join('')}</tr></thead>
+    <tbody>${visible().map(c=>`<tr><td class="name">${esc(c.name)}</td>${days.map(d=>{ const r = rec(d,c.name), w = worst(r);
+      return `<td><button class="cell d-${w}" data-go="${d}" data-c="${esc(c.name)}" aria-label="${esc(c.name)} ${thDate(d)}: ${ST[w]||'ยังไม่เช็ค'}" title="${ST[w]||'ยังไม่เช็ค'}${r.budget?.spend?' · ใช้ '+baht(r.budget.spend):''}"></button></td>`; }).join('')}</tr>`).join('')}</tbody></table></div></div>`;
+}
+
+function summaryText(d){
+  const lines = [`อัปเดตแอด ${thDate(d)}`];
+  for (const c of db.clinics) {
+    const r = rec(d, c.name);
+    if (!TOPICS.some(t => r[t.id] && Object.values(r[t.id]).some(v => v !== '' && v != null))) continue;
+    const k = calc(r);
+    lines.push('', `■ ${c.name}`);
+    lines.push(`แอด: ${ST[r.ads?.status]||'-'}${r.ads?.state?` · ${r.ads.state}`:''} · ผลลัพธ์ ${r.ads?.results||'-'} · ฿/ผลลัพธ์ ${k.cpr?baht(k.cpr):'-'}${r.ads?.purchases>0?` · ซื้อ ${r.ads.purchases} ครั้ง ${baht(r.ads.purchase_value)}`:''}${r.ads?.rejected>0?` · ถูกปฏิเสธ ${r.ads.rejected}`:''}${r.ads?.issues>0?` · ติดปัญหา ${r.ads.issues}`:''}${r.ads?.note?`\n  ${r.ads.note}`:''}`);
+    lines.push(`เพจ: ${ST[r.page?.status]||'-'} · ค้างตอบ ${r.page?.inbox||0} ข้อความ / ${r.page?.comments||0} คอมเมนต์${r.page?.note?`\n  ${r.page.note}`:''}`);
+    lines.push(`งบ: ${ST[r.budget?.status]||'-'} · ใช้ ${baht(r.budget?.spend)} / ${baht(r.budget?.cap)}${r._why?.budget?` · ${r._why.budget}`:''}${r.budget?.change?` · ${r.budget.change}`:''}${r.budget?.note?`\n  ${r.budget.note}`:''}`);
+    lines.push(`แชท/ลีด: ${ST[r.lead?.status]||'-'} · ระดับ ${r.lead?.level||'-'} · นัด ${r.lead?.booked||0}${r.lead?.note?`\n  ${r.lead.note}`:''}`);
+  }
+  return lines.join('\n');
+}
+
+function field(t, [k, label, type, opts], v){
+  const name = `${t}.${k}`;
+  if (type === 'select') return `<label>${label}<select data-k="${name}">${opts.map(o=>`<option ${o===v?'selected':''}>${esc(o)}</option>`).join('')}</select></label>`;
+  return `<label>${label}<input type="number" inputmode="decimal" min="0" data-k="${name}" value="${esc(v)}"></label>`;
+}
+
+function renderPanel(){
+  const body = $('#body'), p = $('#panel');
+  const c = db.clinics.find(x => x.name === cur);
+  body.classList.toggle('open', !!c);
+  if (!c) { p.innerHTML = ''; return; }
+  const r = rec(day, cur), k = calc(r), fed = !!r._why, meta = window.ADS_DATA?.[day], err = meta?.clinics?.[cur]?.error;
+  p.innerHTML = `
+    <div class="ph"><div class="row"><h2>${esc(c.name)}</h2>
+      <button class="ghost icon" data-step="-1" aria-label="คลินิกก่อนหน้า" title="ก่อนหน้า (K)">↑</button>
+      <button class="ghost icon" data-step="1" aria-label="คลินิกถัดไป" title="ถัดไป (J)">↓</button>
+      <button class="ghost icon" id="close" aria-label="ปิดแผง" title="ปิด (Esc)">×</button></div>
+      <div class="meta"><span class="mono">${thDate(day)}</span>${c.page ? `<a href="${esc(c.page)}" target="_blank" rel="noopener">เปิดเพจ</a>` : ''}
+        <span>${err ? 'ดึงจาก Meta ไม่ได้: ' + esc(err) : r._history ? 'ย้อนหลังจาก Meta: มีแค่ยอดเงินและผลลัพธ์ ไม่มีสถานะแอดของวันนั้น' : fed ? `ดึงจาก Meta <span class="mono">${esc(meta.fetched)}</span>` : 'กรอกเอง'}</span>
+        <span class="saved" id="saved">✓ บันทึกแล้ว</span></div></div>
+    ${TOPICS.map(t => {
+      const d = r[t.id] || {};
+      const kv = fed && META_KV[t.id] ? `<dl class="kv">${META_KV[t.id].map(([f,l,u]) => `<div><dt>${l}</dt><dd>${u ? baht(d[f]) : int(d[f])}</dd></div>`).join('')}
+        ${t.id==='ads' ? `<div><dt>฿/ผลลัพธ์</dt><dd>${k.cpr ? baht(k.cpr) : '–'}</dd></div><div class="wide"><dt>สถานะจริง</dt><dd>${esc(d.state)}</dd></div>` : ''}</dl>` : '';
+      // clinics without Meta data (e.g. Google Ads) type these numbers by hand
+      const manual = !fed && META_KV[t.id] ? META_KV[t.id].map(([f,l,u]) => [f, u ? l + ' (฿)' : l, 'number']) : [];
+      return `<section class="sec">
+        <div class="sec-h"><span class="dot d-${d.status||''}"></span><h3>${t.name}</h3>
+          <span class="stat" role="radiogroup" aria-label="สถานะ ${t.name}">${Object.entries(ST).map(([v,l]) =>
+            `<label><input type="radio" name="st-${t.id}" value="${v}" data-k="${t.id}.status" ${d.status===v?'checked':''}><span class="dot d-${v}"></span>${l}</label>`).join('')}</span></div>
+        ${r._why?.[t.id] ? `<p class="why"><span class="src">META</span><span>${esc(r._why[t.id])}</span></p>` : ''}
+        ${t.id==='ads' && r._problems?.length ? `<details class="probs"><summary>ดูแอดที่มีปัญหา ${r._problems.length} ชิ้น</summary><ul>${r._problems.map(x => `<li>${esc(x)}</li>`).join('')}</ul></details>` : ''}
+        ${kv}
+        <div class="fields">${[...manual, ...t.fields].map(f => field(t.id, f, d[f[0]] ?? '')).join('')}</div>
+        ${t.id==='budget' && k.pct != null ? `<p class="why"><span>ใช้ ${k.pct.toFixed(0)}% ของเพดาน</span></p>` : ''}
+        <textarea data-k="${t.id}.note" placeholder="สิ่งที่เจอ / ต้องทำ" aria-label="สิ่งที่เจอ ${t.name}">${esc(d.note)}</textarea>
+      </section>`;
+    }).join('')}
+    <div class="foot"><span>ตัวเลขที่มีป้าย META อัปเดตเองทุกเช้า 08:45</span><span>สถานะที่กดเองจะไม่ถูกเปลี่ยน</span></div>`;
+}
+
+function render(){
+  $('#dayslot').innerHTML = rangeButton('day');
+  document.querySelector('.datebox').style.display = ['dash', 'log', 'angel', 'media', 'reports'].includes(view) ? 'none' : '';
+  document.querySelectorAll('[role=tab]').forEach(b => b.setAttribute('aria-selected', b.dataset.view===view));
+  // the media library is an iframe: keep it (and its scroll/filters) across the page's periodic re-renders
+  if (!(view === 'media' && $('#radar'))) $('#main').innerHTML = mainHTML();
+  renderPanel();
+}
+const open = c => { cur = c; render(); document.querySelector(`tr[data-c="${CSS.escape(c)}"]`)?.focus({preventScroll:false}); };
+
+// edits write straight into db; only the table + header area re-render so the focused field keeps focus
+let savedT;
+$('#panel').addEventListener('input', e => {
+  const k = e.target.dataset.k; if (!k) return;
+  const [t, f] = k.split('.');
+  topic(cur, t)[f] = e.target.value;
+  if (f === 'status') delete rec(day, cur)._auto?.['cleared_' + t];  // picked again by hand: auto may follow again later
+  save(day, cur);
+  if (view === 'today') $('#main').innerHTML = renderToday();
+  if (f === 'status') renderPanel();
+});
+$('#panel').addEventListener('click', e => {
+  // กดสถานะเดิมซ้ำ = ล้างติ๊ก (radio ปกติเอาออกไม่ได้; ตอน click ค่าที่เก็บไว้ยังเป็นค่าเก่า)
+  const rd = e.target.closest('input[type=radio][data-k$=".status"]');
+  if (rd) { const t = rd.dataset.k.split('.')[0];
+    if (topic(cur, t).status === rd.value) { rd.checked = false; topic(cur, t).status = '';
+      ((rec(day, cur)._auto ??= {})['cleared_' + t] = 1);  // a cleared status stays cleared: the next Meta pull must not refill it
+      save(day, cur);
+      if (view === 'today') $('#main').innerHTML = renderToday(); renderPanel(); }
+    return; }
+  if (e.target.closest('#close')) { cur = null; render(); return; }
+  const st = e.target.closest('[data-step]'); if (st) step(+st.dataset.step);
+});
+$('#main').addEventListener('mousemove', e => {
+  const box = e.target.closest('.chart'); document.querySelectorAll('.chart.on').forEach(c => c !== box && c.classList.remove('on'));
+  if (!box || !e.target.classList.contains('hit')) return box?.classList.remove('on');
+  const c = CHARTS[box.dataset.chart], svg = box.querySelector('svg'), rc = svg.getBoundingClientRect(), k = rc.width / c.W;
+  const i = Math.max(0, Math.min(c.n-1, Math.round(((e.clientX - rc.left)/k - c.L) / ((c.W-c.L-c.R)/Math.max(1,c.n-1)))));
+  const r = c.rows[i], v = r[c.key], px = c.x(i);
+  box.classList.add('on');
+  svg.querySelector('.xh').setAttribute('x1', px); svg.querySelector('.xh').setAttribute('x2', px);
+  const pt = svg.querySelector('.pt'); pt.style.display = v == null ? 'none' : ''; if (v != null) { pt.setAttribute('cx', px); pt.setAttribute('cy', c.y(v)); }
+  const tip = box.querySelector('.tip'); tip.innerHTML = `${thDate(r.d)}<b>${v == null ? 'ไม่มีข้อมูล' : c.fmt(v)}</b>`;
+  tip.style.left = (px*k + 12) + 'px'; tip.style.top = ((v == null ? 40 : c.y(v))*k + 4) + 'px';
+});
+document.addEventListener('mouseover', e => {
+  const pk = e.target.closest('[data-pick]'); if (!rp || !pk || rp.to || rp.hover === pk.dataset.pick) return;
+  rp.hover = pk.dataset.pick; refreshPicker();
+});
+// date pickers (header + dashboard) share one handler
+document.addEventListener('click', e => {
+  const rb = e.target.closest('[data-rbtn]'); if (rb) { const t = rb.dataset.rbtn; if (rp) { const same = rp.target === t; closePicker(false); if (same) return; } openPicker(t); return; }
+  if (!rp) return;
+  const pr = e.target.closest('[data-preset]'); if (pr) { const [f,t] = pr.dataset.preset.split('|'); rp = {...rp, from:f, to:t, month: addMonth(t.slice(0,7), -1)}; return closePicker(true); }
+  const pk = e.target.closest('[data-pick]'); if (pk) { const d = pk.dataset.pick;
+    if (!rp.from || rp.to || d < rp.from) Object.assign(rp, {from:d, to:null}); else rp.to = d;
+    return refreshPicker(); }
+  const mn = e.target.closest('[data-mnav]'); if (mn) { rp.month = addMonth(rp.month, +mn.dataset.mnav); return refreshPicker(); }
+  if (e.target.closest('#rp-apply')) return closePicker(true);
+  if (e.target.closest('#rp-cancel')) return closePicker(false);
+});
+document.addEventListener('mousedown', e => { if (rp && !e.target.closest('.rp-wrap')) closePicker(false); });
+$('#main').addEventListener('mouseleave', () => document.querySelectorAll('.chart.on').forEach(c => c.classList.remove('on')));
+$('#main').addEventListener('change', e => {
+  if (e.target.id === 'angClinic') { angelClinic = +e.target.value; render(); }
+  if (e.target.id === 'angAll') { angelAll = e.target.checked; render(); }
+});
+$('#main').addEventListener('click', e => {
+  if (e.target.closest('[data-cpr-reset]')) { rngCpr = null; render(); return; }
+  if (e.target.closest('[data-rep-run]')) {
+    if (!confirm('สั่งรันรีพอร์ตจริงตอนนี้? ระบบจะสร้าง PDF อัปโหลด Drive และส่ง Telegram ให้ลูกค้าทุกคลินิกที่ถึงกำหนด')) return;
+    e.target.disabled = true;
+    sb.from('report_jobs').insert({requested_by: me}).then(({error}) => { if (error) alert('สั่งรันไม่ได้: ' + error.message); loadReports(); });
+    return; }
+  const ad = e.target.closest('[data-angd]'); if (ad) { angelDays = +ad.dataset.angd; render(); return; }
+  const pc = e.target.closest('[data-pc]'); if (pc) { postClinic = pc.dataset.pc; render(); return; }
+  if (e.target.closest('[data-posts-reload]')) { const b = e.target.closest('button'); b.disabled = true; b.textContent = 'กำลังดึง…';
+    sb.functions.invoke('page-posts', {body: {days: 2}}).then(({error}) => { if (error) alert('ดึงโพสต์ไม่ได้: ' + error.message); loadPosts(day, true); }); return; }
+  const ld = e.target.closest('[data-logday]'); if (ld) { logDay = ld.dataset.logday === TODAY ? null : ld.dataset.logday; render(); return; }
+  const ls = e.target.closest('[data-logst]'); if (ls) {
+    const [c, t, v] = ls.dataset.logst.split('|'), d = logDay || TODAY, o = (((db.days[d] ??= {})[c] ??= {})[t] ??= {});
+    const was = (db.days[d][c]._auto ??= {});
+    if (o.status === v) { o.status = ''; was['cleared_' + t] = 1; } else { o.status = v; delete was['cleared_' + t]; }  // same rule as the panel
+    save(d, c); $('#main').innerHTML = mainHTML(); return;
+  }
+  const g = e.target.closest('[data-go]'); if (g) { day = g.dataset.go; cur = g.dataset.c; view = 'today'; render(); return; }
+  const o = e.target.closest('[data-open]'); if (o) return open(o.dataset.open);
+  const tr = e.target.closest('tr[data-c]'); if (tr) open(tr.dataset.c);
+});
+function step(n){
+  const list = visible().map(c => c.name); if (!list.length) return;
+  const i = list.indexOf(cur);
+  open(list[i < 0 ? 0 : (i + n + list.length) % list.length]);
+}
+document.addEventListener('keydown', e => {
+  const typing = /INPUT|TEXTAREA|SELECT/.test(e.target.tagName) && e.target.type !== 'radio';
+  if (e.key === 'Escape' && rp) { closePicker(false); return; }
+  if (e.key === 'Escape') { if (typing) e.target.blur(); else if (cur) { cur = null; render(); } return; }
+  if (typing || e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.key === 'j') step(1);
+  else if (e.key === 'k') step(-1);
+  else if (e.key === 'ArrowLeft') shift(-1);
+  else if (e.key === 'ArrowRight') shift(1);
+  else if (e.key === '/') { e.preventDefault(); $('#q').focus(); }
+  else if (e.key === 'Enter' && e.target.matches('tr[data-c]')) open(e.target.dataset.c);
+  else return;
+});
+document.querySelectorAll('[role=tab]').forEach(b => b.onclick = () => { view = b.dataset.view; render(); });
+$('#q').oninput = e => { q = e.target.value; if (view !== 'dash' && view !== 'text') $('#main').innerHTML = mainHTML(); };
+// daily log edits
+$('#main').addEventListener('input', e => {
+  const k = e.target.dataset.log; if (!k) return;
+  const [c, t] = k.split('|'), d = logDay || TODAY;
+  ((((db.days[d] ??= {})[c] ??= {})[t] ??= {}).note = e.target.value); save(d, c);
+});
+// ‹ › move the whole range by its own length (a single day moves one day), never past today
+const shift = n => { const len = rangeDays().length, to = shiftDay(day, n * len); if (to > TODAY) return; if (dayFrom) dayFrom = shiftDay(dayFrom, n * len); day = to; render(); };
+$('#prev').onclick = () => shift(-1);
+$('#next').onclick = () => shift(1);
+$('#copy').onclick = async e => {
+  const b = e.currentTarget;
+  try { await navigator.clipboard.writeText(summaryText(day)); b.textContent = '✓ คัดลอกแล้ว'; }
+  catch { view = 'text'; render(); b.textContent = 'คัดลอกไม่ได้ ลากเลือกข้อความแทน'; }
+  setTimeout(() => b.textContent = 'คัดลอกสรุป', 1600);
+};
+// "ดึงจาก Meta" asks the Edge Function to pull now (it also runs every 30 min on its own)
+async function runPull(){
+  const b = $('#pull'); if (b.classList.contains('busy')) return;
+  b.classList.add('busy'); $('#pullTxt').textContent = 'กำลังดึง…';
+  try {
+    const {data, error} = await sb.functions.invoke('meta-pull', {body: {days: 7}});
+    if (error || data?.error) throw new Error(data?.error || error.message);
+    await loadMeta(); applyAuto(); render();
+  } catch (e) { alert('ดึงจาก Meta ไม่ได้: ' + e.message); }
+  finally { b.classList.remove('busy'); showPulled(); }
+}
+function showPulled(){ const f = window.ADS_DATA?.[TODAY]?.fetched; $('#pullTxt').textContent = f ? `ดึงจาก Meta · ${f}` : 'ดึงจาก Meta'; }
+$('#pull').onclick = runPull;
+
+$('#addClinic').onclick = () => {
+  const name = prompt('ชื่อคลินิก'); if (!name?.trim()) return;
+  if (db.clinics.some(c=>c.name===name.trim())) return alert('มีคลินิกชื่อนี้แล้ว');
+  const cap = prompt('เพดานงบต่อวัน (฿)', '1000'), page = prompt('ลิงก์เพจ (ไม่มีก็เว้นว่าง)', '');
+  sb.from('clinics').insert({owner: OWNER, name: name.trim(), cap: +cap || null, page_url: (page || '').trim() || null, sort: db.clinics.length + 1})
+    .select('id').single().then(({data, error}) => {
+      if (error) return alert('เพิ่มคลินิกไม่ได้: ' + error.message);
+      db.clinics.push({id: data.id, name: name.trim(), cap: +cap || '', page: (page || '').trim()}); open(name.trim());
+    });
+};
+// switch clinics on/off for this owner; off = hidden here and skipped by the Meta pull (clinics.active)
+// the ⋯ menu may wrap to the left edge on narrow windows: open its list toward whichever side has room
+document.querySelector('details.menu').addEventListener('toggle', e => {
+  const m = e.target, pop = m.querySelector('.pop'); if (!m.open) return;
+  const left = m.getBoundingClientRect().right < pop.offsetWidth + 8;
+  pop.style.left = left ? '0' : ''; pop.style.right = left ? 'auto' : '';
+});
+$('#toggleClinics').onclick = async () => {
+  document.querySelector('details.menu').open = false;
+  const {data, error} = await sb.from('clinics').select('id,name,active').eq('owner', OWNER).order('active', {ascending: false}).order('sort');
+  if (error) return alert('โหลดรายชื่อไม่ได้: ' + error.message);
+  const list = $('#accList'), changed = new Set();
+  list.innerHTML = data.map(c => `<label class="${c.active ? '' : 'off'}"><input type="checkbox" data-id="${c.id}" ${c.active ? 'checked' : ''}>${esc(c.name)}</label>`).join('');
+  list.onchange = async e => {
+    const cb = e.target, on = cb.checked; cb.disabled = true;
+    const {error} = await sb.from('clinics').update({active: on}).eq('id', +cb.dataset.id);
+    cb.disabled = false;
+    if (error) { cb.checked = !on; return alert('บันทึกไม่ได้: ' + error.message); }
+    cb.parentElement.classList.toggle('off', !on); changed.add(cb.dataset.id);
+  };
+  $('#accDlg').onclose = async () => { if (changed.size) { await loadAll(); render(); } };
+  $('#accDlg').showModal();
+};
+// account: who is signed in (username accounts show without the @ads-daily.local part) + change password
+const acctLabel = email => (email || '').endsWith('@' + USER_DOMAIN) ? email.slice(0, -USER_DOMAIN.length - 1) : (email || '–');
+$('#changePw').onclick = () => {
+  document.querySelector('details.menu').open = false;
+  $('#pwForm').reset(); $('#pwErr').textContent = ''; $('#pwDlg').showModal(); $('#pwNew').focus();
+};
+$('#pwCancel').onclick = () => $('#pwDlg').close();
+$('#pwForm').onsubmit = async e => {
+  e.preventDefault();
+  const a = $('#pwNew').value, b = $('#pwNew2').value;
+  if (a.length < 8) return $('#pwErr').textContent = 'รหัสผ่านต้องยาวอย่างน้อย 8 ตัว';
+  if (a !== b) return $('#pwErr').textContent = 'รหัสผ่านสองช่องไม่ตรงกัน';
+  $('#pwSave').disabled = true;
+  const {error} = await sb.auth.updateUser({password: a});
+  $('#pwSave').disabled = false;
+  if (error) return $('#pwErr').textContent = 'เปลี่ยนไม่ได้: ' + error.message;
+  $('#pwDlg').close(); alert('เปลี่ยนรหัสผ่านแล้ว ครั้งหน้าใช้รหัสใหม่ล็อกอิน');
+};
+$('#logout').onclick = () => sb.auth.signOut();
+$('#export').onclick = () => {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(db,null,1)], {type:'application/json'}));
+  a.download = `อัปเดตแอด-${day}.json`; a.click(); URL.revokeObjectURL(a.href);
+};
+$('#import').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try {
+    const d = JSON.parse(await f.text());
+    if (!Array.isArray(d.clinics) || typeof d.days !== 'object') throw 0;
+    const known = new Set(db.clinics.map(c => c.name)); let n = 0;
+    for (const [dd, byC] of Object.entries(d.days)) for (const [c, e] of Object.entries(byC)) if (known.has(c)) n++;
+    if (!confirm(`นำเข้าสถานะ/โน้ตจากไฟล์ ${f.name} (${n} รายการ) เข้าข้อมูลของทีม? รายการเดียวกันจะถูกแทนด้วยของในไฟล์`)) return;
+    for (const [dd, byC] of Object.entries(d.days)) for (const [c, e] of Object.entries(byC)) if (known.has(c)) { (db.days[dd] ??= {})[c] = e; save(dd, c); }
+    applyAuto(); await flush(); render();
+  } catch { alert('ไฟล์นี้ไม่ใช่ไฟล์ข้อมูลจากหน้านี้'); }
+  e.target.value = '';
+};
+
+// self-check: open with #selftest and look at the console
+if (location.hash === '#selftest') {
+  console.assert(calc({budget:{spend:'1000'}, ads:{results:'4'}}).cpr === 250, 'cpr');
+  console.assert(calc({budget:{spend:'500'}, ads:{results:''}}).cpr === null, 'no results');
+  console.assert(worst({ads:{status:'ok'}, lead:{status:'bad'}, page:{status:'warn'}}) === 'bad', 'worst');
+  const A = autoStatus({spend:2367, campaigns:9, live:37, rejected:0, issues:0, pending:0, balance:629, limit_left:588, account:''}, 2000);
+  console.assert(A.ads[0]==='ok' && A.budget[0]==='bad', 'lalida low money', A);
+  console.assert(autoStatus({spend:1000, campaigns:2, rejected:1, issues:0, balance:'', limit_left:''}, 1000).ads[0]==='bad', 'rejected');
+  console.assert(autoStatus({spend:1050, campaigns:2, rejected:0, issues:0, balance:'', limit_left:''}, 1000).budget[0]==='warn', 'over cap');
+  console.assert(daysLeft({budget:{spend:1000, balance:2500, limit_left:''}}) === 2.5, 'days left');
+  console.log('selftest done');
+}
+// ---- login gate ----
+const gate = $('#gate');
+let recovering = false, booted = false;
+function showGate(msg = '', err = ''){
+  gate.hidden = false;
+  $('#gateMsg').textContent = msg || (recovering ? 'ตั้งรหัสผ่านใหม่ (อย่างน้อย 8 ตัว)' : 'เข้าสู่ระบบด้วยอีเมลหรือชื่อผู้ใช้ของทีม');
+  $('#gErr').textContent = err;
+  $('#gEmail').closest('label').hidden = recovering;
+  $('#gForgot').hidden = recovering;
+  $('#gRememberRow').hidden = recovering;
+  try { $('#gRemember').checked = localStorage.getItem(REMEMBER_KEY) !== '0'; } catch {}
+  $('#gPw').autocomplete = recovering ? 'new-password' : 'current-password';
+  $('#gGo').textContent = recovering ? 'บันทึกรหัสผ่าน' : 'เข้าสู่ระบบ';
+}
+// a plain username (no "@") is an account named <username>@ads-daily.local, made by the admin in Supabase
+const USER_DOMAIN = 'ads-daily.local';
+const loginEmail = v => (v = v.trim().toLowerCase()).includes('@') ? v : `${v}@${USER_DOMAIN}`;
+for (const b of document.querySelectorAll('#ownerSeg button')) {
+  b.setAttribute('aria-selected', b.dataset.owner === OWNER);
+  b.onclick = () => { try { localStorage.setItem('ads-daily-owner', b.dataset.owner); } catch {}
+    location.replace(location.pathname + '?owner=' + encodeURIComponent(b.dataset.owner)); };
+}
+document.title = `อัปเดตแอดรายวัน · พี่${OWNER}`;
+$('#gateForm').onsubmit = async e => {
+  e.preventDefault(); $('#gErr').textContent = '';
+  if (recovering) {
+    const pw = $('#gPw').value; if (pw.length < 8) return $('#gErr').textContent = 'รหัสผ่านต้องยาวอย่างน้อย 8 ตัว';
+    const {error} = await sb.auth.updateUser({password: pw});
+    if (error) return $('#gErr').textContent = 'ตั้งรหัสผ่านไม่ได้: ' + error.message;
+    recovering = false; history.replaceState(null, '', location.pathname); return boot();
+  }
+  const remember = $('#gRemember').checked;
+  try { localStorage.setItem(REMEMBER_KEY, remember ? '1' : '0'); } catch {}
+  // unticked: drop the remembered username/password so the browser won't offer it on next visit
+  if (!remember) { $('#gEmail').autocomplete = 'off'; $('#gPw').autocomplete = 'off'; }
+  const {error} = await sb.auth.signInWithPassword({email: loginEmail($('#gEmail').value), password: $('#gPw').value});
+  if (error) return $('#gErr').textContent = 'ชื่อผู้ใช้/อีเมล หรือรหัสผ่านไม่ถูกต้อง';
+  // a real page load after a password form is what makes Safari/Chrome offer "save password"; the session survives it
+  location.replace(location.pathname);
+};
+$('#gForgot').onclick = async () => {
+  const email = $('#gEmail').value.trim(); if (!email) return $('#gErr').textContent = 'ใส่อีเมลก่อน';
+  if (!email.includes('@')) return $('#gErr').textContent = 'บัญชีแบบชื่อผู้ใช้ไม่มีอีเมลรับลิงก์ ให้แอดมินตั้งรหัสผ่านใหม่ให้';
+  const {error} = await sb.auth.resetPasswordForEmail(email, {redirectTo: location.origin + location.pathname});
+  const why = !error ? '' : /rate limit/i.test(error.message) ? 'ขอลิงก์ถี่เกินไป ระบบส่งอีเมลได้ประมาณ 2 ฉบับต่อชั่วโมง รอสักพักแล้วลองใหม่ หรือให้แอดมินตั้งรหัสให้ใน Supabase' : 'ส่งอีเมลไม่ได้: ' + error.message;
+  showGate(error ? '' : `ส่งลิงก์ตั้งรหัสผ่านไปที่ ${email} แล้ว เปิดอีเมลฉบับล่าสุดแล้วกดลิงก์`, why);
+};
+sb.auth.onAuthStateChange((ev) => {
+  if (ev === 'PASSWORD_RECOVERY') { recovering = true; showGate(); }
+  // only a real logout reloads; on a bad email link Supabase also reports SIGNED_OUT and a reload would loop
+  if (ev === 'SIGNED_OUT' && me) { history.replaceState(null, '', location.pathname); location.reload(); }
+});
+// an expired / used email link comes back as #error=...: say so in Thai and clean the address bar
+const linkErr = new URLSearchParams(location.hash.slice(1));
+const startErr = !linkErr.get('error') ? '' : linkErr.get('error_code') === 'otp_expired'
+  ? 'ลิงก์ในอีเมลหมดอายุหรือถูกใช้ไปแล้ว ใส่อีเมลแล้วกด "ตั้งรหัสผ่านครั้งแรก / ลืมรหัสผ่าน" ใหม่ แล้วกดลิงก์ในอีเมลฉบับล่าสุดเท่านั้น'
+  : 'ลิงก์ใช้ไม่ได้: ' + (linkErr.get('error_description') || linkErr.get('error'));
+if (startErr) history.replaceState(null, '', location.pathname);
+
+async function boot(){
+  const {data: {session}} = await sb.auth.getSession();
+  if (!session || recovering) return showGate('', recovering ? '' : startErr);
+  me = session.user.id; $('#acctName').textContent = acctLabel(session.user.email);
+  try { await loadAll(); }
+  catch (e) { return showGate('', e.message === 'notmember' ? 'บัญชีนี้ยังไม่ได้รับสิทธิ์ดูข้อมูล ติดต่อแอดมิน' : 'โหลดข้อมูลไม่ได้: ' + e.message); }
+  gate.hidden = true; render(); showPulled();
+  if (booted) return; booted = true;
+  // teammates' edits arrive live; my own echo is skipped
+  sb.channel('checks').on('postgres_changes', {event: '*', schema: 'public', table: 'checks'}, ({new: r}) => {
+    if (!r?.day || r.updated_by === me) return;
+    const c = db.clinics.find(x => x.id === r.clinic_id); if (!c) return;
+    (db.days[r.day] ??= {})[c.name] = r.data; applyAuto();
+    const editing = document.activeElement?.closest?.('#panel') && cur === c.name && day === r.day;
+    if (!typingInMain()) $('#main').innerHTML = mainHTML();
+    if (!editing) renderPanel();
+  }).subscribe();
+  // report jobs: status changes from the Mac worker show up live; worker heartbeat refreshed while the tab is open
+  sb.channel('report_jobs').on('postgres_changes', {event: '*', schema: 'public', table: 'report_jobs'}, () => { if (REP) loadReports(); }).subscribe();
+  setInterval(() => { if (view === 'reports') loadReports(); }, 30e3);
+  // the server pulls Meta every 30 min; pick up new numbers every 5
+  setInterval(async () => { await loadMeta(); applyAuto(); if (!document.activeElement?.closest?.('#panel') && !typingInMain()) render(); showPulled(); }, 5 * 60e3);
+  // midnight: today moves on; the log (when following today) opens a fresh day
+  setInterval(() => { const t = todayISO(); if (t !== TODAY) { TODAY = t; if (!typingInMain()) render(); showPulled(); } }, 60e3);
+}
+boot();
+</script>
+</body>
+</html>
