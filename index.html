@@ -629,7 +629,7 @@ tbody tr:active{background:var(--accent-tint-2)}
 <header>
   <h1>อัปเดตแอดรายวัน</h1>
   <div class="seg" id="ownerSeg" aria-label="ลูกค้าของใคร">
-    <button data-owner="ดิน">พี่ดิน</button><button data-owner="ใหม่">พี่ใหม่</button>
+    <button data-owner="ดิน">Spe Din</button><button data-owner="ใหม่">Spe Mai</button>
   </div>
   <span class="hbreak" aria-hidden="true"></span>
   <div class="seg" role="tablist">
@@ -749,7 +749,7 @@ const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsIn
 const REMEMBER_KEY = 'ads-daily-remember';
 const authStore = () => { try { return localStorage.getItem(REMEMBER_KEY) === '0' ? sessionStorage : localStorage; } catch { return localStorage; } };
 // each person has their own clinic list; the whole page shows one list at a time (?owner=ใหม่ or the last one picked)
-const OWNERS = ['ดิน', 'ใหม่'];
+const OWNERS = ['ดิน', 'ใหม่'], OWNER_NAME = {'ดิน': 'Spe Din', 'ใหม่': 'Spe Mai'};   // DB keeps ดิน/ใหม่; the page shows these names
 const OWNER = (() => { const u = new URLSearchParams(location.search).get('owner'); let s = null; try { s = localStorage.getItem('ads-daily-owner'); } catch {}
   return OWNERS.includes(u) ? u : OWNERS.includes(s) ? s : OWNERS[0]; })();
 const sb = supabase.createClient(SB_URL, SB_ANON, {auth: {storage: {
@@ -1251,7 +1251,7 @@ function renderDash(){
   const runs = db.clinics.map(c => ({c, w: runway(c.name)})).filter(x => x.w && !x.w.card).sort((a,b) => (a.w.days ?? 1e9) - (b.w.days ?? 1e9));
   const low = runs.filter(x => x.w.days != null && x.w.days < 3);
   const best = rank.find(x => x.i != null && x.i < 1), bad = [...rank].reverse().find(x => x.st <= 2);
-  return `<div class="dash-h"><h2>ภาพรวมแอด</h2><p>ทุกคลินิกรวมกัน</p><span class="spacer"></span>${rangeButton('main')}</div>
+  return `<div class="dash-h"><h2>ภาพรวมแอด</h2><p>คลินิกของ ${OWNER_NAME[OWNER]} รวม ${db.clinics.length} คลินิก</p><span class="spacer"></span>${rangeButton('main')}</div>
   <div class="dash ${fxEnter ? 'enter' : ''}">
     <div class="card stat-card metric span-3 key" ${cardI()}>${icon('tag')}<div><div class="lb">ต้นทุนต่อแชท</div><div class="v">${cpr ? baht(cpr) : '–'}</div><div class="chg">${ci0 ? change(cpr, cprP) : 'ไม่มีข้อมูลช่วงก่อนหน้า'}</div></div></div>
     <div class="card stat-card metric span-3" ${cardI()}>${icon('chat')}<div><div class="lb">แชท/ลีด</div><div class="v">${int(R)}</div><div class="chg">${change(R,Rp)}</div></div></div>
@@ -2511,7 +2511,7 @@ for (const b of document.querySelectorAll('#ownerSeg button')) {
   b.onclick = () => { try { localStorage.setItem('ads-daily-owner', b.dataset.owner); } catch {}
     location.replace(location.pathname + '?owner=' + encodeURIComponent(b.dataset.owner)); };
 }
-document.title = `อัปเดตแอดรายวัน · พี่${OWNER}`;
+document.title = `อัปเดตแอดรายวัน · ${OWNER_NAME[OWNER]}`;
 $('#gateForm').onsubmit = async e => {
   e.preventDefault(); $('#gErr').textContent = '';
   if (recovering) {
