@@ -1383,7 +1383,8 @@ function renderPolicy(){
       <label class="pl">ลิงก์แอดจาก Ads Manager หรือเลขแอด</label>
       <div class="prow"><input id="polUrl" class="pinput" placeholder="https://adsmanager.facebook.com/...selected_ad_ids=..." value="${esc(pol.url)}"><button class="btn-primary" id="polGo" ${pol.busy ? 'disabled' : ''}>${pol.busy ? 'กำลังดึง…' : 'ดึงข้อความ'}</button></div>
       ${pol.err ? `<div class="t-bad" style="font-size:12px;margin-top:6px">${esc(pol.err)}</div>` : ''}
-      ${pol.ad ? `<div class="pad-ad">${pol.ad.image ? `<img src="${esc(pol.ad.image)}" alt="" referrerpolicy="no-referrer">` : ''}<div><b>${esc(pol.ad.name || '')}</b><small class="muted">${pol.ad.video ? 'ตรวจคลิปแอดทีละเฟรม' : 'ตรวจภาพปก · ลิงก์ไม่ให้ไฟล์คลิป ถ้าเป็นคลิปให้อัปโหลดไฟล์ด้านล่าง'}</small></div></div>` : ''}
+      ${pol.ad ? `<div class="pad-ad">${pol.ad.image ? `<img src="${esc(pol.ad.image)}" alt="" referrerpolicy="no-referrer">` : ''}<div><b>${esc(pol.ad.name || '')}</b><small class="muted">${pol.ad.video ? 'ตรวจคลิปแอดทีละเฟรม' : 'ตรวจภาพปก · ลิงก์ไม่ให้ไฟล์คลิป ถ้าเป็นคลิปให้อัปโหลดไฟล์ด้านล่าง'}</small>
+        ${pol.ad.full === false ? '<small class="t-warn">Facebook ส่งข้อความมาแค่ช่วงแรก และไม่เจอโพสต์นี้ในเพจคลินิกเรา ถ้าข้อความยาวกว่านี้ให้คัดลอกมาวางเอง</small>' : ''}</div></div>` : ''}
       <label class="pl" style="margin-top:14px">รูป / คลิปแอด (อัปโหลด หรือกด Cmd+V วางภาพ)</label>
       <label class="pdrop"><input type="file" id="polFile" accept="image/*,video/*" multiple hidden><span>เลือกไฟล์รูปหรือคลิป</span><small class="muted">อ่านตัวหนังสือในภาพ + ดูว่ามีภาพก่อน-หลัง เข็ม เลือด ซูมไขมัน ชุดชั้นใน · คลิปดูทุก ~3 วินาที</small></label>
       <label class="pl" style="margin-top:14px">ข้อความแอด (แก้ได้ ตรวจทันทีที่พิมพ์)</label>
@@ -1448,9 +1449,13 @@ async function seeFiles(files){
   busy(''); if (view === 'policy') { fxKey = ''; render(); }
 }
 async function seeUrl(url, name){
-  const {data, error} = await sb.functions.invoke('policy-check', {body: {proxy: url}});
-  if (error || !(data instanceof Blob)) throw new Error('โหลดรูปจาก Facebook ไม่ได้');
-  await seeFiles([new File([data], name, {type: data.type})]);
+  // plain fetch: functions.invoke reads image/* and video/* responses as text, which breaks the file
+  const {data: {session}} = await sb.auth.getSession();
+  const r = await fetch(`${SB_URL}/functions/v1/policy-check`, {method: 'POST', body: JSON.stringify({proxy: url}),
+    headers: {'Content-Type': 'application/json', apikey: SB_ANON, Authorization: `Bearer ${session?.access_token}`}});
+  const blob = await r.blob();
+  if (!r.ok || !/^(image|video)\//.test(blob.type)) throw new Error('โหลดรูปจาก Facebook ไม่ได้');
+  await seeFiles([new File([blob], name, {type: blob.type})]);
 }
 document.addEventListener('change', e => { if (e.target.id === 'polFile') { pol.media = []; pol.ocr = ''; seeFiles([...e.target.files]); } });
 document.addEventListener('paste', e => { if (view !== 'policy') return; const fs = [...e.clipboardData.files].filter(f => /^(image|video)\//.test(f.type)); if (fs.length) { e.preventDefault(); seeFiles(fs); } });
