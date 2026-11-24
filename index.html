@@ -663,7 +663,24 @@ function sumRec(c){
 function sumMeta(c){
   const one = d => window.ADS_DATA?.[d]?.clinics?.[c] || {};
   if (!dayFrom) return one(day);
-  return {video_3s: rangeDays().reduce((a, d) => a + (+one(d).video_3s || 0), 0), error: one(day).error, range: true};
+  const cl = db.clinics.find(x => x.name === c), rr = rangeReach[`${OWNER}|${dayFrom}|${day}`];
+  if (!rr) loadRangeReach();
+  const x = rr?.[cl?.id] || {};
+  return {video_3s: rangeDays().reduce((a, d) => a + (+one(d).video_3s || 0), 0), error: one(day).error, range: true,
+    reach: x.reach, frequency: x.frequency, loading: !rr};
+}
+// unique reach / frequency of a multi-day range comes from Meta for the whole range (daily figures don't add up);
+// cached per owner+range; ranges ending today refetch after 30 min, a failed fetch after 1 min.
+const rangeReach = {}; let rangeBusy = '';
+async function loadRangeReach(){
+  const k = `${OWNER}|${dayFrom}|${day}`, until = day;
+  if (rangeBusy === k) return; rangeBusy = k;
+  const {data, error} = await sb.functions.invoke('range-reach', {body: {owner: OWNER, since: dayFrom, until: day}});
+  rangeBusy = '';
+  rangeReach[k] = error ? {} : data;
+  if (error || until === TODAY) setTimeout(() => { delete rangeReach[k]; }, error ? 60e3 : 30 * 60e3);  // a failed fetch retries after a minute
+  if (error) console.error('range-reach', error);
+  if (dayFrom && `${OWNER}|${dayFrom}|${day}` === k && !typingInMain()) render();
 }
 const dayLabel = () => dayFrom ? `${thDate(dayFrom)} – ${thDate(day)} · ${rangeDays().length} วัน` : thDate(day);
 function entry(c){ db.days[day] ??= {}; return db.days[day][c] ??= {}; }
@@ -751,7 +768,7 @@ function runwayCell(name){
 function renderToday(){
   const list = visible();
   return renderMetrics() + `<div class="card">
-    <div class="card-h"><b>${dayLabel()}</b><span>${list.length} คลินิก</span>${dayFrom ? '<span class="muted">ยอดรวมทั้งช่วง · จุดสถานะเป็นของวันสุดท้าย · การเข้าถึง/ความถี่ดูได้ทีละวัน</span>' : ''}${!dayFrom && day === TODAY ? `<span class="t-warn">วันนี้ยังไม่จบ · ยอดถึง ${esc(window.ADS_DATA?.[day]?.fetched || '–')}</span>` : ''}<span class="spacer"></span>
+    <div class="card-h"><b>${dayLabel()}</b><span>${list.length} คลินิก</span>${dayFrom ? '<span class="muted">ยอดรวมทั้งช่วง · จุดสถานะเป็นของวันสุดท้าย · การเข้าถึง/ความถี่ = คนไม่ซ้ำทั้งช่วงจาก Meta</span>' : ''}${!dayFrom && day === TODAY ? `<span class="t-warn">วันนี้ยังไม่จบ · ยอดถึง ${esc(window.ADS_DATA?.[day]?.fetched || '–')}</span>` : ''}<span class="spacer"></span>
       <span><kbd>J</kbd> <kbd>K</kbd> เลื่อน · <kbd>Enter</kbd> เปิด · <kbd>←</kbd> <kbd>→</kbd> เปลี่ยนวัน · <kbd>/</kbd> ค้นหา</span></div>
     <div class="scroll"><table>
       <thead><tr><th>คลินิก</th><th>แอด · เพจ · งบ · ลีด</th><th class="num">ใช้ / เพดาน</th><th class="num">ผลลัพธ์</th><th class="num">฿/ผลลัพธ์</th><th class="num" title="จำนวนการซื้อ เหมือนช่อง การซื้อ ใน Ads Manager">การซื้อ</th><th class="num" title="การเข้าถึง (คนไม่ซ้ำ) ของวันนั้น ทั้งบัญชี">การเข้าถึง</th><th class="num" title="ความถี่ = การแสดงผล ÷ การเข้าถึง">ความถี่</th><th class="num" title="การเล่นวิดีโอนาน 3 วินาทีขึ้นไป">วิดีโอ 3 วิ</th><th class="num" title="เงินคงเหลือล่าสุด ÷ ยอดใช้เฉลี่ย 7 วัน">รันได้อีก</th><th>ประเด็น</th></tr></thead>
@@ -766,7 +783,7 @@ function renderToday(){
           <td class="num">${int(r.ads?.results)}</td>
           <td class="num">${k.cpr ? baht(k.cpr) : '–'}</td>
           <td class="num">${r.ads?.purchases != null ? `<span class="run"><b>${+r.ads.purchases ? int(r.ads.purchases) : '–'}</b>${+r.ads.purchase_value ? `<small>${baht(r.ads.purchase_value)}</small>` : ''}</span>` : '<span class="muted">–</span>'}</td>
-          <td class="num">${m.reach ? int(m.reach) : `<span class="muted"${m.range ? ' title="เลือกวันเดียวเพื่อดูการเข้าถึง"' : ''}>–</span>`}</td>
+          <td class="num">${m.reach ? int(m.reach) : `<span class="muted"${m.loading ? ' title="กำลังดึงการเข้าถึงทั้งช่วงจาก Meta"' : ''}>${m.loading ? '…' : '–'}</span>`}</td>
           <td class="num">${m.frequency ? `<span class="${m.frequency >= 4 ? 't-warn' : ''}" title="${m.frequency >= 4 ? 'ความถี่สูง คนเดิมเห็นซ้ำบ่อย ระวังแอดล้า' : ''}">${(+m.frequency).toFixed(2)}</span>` : '<span class="muted">–</span>'}</td>
           <td class="num">${m.video_3s ? int(m.video_3s) : '<span class="muted">–</span>'}</td>
           <td class="num">${runwayCell(c.name)}</td>
