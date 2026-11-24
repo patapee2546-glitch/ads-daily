@@ -75,7 +75,7 @@ header .hbreak{flex-basis:100%;height:0;order:1}
 header .seg[role=tablist]{order:2;max-width:100%;overflow-x:auto;scrollbar-width:none}
 header .seg[role=tablist]::-webkit-scrollbar{display:none}
 header .seg[role=tablist] button{white-space:nowrap;flex:none}
-header .menu .pop{background:var(--pop);min-width:240px}
+header .menu .pop{background:var(--pop);min-width:290px}
 .menu .acct{padding:8px 12px 4px;display:grid}.menu .acct small{font-size:11px;color:var(--text-3)}.menu .acct b{font-size:13px;font-weight:600;overflow-wrap:anywhere}
 .menu hr{border:0;border-top:1px solid var(--line);margin:4px 0}
 #pwDlg,#balDlg{border:1px solid var(--line);border-radius:14px;background:var(--pop);color:var(--text);padding:20px;width:min(380px,calc(100vw - 32px))}
@@ -84,10 +84,18 @@ header .menu .pop{background:var(--pop);min-width:240px}
 #pwDlg label,#balDlg label{display:grid;gap:4px;font-size:12px;color:var(--text-3);margin-bottom:10px}
 #pwDlg input,#balDlg input{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 10px;color:var(--text);font:inherit}
 .pw-actions{display:flex;gap:8px;justify-content:flex-end}
+.acct-row{display:flex!important;gap:12px;align-items:center}
+.av-pick{position:relative;cursor:pointer;flex:none}.av{width:48px;height:48px;border-radius:50%;object-fit:cover;display:block}
+.av-none{display:grid;place-items:center;background:var(--grad);color:#fff;font-weight:600;font-size:20px}
+.av-cam{position:absolute;right:-4px;bottom:-4px;width:22px;height:22px;border-radius:50%;background:var(--pop);border:1px solid var(--line-2);display:grid;place-items:center;font-size:11px}
+.av-link{display:inline-block;margin-top:4px;font-size:12px;color:var(--accent);cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.av-sm{width:26px;height:26px;border-radius:50%;object-fit:cover;display:block}
+.av[hidden],.av-sm[hidden],#menuDots[hidden]{display:none}.acct-row>div{min-width:0;display:grid}summary:has(.av-sm:not([hidden])){padding:2px}
 .menu summary{list-style:none}.menu summary::-webkit-details-marker{display:none}
 .menu .pop{position:absolute;right:0;top:40px;z-index:5;background:var(--surface-2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid var(--line);border-radius:8px;padding:4px;min-width:180px;box-shadow:0 8px 24px oklch(0% 0 0 / .12)}
 .menu .pop button,.menu .pop label{display:block;width:100%;text-align:left;border:0;background:none;padding:8px 12px;border-radius:6px;cursor:pointer}
 .menu .pop button:hover,.menu .pop label:hover{background:var(--hover)}
+.menu .pop .acct-row label.av-pick{display:block;width:auto;padding:0;border-radius:50%}.menu .pop .acct-row label.av-link{display:inline-block;width:auto;padding:0;background:none}
 
 .body{display:grid;grid-template-columns:minmax(0,1fr) 0;min-height:0;transition:grid-template-columns .15s}
 .body.open{grid-template-columns:minmax(0,1fr) 460px}
@@ -515,9 +523,11 @@ tbody tr:active{background:var(--accent-tint-2)}
     <span id="pullTxt">ดึงจาก Meta</span><span class="live" id="pullLive" hidden title="ข้อมูลสด: ดึงจาก Meta ภายใน 40 นาทีที่ผ่านมา"></span></button>
   <button class="ghost" id="copy">คัดลอกสรุป</button>
   <details class="menu">
-    <summary class="ghost icon" aria-label="เมนูเพิ่มเติม">⋯</summary>
+    <summary class="ghost icon" aria-label="เมนูเพิ่มเติม"><img id="menuPic" class="av-sm" alt="" hidden><span id="menuDots">⋯</span></summary>
     <div class="pop">
-      <div class="acct"><small>เข้าสู่ระบบเป็น</small><b id="acctName">–</b></div>
+      <div class="acct acct-row"><label class="av-pick" title="เปลี่ยนรูปโปรไฟล์"><img id="acctPic" class="av" alt="รูปโปรไฟล์" hidden><span class="av av-none" id="acctInit">?</span>
+        <span class="av-cam" aria-hidden="true">📷</span><input type="file" id="avFile" accept="image/*" hidden></label>
+        <div><small>เข้าสู่ระบบเป็น</small><b id="acctName">–</b><label class="av-link">เปลี่ยนรูปโปรไฟล์<input type="file" id="avFile2" accept="image/*" hidden></label></div></div>
       <button id="changePw">เปลี่ยนรหัสผ่าน</button>
       <hr>
       <button id="addClinic">เพิ่มคลินิก</button>
@@ -1882,6 +1892,30 @@ $('#toggleClinics').onclick = async () => {
   $('#accDlg').onclose = async () => { if (changed.size) { await loadAll(); render(); } };
   $('#accDlg').showModal();
 };
+// profile picture: a 256px square WebP in the lead-notes bucket (avatars/<uid>/…), its path kept in the user's auth metadata
+async function showAvatar(user){
+  const path = user?.user_metadata?.avatar, name = acctLabel(user?.email);
+  $('#acctInit').textContent = (name[0] || '?').toUpperCase();
+  let url = '';
+  if (path) { const {data} = await sb.storage.from(BUCKET).createSignedUrl(path, 3600 * 12); url = data?.signedUrl || ''; }
+  for (const id of ['#acctPic', '#menuPic']) { $(id).hidden = !url; if (url) $(id).src = url; }
+  $('#acctInit').hidden = !!url; $('#menuDots').hidden = !!url;
+}
+async function setAvatar(file){
+  if (!file || !/^image\//.test(file.type)) return;
+  try {
+    const bmp = await createImageBitmap(file), side = Math.min(bmp.width, bmp.height), cv = document.createElement('canvas'); cv.width = cv.height = 256;
+    cv.getContext('2d').drawImage(bmp, (bmp.width - side) / 2, (bmp.height - side) / 2, side, side, 0, 0, 256, 256);   // centre square crop
+    let blob = await new Promise(r => cv.toBlob(r, 'image/webp', 0.85)); if (!blob || blob.type !== 'image/webp') blob = await new Promise(r => cv.toBlob(r, 'image/jpeg', 0.88));
+    const {data: {user}} = await sb.auth.getUser(), old = user?.user_metadata?.avatar;
+    const path = `avatars/${user.id}/${crypto.randomUUID()}.${blob.type === 'image/webp' ? 'webp' : 'jpg'}`;
+    const up = await sb.storage.from(BUCKET).upload(path, blob, {contentType: blob.type}); if (up.error) throw up.error;
+    const {data, error} = await sb.auth.updateUser({data: {avatar: path}}); if (error) throw error;
+    if (old) sb.storage.from(BUCKET).remove([old]);
+    await showAvatar(data.user);
+  } catch (e) { alert('เปลี่ยนรูปโปรไฟล์ไม่ได้: ' + (e.message || e)); }
+}
+for (const id of ['#avFile', '#avFile2']) $(id).onchange = e => { setAvatar(e.target.files[0]); e.target.value = ''; };
 // account: who is signed in (username accounts show without the @ads-daily.local part) + change password
 const acctLabel = email => (email || '').endsWith('@' + USER_DOMAIN) ? email.slice(0, -USER_DOMAIN.length - 1) : (email || '–');
 $('#changePw').onclick = () => {
@@ -1995,7 +2029,7 @@ if (startErr) history.replaceState(null, '', location.pathname);
 async function boot(){
   const {data: {session}} = await sb.auth.getSession();
   if (!session || recovering) return showGate('', recovering ? '' : startErr);
-  me = session.user.id; $('#acctName').textContent = acctLabel(session.user.email);
+  me = session.user.id; $('#acctName').textContent = acctLabel(session.user.email); showAvatar(session.user);
   try { await loadAll(); }
   catch (e) { return showGate('', e.message === 'notmember' ? 'บัญชีนี้ยังไม่ได้รับสิทธิ์ดูข้อมูล ติดต่อแอดมิน' : 'โหลดข้อมูลไม่ได้: ' + e.message); }
   gate.hidden = true; render(); showPulled();
