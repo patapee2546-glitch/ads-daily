@@ -72,7 +72,8 @@ header details.menu{position:absolute;top:10px;right:16px}
 header{z-index:30}  /* above the dashboard date-range button (.dash-h z 10) so the ⋯ list is never covered */
 /* page tabs always sit on their own second row, so the header doesn't reflow when a page hides the date box */
 header .hbreak{flex-basis:100%;height:0;order:1}
-header .seg[role=tablist]{order:2;max-width:100%;overflow-x:auto;scrollbar-width:none}
+header .seg[role=tablist]{order:2;max-width:100%;min-width:0;overflow-x:auto;scrollbar-width:none}
+header .seg[role=tablist] button{font-size:13px}
 header .seg[role=tablist]::-webkit-scrollbar{display:none}
 header .seg[role=tablist] button{white-space:nowrap;flex:none}
 header .menu .pop{background:var(--pop);min-width:290px}
@@ -464,7 +465,7 @@ pre{white-space:pre-wrap;font:12px/1.6 var(--sans);margin:0;padding:12px;color:v
   background:linear-gradient(180deg,oklch(97% 0.002 260 / .9),oklch(89% 0.004 260 / .78));
   box-shadow:inset 0 1px 0 oklch(100% 0 0),inset 0 -1px 0 oklch(0% 0 0 / .06),0 6px 18px oklch(0% 0 0 / .1),0 1px 2px oklch(0% 0 0 / .08);
   backdrop-filter:blur(14px) saturate(140%);-webkit-backdrop-filter:blur(14px) saturate(140%)}
-.seg button{position:relative;z-index:1;height:34px;border-radius:999px;display:inline-flex;align-items:center;gap:5px;padding:0 8px;white-space:nowrap;color:oklch(38% 0.006 260);font-weight:500;transition:color .25s}
+.seg button{position:relative;z-index:1;height:34px;border-radius:999px;display:inline-flex;align-items:center;gap:4px;padding:0 7px;white-space:nowrap;color:oklch(38% 0.006 260);font-weight:500;transition:color .25s}
 .seg button:hover{color:oklch(15% 0 0)}
 .seg button[aria-selected=true],.seg button[aria-selected=true]:hover{color:#fff}
 .seg button[aria-selected=true]{background:linear-gradient(180deg,oklch(30% 0.004 260),oklch(14% 0 0));box-shadow:0 4px 12px oklch(0% 0 0 / .28)}
@@ -625,6 +626,41 @@ tbody tr:active{background:var(--accent-tint-2)}
 .pm.block{background:color-mix(in oklch,var(--bad) 30%,transparent)}.pm.fix{background:color-mix(in oklch,var(--warn) 30%,transparent)}.pm.caution{background:var(--accent-tint)}
 .ptext{white-space:pre-wrap;line-height:1.7;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--tint);font-size:13px;max-height:340px;overflow:auto}
 @media (max-width:900px){.pol{grid-template-columns:1fr}}
+
+/* ---- angel: score, funnel step, inverted-triangle funnel ---- */
+.ang-wrap{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:0;border-top:1px solid var(--edge)}
+.ang-list .ang:first-child{border-top:0}
+.ang-funnel{border-left:1px solid var(--edge);padding:14px;position:sticky;top:0;align-self:start}
+.ang-funnel .fh{font-size:12px;color:var(--text-3);margin-bottom:8px}
+.funnel{width:100%;height:auto;display:block}
+.fb{cursor:pointer}.fb path{stroke:oklch(100% 0 0 / .25);stroke-width:1;transition:filter .15s,opacity .15s}
+.fb.s1 path{fill:oklch(55% 0.13 250)}.fb.s2 path{fill:oklch(55% 0.13 200)}.fb.s3 path{fill:oklch(60% 0.12 75)}.fb.s4 path{fill:oklch(58% 0.15 30)}
+.fb:hover path,.fb:focus-visible path{filter:brightness(1.15)}.fb.on path{stroke:#fff;stroke-width:2.5}
+.funnel:has(.fb.on) .fb:not(.on) path{opacity:.45}
+.fb .ft{fill:#fff;font:600 12.5px var(--sans);text-anchor:middle}.fb .fs{fill:oklch(100% 0 0 / .85);font:11px var(--sans);text-anchor:middle}
+.fnote{font-size:11px;color:var(--text-3);margin-top:8px}
+.score{display:inline-grid;place-items:center;min-width:34px;height:24px;padding:0 6px;border-radius:999px;font:700 12px var(--sans);color:#fff;background:linear-gradient(135deg,oklch(60% 0.17 285),oklch(55% 0.15 250))}
+.stepc{font-size:11px;font-weight:600;padding:1px 8px;border-radius:999px;color:#fff}
+.stepc.s1{background:oklch(55% 0.13 250)}.stepc.s2{background:oklch(55% 0.13 200)}.stepc.s3{background:oklch(60% 0.12 75)}.stepc.s4{background:oklch(58% 0.15 30)}
+.parts{display:flex;gap:10px;margin-top:6px;font-size:11px;color:var(--text-3)}
+.parts span{position:relative;width:86px;height:16px;border-radius:4px;background:var(--hover);overflow:hidden;padding-left:6px;line-height:16px}
+.parts i{position:absolute;left:0;top:0;bottom:0;background:var(--accent-tint-2)}
+@media (max-width:1000px){.ang-wrap{grid-template-columns:1fr}.ang-funnel{position:static;border-left:0;border-top:1px solid var(--edge);order:-1}}
+
+/* ---- Social Listening ---- */
+.lhead{padding:0 14px 6px;font-size:13px;color:var(--text-2)}.lhead b{color:var(--text)}
+.lgrid{display:grid;grid-template-columns:260px minmax(0,1fr);gap:20px;align-items:center;padding:8px 14px 14px}
+.donut{width:240px;height:240px}.donut .dn{fill:var(--text);font:800 34px var(--sans);text-anchor:middle}.donut .dl{fill:var(--text-3);font:12px var(--sans);text-anchor:middle}
+.lcats{display:grid;gap:8px}
+.lcat{display:grid;grid-template-columns:14px minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 14px;border:1px solid var(--line);border-radius:12px;background:var(--tint)}
+.lcat i{width:14px;height:14px;border-radius:4px}.lcat small{display:block;font-size:11px;color:var(--text-3)}
+.lcat > span{text-align:right}.lcat > span b{font-size:18px;color:oklch(80% 0.13 85)}
+.lall{padding:0 14px 12px}.lbar{display:flex;height:26px;border-radius:8px;overflow:hidden;font-size:11px;font-weight:600;color:oklch(20% 0.02 260)}
+.lbar span{display:grid;place-items:center;white-space:nowrap;overflow:hidden;min-width:0}.lall small{display:block;margin-top:6px;font-size:11px;color:var(--text-3)}
+.ltips{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 14px 14px}
+.ltips div{padding:12px 14px;border-left:3px solid oklch(78% 0.12 85);border-radius:10px;background:var(--tint);font-size:13px;color:var(--text-2)}.ltips b{color:oklch(80% 0.13 85)}
+.lpaste summary{cursor:pointer;font-size:13px;color:var(--accent);margin-bottom:8px}
+@media (max-width:900px){.lgrid,.ltips{grid-template-columns:1fr}.donut{margin:auto}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important}.metric:hover,.ghost:hover,.ghost:active,.seg button:active,tbody tr:hover .dots .dot{transform:none}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 @supports not (backdrop-filter:blur(1px)){:root{--surface:var(--surface-2)}}
@@ -651,6 +687,7 @@ tbody tr:active{background:var(--accent-tint-2)}
     <button role="tab" data-view="running"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v12H4z"/><path d="m10 8 4 2-4 2z"/><path d="M8 20h8"/></svg>โพสต์รันแอด</button>
     <button role="tab" data-view="posts"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg>โพสต์เพจ</button>
     <button role="tab" data-view="angel"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9Z"/><path d="M19 15v4M17 17h4"/></svg>แอดนางฟ้า</button>
+    <button role="tab" data-view="listen"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-6.4A8 8 0 1 1 21 12Z"/><path d="M8 11h.01M12 11h.01M16 11h.01"/></svg>คอมเมนต์</button>
     <button role="tab" data-view="media"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.5"/><path d="m21 16-5-5-9 8"/></svg>สื่อคู่แข่ง</button>
   </div>
   <button class="ghost icon bell" id="bell"  aria-label="แจ้งเตือน"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><b id="bellN"></b></button>
@@ -2032,7 +2069,39 @@ function renderPosts(){
 }
 // ---- angel ads: per clinic, ads with cheap cost per result AND purchases, over 30/60/90/365 days (angel-ads function) ----
 const ANGEL = {};                       // 'clinicId|days' -> result | 'loading' | {error}
-let angelClinic = null, angelDays = 30, angelAll = false;
+let angelClinic = null, angelDays = 30, angelAll = false, angelStep = 0;
+// funnel step of an ad from its name + copy (same journey as the Mediren retarget funnel). Checked in this order:
+// a concern/FAQ hook beats a result hook, a result hook beats a price line, anything about the doctor/standard is step 1.
+// ponytail: keyword rules on the hook; an ad that mixes steps gets the first match.
+const FUNNEL = [
+  {n: 1, name: 'มั่นใจในหมอ', sub: 'หมอ · มาตรฐาน · เคสยาก'},
+  {n: 2, name: 'ผลลัพธ์จริง', sub: 'รีวิว · ผลหลังทำ'},
+  {n: 3, name: 'ตอบข้อกังวล', sub: 'ข้อควรระวัง · เจ็บไหม · ราคาถูกเสี่ยงไหม'},
+  {n: 4, name: 'แจ้งราคา + จองคิว', sub: 'ราคา · โปร · จองคิว'},
+];
+const STEP_RX = [[3, /ข้อควรระวัง|ระวัง|เหมา|ไม่ได้ดี|ทำไม|เสี่ยง|เจ็บไหม|ต้องเจ็บ|พักฟื้น|กังวล|ความจริง|เข้าใจผิด|faq|ต่างกันยังไง|ปลูกไม่ได้|ทำไม่ได้/i],
+  [2, /รีวิว|review|ผลลัพธ์|อัปเดต|อัพเดท|เคสจริง|คนไข้|ลูกค้า|หลังทำ|หลังปลูก|เดือนหน้า|ก่อน.?หลัง|เปลี่ยนไป/i],
+  [4, /ราคา|฿|\d[\d,]{2,}\s*\.?-|บาท|โปร|เริ่มต้น|จองคิว|ผ่อน|ส่วนลด|ลด\s*\d/i],
+  [1, /หมอ|แพทย์|ผู้เชี่ยวชาญ|ประธาน|มาตรฐาน|เคสยาก|ประสบการณ์|ระดับเอเชีย|ทีมแพทย์|bn\b/i]];
+// the ad name is the editor's own label of the angle: trust it first, fall back to the copy's opening only when the name says nothing
+const stepIn = t => (STEP_RX.find(([, rx]) => rx.test(t)) || [0])[0];
+const stepOf = a => stepIn(a.name || '') || stepIn((a.body || '').slice(0, 160));
+console.assert(stepOf({name: 'VDO I เคสยากแบบนี้... ต้องจบที่หมอเบญ', body: 'ผลลัพธ์ที่ได้ ปรึกษาสอบถาม'}) === 1 && stepOf({name: 'อัปเดตผลลัพธ์ 5 เดือน!'}) === 2
+  && stepOf({name: 'Reel ปลูกผมเหมากราฟไม่ได้ดีอย่างที่คิด'}) === 3 && stepOf({name: 'โปร Botox 50u ราคา 1,910.-'}) === 4, 'funnel steps');
+function funnelSVG(ads){
+  const W = 300, H = 330, rows = FUNNEL.map(f => { const xs = ads.filter(a => a.step === f.n);
+    return {...f, n2: xs.length, spend: xs.reduce((t, a) => t + a.spend, 0), buys: xs.reduce((t, a) => t + a.purchases, 0)}; });
+  const none = ads.filter(a => !a.step).length, bh = (H - 12) / 4;
+  return `<svg class="funnel" viewBox="0 0 ${W} ${H}" role="group" aria-label="Funnel แอดนางฟ้า 4 ขั้น">${rows.map((r, i) => {
+      const t = i * bh + 2, b = t + bh - 6, inset = k => 12 + k * 26, x1 = inset(i), x2 = inset(i + 1) - 6;   // inverted triangle: each band narrower
+      const on = angelStep === r.n, mid = (t + b) / 2;
+      return `<g class="fb ${on ? 'on' : ''} s${r.n}" data-astep="${r.n}" tabindex="0" role="button" aria-pressed="${on}" aria-label="Step ${r.n} ${r.name}: ${r.n2} แอด">
+        <path d="M${x1},${t}H${W - x1}L${W - x2},${b}H${x2}Z"/>
+        <text x="${W / 2}" y="${mid - 9}" class="ft">Step ${r.n} · ${r.name}</text>
+        <text x="${W / 2}" y="${mid + 9}" class="fs">${r.n2} แอด · ${baht(r.spend)}${r.buys ? ` · ซื้อ ${int(r.buys)}` : ''}</text></g>`; }).join('')}</svg>
+    <div class="fnote">${none ? `ไม่ระบุขั้น ${none} แอด · ` : ''}กดขั้นเพื่อกรองรายการ${angelStep ? ' · <button class="link" data-astep="0">ดูทุกขั้น</button>' : ''}</div>`;
+}
+
 async function loadAngel(id, d){
   const k = id + '|' + d; if (ANGEL[k]) return; ANGEL[k] = 'loading';
   const {data, error} = await sb.functions.invoke('angel-ads', {body: {clinic_id: id, days: d}});
@@ -2047,26 +2116,101 @@ function renderAngel(){
   const ctl = `<div class="ang-ctl"><select id="angClinic" aria-label="คลินิก">${cs.map(c => `<option value="${c.id}" ${c.id === angelClinic ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select>
     <span class="seg" role="group" aria-label="ช่วงเวลา">${[[30,'30 วัน'],[60,'60 วัน'],[90,'90 วัน'],[365,'1 ปี']].map(([d,l]) => `<button data-angd="${d}" aria-selected="${d === angelDays}">${l}</button>`).join('')}</span>
     <span class="spacer"></span><label class="muted" style="font-size:13px;display:flex;gap:6px;align-items:center"><input type="checkbox" id="angAll" ${angelAll ? 'checked' : ''}>แสดงทุกแอด</label></div>`;
-  const head = `<div class="card-h"><b>แอดนางฟ้า</b><span>ต้นทุน/ผลลัพธ์ต่ำกว่าค่าเฉลี่ยบัญชี และมียอดซื้อในระบบ</span></div>`;
+  const head = `<div class="card-h"><b>แอดนางฟ้า</b><span>เรียงตามคะแนน: ยอดซื้อ 50% · ต้นทุนต่อแชท 30% · เอนเกจ (คอมเมนต์ แชร์ ไลค์) 20%</span></div>`;
   if (!A || A === 'loading') return `<div class="card">${head}${ctl}<div class="ang-sum">กำลังดึงจาก Meta… (1 ปีอาจใช้เวลาครึ่งนาที)</div></div>`;
   if (A.error) return `<div class="card">${head}${ctl}<div class="ang-sum">ดึงไม่ได้: ${esc(A.error)}</div></div>`;
   const label = {angel: '👼 นางฟ้า', sold: 'มียอดซื้อ', cheap: 'แชทถูก'};
-  const ads = angelAll ? A.ads : A.ads.filter(a => a.tier);
+  for (const a of A.ads) a.step ??= stepOf(a);
+  const pool = angelAll ? A.ads : A.ads.filter(a => a.tier), ads = angelStep ? pool.filter(a => a.step === angelStep) : pool;
   const unit = A.step === 'month' ? 'เดือน' : 'สัปดาห์';
   const pd = p => `${+p.from.slice(8)}/${+p.from.slice(5,7)}–${+p.to.slice(8)}/${+p.to.slice(5,7)}`;
   return `<div class="card">${head}${ctl}
     <div class="ang-sum"><span>${thDate(A.since)} – ${thDate(A.until)}</span><span>ค่าเฉลี่ยบัญชี <b>${baht(A.avg)}</b>/ผลลัพธ์</span>
       <span>นางฟ้า <b>${A.ads.filter(a => a.tier === 'angel').length}</b> จาก ${A.total_ads} แอดที่ใช้เงิน</span></div>
-    ${ads.map(a => `<div class="ang">${a.thumb ? `<img src="${esc(a.thumb)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : '<div class="noimg"></div>'}
-      <div><div class="nm">${esc(a.name)}${a.tier ? `<span class="tier ${a.tier}">${label[a.tier]}</span>` : ''}${a.status && a.status !== 'ACTIVE' ? `<span class="tier">${esc(a.status === 'PAUSED' || a.status === 'CAMPAIGN_PAUSED' || a.status === 'ADSET_PAUSED' ? 'ปิดอยู่' : a.status)}</span>` : ''}</div>
+    <div class="ang-wrap"><div class="ang-list">${ads.map(a => `<div class="ang">${a.thumb ? `<img src="${esc(a.thumb)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : '<div class="noimg"></div>'}
+      <div><div class="nm"><span class="score" title="ยอดซื้อ ${Math.round((a.parts?.buy || 0) * 100)} · ต้นทุนต่อแชท ${Math.round((a.parts?.cpr || 0) * 100)} · เอนเกจ ${Math.round((a.parts?.eng || 0) * 100)} (เทียบแอดอื่นในบัญชี)">${a.score ?? '–'}</span>${esc(a.name)}${a.tier ? `<span class="tier ${a.tier}">${label[a.tier]}</span>` : ''}${a.step ? `<span class="stepc s${a.step}">Step ${a.step} ${FUNNEL[a.step - 1].name}</span>` : ''}${a.status && a.status !== 'ACTIVE' ? `<span class="tier">${esc(a.status === 'PAUSED' || a.status === 'CAMPAIGN_PAUSED' || a.status === 'ADSET_PAUSED' ? 'ปิดอยู่' : a.status)}</span>` : ''}</div>
         <div class="sub">${esc(a.campaign || '')} › ${esc(a.adset || '')}${a.post ? ` · <a href="${esc(a.post)}" target="_blank" rel="noopener">ดูโพสต์</a>` : ''}</div>
         <div class="kv"><span>ใช้ <b>${baht(a.spend)}</b></span><span>ผลลัพธ์ <b>${int(a.results)}</b></span><span>ต้นทุน <b>${a.cpr ? baht(a.cpr) : '–'}</b></span>
-          <span>ซื้อ <b>${int(a.purchases)}</b>${a.value ? ` · ${baht(a.value)}` : ''}</span></div>
+          <span>ซื้อ <b>${int(a.purchases)}</b>${a.value ? ` · ${baht(a.value)}` : ''}</span>
+          <span>คอมเมนต์ <b>${int(a.comments || 0)}</b></span><span>ไลค์ <b>${int(a.reactions || 0)}</b></span><span>แชร์ <b>${int(a.shares || 0)}</b></span></div>
+        <div class="parts" aria-hidden="true">${[['ซื้อ', a.parts?.buy], ['฿/แชท', a.parts?.cpr], ['เอนเกจ', a.parts?.eng]].map(([l, v]) => `<span><i style="width:${Math.round((v || 0) * 100)}%"></i>${l}</span>`).join('')}</div>
         <div class="strip" aria-label="ช่วงที่แอดนี้ต้นทุนถูกกว่าค่าเฉลี่ย">${a.periods.map(p => `<i class="${p.good ? 'on' : 'sp'}" title="${pd(p)}: ใช้ ${baht(p.spend)} · ผลลัพธ์ ${int(p.results)}${p.results ? ' · ' + baht(p.spend / p.results) + '/ผลลัพธ์' : ''}${p.purchases ? ' · ซื้อ ' + int(p.purchases) : ''}"></i>`).join('')}
           <small>${(() => { const g = a.periods.filter(p => p.good); return g.length ? `ถูกช่วง ${pd(g[0]).split('–')[0]} – ${pd(g[g.length-1]).split('–')[1]} (${g.length}/${a.periods.length} ${unit})` : 'ยังไม่มีช่วงที่ต้นทุนต่ำกว่าค่าเฉลี่ย'; })()}</small></div></div></div>`).join('')
-      || '<div class="ang-sum">ช่วงนี้ยังไม่มีแอดที่ทั้งต้นทุนถูกและมียอดซื้อ ติ๊ก "แสดงทุกแอด" เพื่อดูทั้งหมด</div>'}
+      || '<div class="ang-sum">ช่วงนี้ยังไม่มีแอดที่ทั้งต้นทุนถูกและมียอดซื้อ ติ๊ก "แสดงทุกแอด" เพื่อดูทั้งหมด</div>'}</div>
+    <div class="ang-funnel"><div class="fh">Funnel ของแอดที่แสดง</div>${funnelSVG(pool)}</div></div>
     <div class="log-note">ช่องสี่เหลี่ยม = ${unit}ที่แอดใช้เงิน · เขียว = ${unit}นั้นต้นทุนต่ำกว่าค่าเฉลี่ยบัญชี · ชี้ที่ช่องเพื่อดูตัวเลข · ผลลัพธ์ = แชท + ลีด · ยอดซื้อตามที่ Meta นับ</div></div>`;
 }
+// ---- Social Listening: what customers ask in the comments of the posts behind the clinic's biggest ads ----
+// Comments come from angel-ads {comments} (needs a token with pages_read_engagement) or are pasted by hand.
+// ponytail: keyword categories, first match wins in this order (price first, as in the Mediren report); upgrade = a model.
+const LCATS = [
+  {k: 'price', name: 'ถามราคา', col: 'oklch(70% 0.14 75)', rx: /ราคา|เท่าไ|กี่บาท|แพงไหม|แพงมั้ย|ค่าใช้จ่าย|price|กราฟละ|ละกี่|ตกเท่า/i, ex: '"ราคาเท่าไหร่" "กราฟละเท่าไหร่"'},
+  {k: 'interest', name: 'สนใจ / ขอรายละเอียด / ติดต่อ', col: 'oklch(70% 0.12 285)', rx: /สนใจ|ขอรายละเอียด|ขอข้อมูล|ขอเบอร์|ติดต่อ|inbox|ทักแชท|ส่งรายละเอียด|รายละเอียด|^ib\b|ไลน์|line/i, ex: '"สนใจค่ะ" "ขอรายละเอียด"'},
+  {k: 'branch', name: 'ถามสาขา / สถานที่', col: 'oklch(62% 0.16 35)', rx: /สาขา|ที่ไหน|อยู่ไหน|แถวไหน|จังหวัด|ใกล้|ภาคใต้|ภาคเหนือ|ภาคอีสาน|ไปยังไง|เดินทาง/i, ex: '"มีสาขาที่ไหน" "ภาคใต้มีไหม"'},
+  {k: 'fit', name: 'ถามว่าเคสตัวเองทำได้ไหม', col: 'oklch(62% 0.15 250)', rx: /ทำได้ไหม|ทำได้มั้ย|ได้ไหม|ได้มั้ย|ได้หรือเปล่า|เหมาะไหม|เหมาะกับ|อายุ\s*\d+|แบบนี้ทำ|เป็น.{0,12}ทำได้/i, ex: '"อายุ 61 ทำได้ไหม"'},
+  {k: 'process', name: 'ถามขั้นตอน / พักฟื้น / เจ็บ', col: 'oklch(62% 0.18 350)', rx: /เจ็บ|พักฟื้น|กี่วัน|ขั้นตอน|นานไหม|ผลข้างเคียง|ปลอดภัย|ถาวร|กี่ครั้ง|อยู่ได้นาน|ทำกี่/i, ex: '"เจ็บไหม" "พักฟื้นกี่วัน"'},
+  {k: 'other', name: 'คำถามอื่น ๆ', col: 'oklch(62% 0.13 160)', rx: /\?|ไหม|มั้ย|อะไร|ยังไง|อย่างไร|หรือเปล่า|รึเปล่า|ป่าว|ไหน|เมื่อไหร่|กี่/i, ex: '"เคสนี้กี่กราฟ" "ปลูกซ้ำได้ไหม"'},
+];
+const lcat = t => { const x = String(t).trim();
+  if (!/[ก-๙a-z]{2}/i.test(x.replace(/@\S+/g, ''))) return 'sticker';   // stickers, emoji, tags only
+  return (LCATS.find(c => c.rx.test(x)) || {k: 'talk'}).k; };
+console.assert(lcat('ราคาเท่าไหร่คะ') === 'price' && lcat('สนใจค่ะ') === 'interest' && lcat('อายุ 61 ปลูกได้ไหม') === 'fit' && lcat('สวยมากค่ะ') === 'talk' && lcat('😍😍') === 'sticker', 'listen categories');
+let LISTEN = {}, listenClinic = null, listenDays = 90, listenPaste = '';
+async function loadListen(id, d){
+  const k = id + '|' + d; if (LISTEN[k]) return; LISTEN[k] = 'loading';
+  const {data, error} = await sb.functions.invoke('angel-ads', {body: {clinic_id: id, days: d, comments: true}});
+  LISTEN[k] = error ? {error: (await error.context?.json?.().catch(() => null))?.error || error.message} : data;
+  if (view === 'listen' && !typingInMain()) render();
+}
+function donut(parts, total, label){
+  let a0 = -Math.PI / 2; const R = 80, r = 52, C = 100;
+  const arc = (a1, a2) => { const p = (a, rr) => `${(C + rr * Math.cos(a)).toFixed(1)},${(C + rr * Math.sin(a)).toFixed(1)}`, big = a2 - a1 > Math.PI ? 1 : 0;
+    return `M${p(a1, R)}A${R},${R} 0 ${big} 1 ${p(a2, R)}L${p(a2, r)}A${r},${r} 0 ${big} 0 ${p(a1, r)}Z`; };
+  return `<svg class="donut" viewBox="0 0 200 200" role="img" aria-label="${esc(label)}">${parts.filter(x => x.n).map(x => { const a1 = a0, a2 = a0 + 2 * Math.PI * x.n / total - 0.012; a0 += 2 * Math.PI * x.n / total;
+      return `<path d="${arc(a1, Math.max(a1 + .001, a2))}" fill="${x.col}"><title>${esc(x.name)} ${x.n}</title></path>`; }).join('')}
+    <text x="100" y="98" class="dn">${int(total)}</text><text x="100" y="118" class="dl">${esc(label)}</text></svg>`;
+}
+function renderListen(){
+  const cs = db.clinics.filter(c => !/google/i.test(c.name));
+  if (!cs.some(c => c.id === listenClinic)) listenClinic = cs[0]?.id;
+  const k = listenClinic + '|' + listenDays, L = LISTEN[k];
+  if (!L && !listenPaste) loadListen(listenClinic, listenDays);
+  const ctl = `<div class="ang-ctl"><select id="lsClinic" aria-label="คลินิก">${cs.map(c => `<option value="${c.id}" ${c.id === listenClinic ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select>
+    <span class="seg" role="group" aria-label="ช่วงเวลา">${[[30, '30 วัน'], [90, '90 วัน']].map(([d, l]) => `<button data-lsd="${d}" aria-selected="${d === listenDays}">${l}</button>`).join('')}</span></div>`;
+  const posts = (L && L.posts) || [], fetched = posts.flatMap(p => p.comments.map(t => ({t, post: p.title})));
+  const blocked = L && L.posts && !fetched.length && posts.some(p => p.err);
+  const pasted = listenPaste.split('\n').map(t => t.trim()).filter(Boolean).map(t => ({t, post: 'วางเอง'}));
+  const all = fetched.length ? fetched : pasted;
+  const pasteBox = `<details class="lpaste" ${blocked || !fetched.length ? 'open' : ''}><summary>วางคอมเมนต์เอง (บรรทัดละ 1 คอมเมนต์)</summary>
+    <textarea id="lsPaste" class="ptarea" style="min-height:140px" placeholder="คัดลอกคอมเมนต์จากโพสต์มาวางที่นี่">${esc(listenPaste)}</textarea></details>`;
+  const top = `<div class="dash-h"><h2>Social Listening</h2><p>ลูกค้าถามเรื่องอะไรบ้าง ในคอมเมนต์ของโพสต์ที่ยิงแอดมากที่สุด</p></div>`;
+  if (L === 'loading' && !all.length) return `${top}<div class="card">${ctl}<div class="ang-sum">กำลังดึงคอมเมนต์จาก Meta…</div></div>`;
+  const note = L?.error ? `ดึงไม่ได้: ${esc(L.error)}` : blocked ? 'Meta ยังไม่ให้อ่านคอมเมนต์ (token ต้องมีสิทธิ์ pages_read_engagement ของเพจนี้) · วางคอมเมนต์เองด้านล่างได้' : '';
+  if (!all.length) return `${top}<div class="card">${ctl}<div class="ang-sum">${note || 'ยังไม่มีคอมเมนต์ในช่วงนี้'}</div><div style="padding:0 14px 14px">${pasteBox}</div></div>`;
+  const by = {}; for (const c of all) (by[lcat(c.t)] ??= []).push(c);
+  const qs = LCATS.map(c => ({...c, n: (by[c.k] || []).length, xs: by[c.k] || []})), Q = qs.reduce((t, c) => t + c.n, 0), N = all.length;
+  const talk = (by.talk || []).length, stick = (by.sticker || []).length, pct = (n, d = Q) => d ? (n / d * 100).toFixed(1) + '%' : '–';
+  const rank = [...qs].sort((a, b) => b.n - a.n), short = xs => [...new Set(xs.map(x => x.t).filter(t => t.length <= 40))].slice(0, 3).map(t => `“${esc(t)}”`).join(' ');
+  const tip = [
+    rank[0]?.n ? `<b>${esc(rank[0].name)} เป็นอันดับ 1 (${pct(rank[0].n)})</b> ${rank[0].k === 'price' ? 'ควรทำแอดแจ้งราคาเริ่มต้น / ตั้งข้อความตอบอัตโนมัติเรื่องราคา' : 'ควรทำคอนเทนต์ตอบเรื่องนี้โดยตรง'}` : '',
+    qs[1].n ? `<b>คนสนใจพร้อมคุย ${pct(qs[1].n)}</b> คอมเมนต์ "สนใจ / ขอรายละเอียด" ควรตอบกลับภายในวันเดียวกันแล้วชวนเข้า Inbox` : '',
+    qs[2].n ? `<b>ถามสาขา ${pct(qs[2].n)}</b> ควรปักหมุดคอมเมนต์รายชื่อสาขา / แผนที่` : '',
+    qs[3].n + qs[4].n ? `<b>ถามว่าทำได้ไหม / เจ็บไหม ${pct(qs[3].n + qs[4].n)}</b> เป็นไอเดียคอนเทนต์ตอบคำถามรอบถัดไป` : ''].filter(Boolean);
+  const perPost = posts.filter(p => p.comments.length).map(p => `${esc(p.title.slice(0, 28))} ${p.comments.length}`).join(' · ');
+  return `${top}<div class="card">${ctl}${note ? `<div class="ang-sum">${note}</div>` : ''}
+    <div class="lhead">จากคอมเมนต์ <b>${int(N)}</b> รายการ · เป็นคำถาม/สนใจ <b>${int(Q)}</b> รายการ (${pct(Q, N)})${L?.since && fetched.length ? ` · ${thDate(L.since)} – ${thDate(L.until)}` : ''}</div>
+    <div class="lgrid">${donut(qs, Q, 'คอมเมนต์ที่ถาม/สนใจ')}
+      <div class="lcats">${rank.map(c => `<div class="lcat"><i style="background:${c.col}"></i><div><b>${esc(c.name)}</b><small>${short(c.xs) || c.ex}</small></div><span><b>${pct(c.n)}</b><small>${int(c.n)} คอมเมนต์</small></span></div>`).join('')}</div></div>
+    <div class="lall"><div class="lbar"><span style="flex:${Q};background:oklch(78% 0.12 85)">คำถาม/สนใจ ${pct(Q, N)}</span><span style="flex:${talk};background:oklch(72% 0.08 250)">ชม/รีวิว ${pct(talk, N)}</span><span style="flex:${stick};background:var(--line-2)">${pct(stick, N)}</span></div>
+      <small>คำถาม/สนใจ ${int(Q)} · ชม/รีวิว/ความเห็นทั่วไป ${int(talk)} · สติกเกอร์/รูป/แท็กเพื่อน ${int(stick)}</small></div>
+    <div class="ltips">${tip.map(t => `<div>${t}</div>`).join('')}</div>
+    <div class="legend-note">${fetched.length ? `นับเฉพาะคอมเมนต์ลูกค้า (ไม่รวมที่เพจตอบกลับ) จาก ${posts.filter(p => p.comments.length).length} โพสต์: ${perPost}` : 'จากคอมเมนต์ที่วางเอง'} · จัดหมวดด้วยคีย์เวิร์ด คอมเมนต์ที่ถามหลายเรื่องนับเข้าหมวดแรกที่ตรง (ราคาก่อน)</div>
+    <div style="padding:0 14px 14px">${pasteBox}</div></div>`;
+}
+document.addEventListener('input', e => { if (e.target.id === 'lsPaste') { listenPaste = e.target.value; clearTimeout(window._lsT); window._lsT = setTimeout(() => { fxKey = ''; render(); document.getElementById('lsPaste')?.focus(); }, 500); } });
+document.addEventListener('change', e => { if (e.target.id === 'lsClinic') { listenClinic = +e.target.value; render(); } });
+document.addEventListener('click', e => { const b = e.target.closest('[data-lsd]'); if (b) { listenDays = +b.dataset.lsd; render(); } });
+
 // ---- Run Report: queue a job for the Mac that runs ADSIDEA Reports (report-worker function + launchd worker) ----
 let REP = null;  // {jobs, worker, names}
 async function loadReports(){
@@ -2142,7 +2286,7 @@ function renderReports(){
           : j.status === 'done' ? '<div class="muted" style="font-size:12px;margin-top:6px">ไม่มีรีพอร์ตที่ถึงกำหนดในรอบนี้</div>' : ''}
         ${j.log ? `<details><summary>ดู log</summary><pre>${esc(j.log)}</pre></details>` : ''}</div>`; }).join('') || '<div class="job muted">ยังไม่เคยกด Run จากเว็บ</div>'}</div>`;
 }
-const mainHTML = () => view === 'dash' ? renderDash() : view === 'reports' ? renderReports() : view === 'posts' ? renderPosts() : view === 'angel' ? renderAngel() : view === 'media' ? `<iframe id="radar" src="radar/index.html" title="คลังสื่อคู่แข่ง (Competitor Ad Radar)"></iframe>` : view === 'log' ? renderLog() : view === 'today' ? renderToday() : view === 'leadnote' ? renderLeadNote('lead') : view === 'adsnote' ? renderLeadNote('adsb') : view === 'history' ? renderHistory() : view === 'brain' ? renderBrain() : view === 'policy' ? renderPolicy() : view === 'running' ? renderRunning()
+const mainHTML = () => view === 'dash' ? renderDash() : view === 'reports' ? renderReports() : view === 'posts' ? renderPosts() : view === 'angel' ? renderAngel() : view === 'media' ? `<iframe id="radar" src="radar/index.html" title="คลังสื่อคู่แข่ง (Competitor Ad Radar)"></iframe>` : view === 'log' ? renderLog() : view === 'today' ? renderToday() : view === 'leadnote' ? renderLeadNote('lead') : view === 'adsnote' ? renderLeadNote('adsb') : view === 'history' ? renderHistory() : view === 'brain' ? renderBrain() : view === 'policy' ? renderPolicy() : view === 'running' ? renderRunning() : view === 'listen' ? renderListen()
   : `<div class="card"><div class="card-h"><b>ข้อความสรุป ${thDate(day)}</b><span>วางใน LINE หรือ Obsidian ได้</span></div><pre>${esc(summaryText(day))}</pre></div>`;
 const typingInMain = () => /INPUT|TEXTAREA/.test(document.activeElement?.tagName) && document.activeElement.closest('#main');
 
@@ -2360,6 +2504,7 @@ $('#main').addEventListener('click', e => {
     sb.from('report_jobs').insert({requested_by: me}).then(({error}) => { if (error) alert('สั่งรันไม่ได้: ' + error.message); loadReports(); });
     return; }
   const ad = e.target.closest('[data-angd]'); if (ad) { angelDays = +ad.dataset.angd; render(); return; }
+  const st = e.target.closest('[data-astep]'); if (st) { const n = +st.dataset.astep; angelStep = angelStep === n ? 0 : n; render(); return; }
   const pc = e.target.closest('[data-pc]'); if (pc) { postClinic = pc.dataset.pc; render(); return; }
   if (e.target.closest('[data-posts-reload]')) { const b = e.target.closest('button'); b.disabled = true; b.textContent = 'กำลังดึง…';
     sb.functions.invoke('page-posts', {body: {days: 2}}).then(({error}) => { if (error) alert('ดึงโพสต์ไม่ได้: ' + error.message); loadPosts(day, true); }); return; }
