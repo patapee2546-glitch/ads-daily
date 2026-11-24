@@ -247,6 +247,12 @@ aside{border-left:1px solid var(--line);background:var(--surface);backdrop-filte
 .sw input:checked{background:#1877f2;border-color:#1877f2}.sw input:checked::before{transform:translateX(16px);background:#fff}
 .sw input:focus-visible{outline:2px solid #1877f2;outline-offset:2px}.sw:has(:checked){color:var(--text)}
 .mon{color:#1877f2;font-weight:500}
+.note-open{width:100%;min-height:64px;max-height:120px;overflow:hidden;text-align:left;white-space:pre-wrap;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--text);font:inherit;cursor:pointer;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical}
+.note-open:hover{border-color:var(--accent)}
+.leadnote .card-h select{max-width:260px}
+#leadNote{display:block;width:100%;box-sizing:border-box;min-height:max(320px,55vh);resize:vertical;border:0;border-top:1px solid var(--line);padding:16px;background:transparent;color:var(--text);font:15px/1.7 var(--sans)}
+#leadNote:focus{outline:none;box-shadow:inset 0 0 0 2px var(--accent)}
+.leadpast{list-style:none;margin:0;padding:0}.leadpast li{padding:10px 16px;border-top:1px solid var(--line)}.leadpast p{margin:4px 0 0;white-space:pre-wrap;color:var(--text-2)}
 .bell{position:relative}.bell b{position:absolute;top:-4px;right:-4px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:oklch(58% 0.2 25);color:#fff;font:600 11px/17px var(--sans);text-align:center}
 .mbal{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px;margin:8px 0}.mbal label{display:grid;gap:4px;font-size:12px;color:var(--text-2);flex:1 1 220px}.mbal small{flex-basis:100%;font-size:12px}
 .acct-link{color:inherit;text-decoration:none;border-radius:6px}.acct-link:hover{color:#1877f2;text-decoration:underline;text-underline-offset:3px}.acct-link:focus-visible{outline:2px solid #1877f2;outline-offset:2px}
@@ -408,6 +414,7 @@ pre{white-space:pre-wrap;font:12px/1.6 var(--sans);margin:0;padding:12px;color:v
     <button role="tab" data-view="dash" aria-selected="true">ภาพรวม</button>
     <button role="tab" data-view="log">บันทึกรายวัน</button>
     <button role="tab" data-view="today">รายคลินิก</button>
+    <button role="tab" data-view="leadnote">โน้ตแชท/ลีด</button>
     <button role="tab" data-view="posts">โพสต์เพจ</button>
     <button role="tab" data-view="angel">แอดนางฟ้า</button>
     <button role="tab" data-view="media">คลังสื่อคู่แข่ง</button>
@@ -925,6 +932,20 @@ function renderDash(){
 const LOG_START = '2026-11-23';
 let logDay = null;  // null = follow today (rolls over at midnight)
 const LOG_TOPICS = [['ads','แอด'], ['page','เพจ'], ['budget','งบ'], ['lead','ลีด']];
+// long free text about chat/lead quality gets its own page (the panel box is too small); same data: day record lead.note
+let leadClinic = null;
+function renderLeadNote(){
+  const c = db.clinics.find(x => x.name === (leadClinic || cur)) || db.clinics[0];
+  if (!c) return '<p class="muted">ยังไม่มีคลินิก</p>';
+  leadClinic = c.name;
+  const past = Object.keys(db.days).filter(d => d !== day && rec(d, c.name).lead?.note).sort().reverse().slice(0, 30);
+  return `<div class="card leadnote"><div class="card-h"><b>โน้ตคุณภาพแชท/ลีด</b>
+      <select id="leadClinic" aria-label="เลือกคลินิก">${db.clinics.map(x => `<option ${x.name === c.name ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select>
+      <span class="mono">${thDate(day)}</span><span class="spacer"></span><span class="muted">บันทึกอัตโนมัติขณะพิมพ์</span></div>
+    <textarea id="leadNote" data-lead="${esc(c.name)}" placeholder="สิ่งที่เจอ / ต้องทำ: เช่น ลูกค้าถามราคาแล้วเงียบ, แชทไม่ตรงกลุ่ม, แอดมินตอบช้า" aria-label="โน้ตคุณภาพแชท/ลีด ${esc(c.name)} ${thDate(day)}">${esc(rec(day, c.name).lead?.note)}</textarea></div>
+  ${past.length ? `<div class="card"><div class="card-h"><b>โน้ตวันก่อนๆ</b><span>${past.length} วัน</span></div>
+    <ul class="leadpast">${past.map(d => `<li><button class="ghost" data-goday="${d}">${thLong(d, true)}</button><p>${esc(rec(d, c.name).lead.note)}</p></li>`).join('')}</ul></div>` : ''}`;
+}
 function renderLog(){
   const d = logDay || TODAY, days = [];
   for (let x = TODAY; x >= LOG_START; x = shiftDay(x, -1)) days.push(x);
@@ -1095,7 +1116,7 @@ function renderReports(){
           : j.status === 'done' ? '<div class="muted" style="font-size:12px;margin-top:6px">ไม่มีรีพอร์ตที่ถึงกำหนดในรอบนี้</div>' : ''}
         ${j.log ? `<details><summary>ดู log</summary><pre>${esc(j.log)}</pre></details>` : ''}</div>`; }).join('') || '<div class="job muted">ยังไม่เคยกด Run จากเว็บ</div>'}</div>`;
 }
-const mainHTML = () => view === 'dash' ? renderDash() : view === 'reports' ? renderReports() : view === 'posts' ? renderPosts() : view === 'angel' ? renderAngel() : view === 'media' ? `<iframe id="radar" src="radar/index.html" title="คลังสื่อคู่แข่ง (Competitor Ad Radar)"></iframe>` : view === 'log' ? renderLog() : view === 'today' ? renderToday() : view === 'history' ? renderHistory()
+const mainHTML = () => view === 'dash' ? renderDash() : view === 'reports' ? renderReports() : view === 'posts' ? renderPosts() : view === 'angel' ? renderAngel() : view === 'media' ? `<iframe id="radar" src="radar/index.html" title="คลังสื่อคู่แข่ง (Competitor Ad Radar)"></iframe>` : view === 'log' ? renderLog() : view === 'today' ? renderToday() : view === 'leadnote' ? renderLeadNote() : view === 'history' ? renderHistory()
   : `<div class="card"><div class="card-h"><b>ข้อความสรุป ${thDate(day)}</b><span>วางใน LINE หรือ Obsidian ได้</span></div><pre>${esc(summaryText(day))}</pre></div>`;
 const typingInMain = () => /INPUT|TEXTAREA/.test(document.activeElement?.tagName) && document.activeElement.closest('#main');
 
@@ -1131,7 +1152,7 @@ function field(t, [k, label, type, opts], v){
 
 function renderPanel(){
   const body = $('#body'), p = $('#panel');
-  const c = db.clinics.find(x => x.name === cur);
+  const c = view === 'leadnote' ? null : db.clinics.find(x => x.name === cur);  // the notes page is full width
   body.classList.toggle('open', !!c);
   if (!c) { p.innerHTML = ''; return; }
   const r = rec(day, cur), k = calc(r), fed = !!r._why, meta = window.ADS_DATA?.[day], err = meta?.clinics?.[cur]?.error;
@@ -1160,7 +1181,8 @@ function renderPanel(){
         <div class="fields">${[...manual, ...t.fields].map(f => field(t.id, f, d[f[0]] ?? '')).join('')}</div>
         ${t.id==='budget' && k.pct != null ? `<p class="why"><span>ใช้ ${k.pct.toFixed(0)}% ของเพดาน</span></p>` : ''}
         ${t.id==='budget' ? manualBalHTML(c) : ''}
-        <textarea data-k="${t.id}.note" placeholder="สิ่งที่เจอ / ต้องทำ" aria-label="สิ่งที่เจอ ${t.name}">${esc(d.note)}</textarea>
+        ${t.id === 'lead' ? `<button class="note-open" data-open-lead title="เปิดหน้าโน้ตแชท/ลีด พิมพ์ยาวๆ ได้">${d.note ? esc(d.note) : '<span class="muted">สิ่งที่เจอ / ต้องทำ: กดเพื่อเปิดหน้าโน้ตแชท/ลีด</span>'}</button>`
+          : `<textarea data-k="${t.id}.note" placeholder="สิ่งที่เจอ / ต้องทำ" aria-label="สิ่งที่เจอ ${t.name}">${esc(d.note)}</textarea>`}
       </section>`;
     }).join('')}
     <div class="foot"><span>ตัวเลขที่มีป้าย META อัปเดตเองทุกเช้า 08:45</span><span>สถานะที่กดเองจะไม่ถูกเปลี่ยน</span></div>`;
@@ -1229,6 +1251,7 @@ $('#panel').addEventListener('click', e => {
       if (view === 'today') $('#main').innerHTML = renderToday(); renderPanel(); }
     return; }
   if (e.target.closest('#mbalSave')) { saveManualBal(); return; }
+  if (e.target.closest('[data-open-lead]')) { leadClinic = cur; view = 'leadnote'; dayFrom = null; render(); $('#leadNote')?.focus(); return; }
   if (e.target.closest('#close')) { cur = null; render(); return; }
   const st = e.target.closest('[data-step]'); if (st) step(+st.dataset.step);
 });
@@ -1265,9 +1288,11 @@ $('#main').addEventListener('mouseleave', () => document.querySelectorAll('.char
 $('#main').addEventListener('change', e => {
   if (e.target.id === 'angClinic') { angelClinic = +e.target.value; render(); }
   if (e.target.id === 'angAll') { angelAll = e.target.checked; render(); }
+  if (e.target.id === 'leadClinic') { leadClinic = e.target.value; render(); $('#leadNote')?.focus(); }
 });
 $('#main').addEventListener('click', e => {
   if (e.target.closest('[data-cpr-reset]')) { rngCpr = null; render(); return; }
+  const gd = e.target.closest('[data-goday]'); if (gd) { day = gd.dataset.goday; dayFrom = null; render(); $('#leadNote')?.focus(); return; }
   if (e.target.closest('[data-rep-run]')) {
     if (!confirm('สั่งรันรีพอร์ตจริงตอนนี้? ระบบจะสร้าง PDF อัปโหลด Drive และส่ง Telegram ให้ลูกค้าทุกคลินิกที่ถึงกำหนด')) return;
     e.target.disabled = true;
@@ -1310,6 +1335,7 @@ document.querySelectorAll('[role=tab]').forEach(b => b.onclick = () => { view = 
 $('#q').oninput = e => { q = e.target.value; if (view !== 'dash' && view !== 'text') $('#main').innerHTML = mainHTML(); };
 // daily log edits
 $('#main').addEventListener('input', e => {
+  if (e.target.dataset.lead) { topic(e.target.dataset.lead, 'lead').note = e.target.value; save(day, e.target.dataset.lead); return; }
   const k = e.target.dataset.log; if (!k) return;
   const [c, t] = k.split('|'), d = logDay || TODAY;
   ((((db.days[d] ??= {})[c] ??= {})[t] ??= {}).note = e.target.value); save(d, c);
