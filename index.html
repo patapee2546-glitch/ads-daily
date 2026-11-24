@@ -11,23 +11,24 @@
 :root{
   /* minimal: neutral greys, solid surfaces, colour only where it means something (status) or where you press (accent) */
   --bg:oklch(97.6% 0.002 260);
-  --blob1:transparent; --blob2:transparent; --blob3:transparent;
-  --surface:#fff; --surface-2:#fff; --tint:oklch(96.5% 0.002 260); --hover:oklch(95.5% 0.003 260);
-  --line:oklch(91.5% 0.003 260); --line-2:oklch(85% 0.004 260); --edge:oklch(93% 0.003 260);
+  --blob1:oklch(82% 0.06 250 / .55); --blob2:oklch(86% 0.05 195 / .5); --blob3:oklch(88% 0.04 320 / .4);
+  --surface:oklch(100% 0 0 / .62); --surface-2:oklch(100% 0 0 / .85); --tint:oklch(100% 0 0 / .5); --hover:oklch(100% 0 0 / .6);
+  --line:oklch(100% 0 0 / .75); --line-2:oklch(70% 0.01 260 / .3); --edge:oklch(70% 0.01 260 / .15);
   --text:oklch(21% 0.006 260); --text-2:oklch(44% 0.008 260); --text-3:oklch(55% 0.008 260);
   --accent:oklch(52% 0.19 285); --accent-tint:oklch(55% 0.17 285 / .08); --accent-tint-2:oklch(55% 0.17 285 / .18);
   --ok:oklch(55% 0.13 155); --warn:oklch(64% 0.14 70); --bad:oklch(56% 0.17 25); --none:oklch(85% 0.004 260);
-  --shadow:0 1px 2px oklch(0% 0 0 / .04); --pop:#fff; --blur:none;
+  --shadow:0 1px 0 oklch(100% 0 0 / .8) inset,0 8px 28px oklch(30% 0.02 260 / .08); --pop:oklch(99% 0.002 260); --blur:blur(20px) saturate(150%);
   --sans:"Inter","Anuphan",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,monospace;
 }
 @media (prefers-color-scheme:dark){:root{
-  --bg:oklch(15.5% 0.003 260);
-  --surface:oklch(19.5% 0.003 260); --surface-2:oklch(21.5% 0.003 260); --tint:oklch(22.5% 0.003 260); --hover:oklch(24% 0.004 260);
-  --line:oklch(27% 0.004 260); --line-2:oklch(34% 0.005 260); --edge:oklch(25% 0.004 260);
+  --bg:oklch(14% 0.004 260);
+  --blob1:oklch(38% 0.07 250 / .55); --blob2:oklch(36% 0.05 195 / .45); --blob3:oklch(34% 0.05 320 / .4);
+  --surface:oklch(100% 0 0 / .06); --surface-2:oklch(22% 0.006 260 / .88); --tint:oklch(100% 0 0 / .05); --hover:oklch(100% 0 0 / .08);
+  --line:oklch(100% 0 0 / .12); --line-2:oklch(100% 0 0 / .2); --edge:oklch(100% 0 0 / .07);
   --text:oklch(96% 0.002 260); --text-2:oklch(78% 0.005 260); --text-3:oklch(64% 0.006 260);
   --accent:oklch(64% 0.17 285); --accent-tint:oklch(70% 0.15 285 / .12); --accent-tint-2:oklch(70% 0.15 285 / .24);
   --ok:oklch(76% 0.13 155); --warn:oklch(82% 0.12 75); --bad:oklch(72% 0.15 25); --none:oklch(36% 0.005 260);
-  --shadow:none; --pop:oklch(21.5% 0.003 260);
+  --shadow:0 1px 0 oklch(100% 0 0 / .08) inset,0 10px 30px oklch(0% 0 0 / .35); --pop:oklch(21.5% 0.004 260);
 }}
 *{box-sizing:border-box}
 html,body{height:100%}
@@ -458,17 +459,30 @@ pre{white-space:pre-wrap;font:12px/1.6 var(--sans);margin:0;padding:12px;color:v
 :root{--grad:var(--accent);--glow:none}
 .seg button{transition:background .15s,color .15s,transform .1s,box-shadow .15s}
 .seg button:hover{color:var(--text)}
-.seg{position:relative;border-radius:999px;padding:4px;background:oklch(94% 0.003 260 / .7);border-color:oklch(100% 0 0 / .8);box-shadow:inset 0 1px 0 oklch(100% 0 0 / .9),0 1px 3px oklch(0% 0 0 / .06);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
-.seg button{position:relative;z-index:1;border-radius:999px;display:inline-flex;align-items:center;gap:5px;padding:4px 11px;white-space:nowrap}
-[role=tablist]{max-width:100%;min-width:0;scrollbar-width:none}
-.seg button[aria-selected=true]{background:var(--surface);color:var(--text);font-weight:500;box-shadow:0 1px 3px oklch(0% 0 0 / .12)}
+/* glassy pill tabs (light: pale glass + black pill, dark: smoky glass + glossy white pill) */
+.seg{position:relative;border-radius:999px;padding:5px;gap:2px;border:1px solid oklch(100% 0 0 / .9);
+  background:linear-gradient(180deg,oklch(97% 0.002 260 / .9),oklch(89% 0.004 260 / .78));
+  box-shadow:inset 0 1px 0 oklch(100% 0 0),inset 0 -1px 0 oklch(0% 0 0 / .06),0 6px 18px oklch(0% 0 0 / .1),0 1px 2px oklch(0% 0 0 / .08);
+  backdrop-filter:blur(14px) saturate(140%);-webkit-backdrop-filter:blur(14px) saturate(140%)}
+.seg button{position:relative;z-index:1;height:34px;border-radius:999px;display:inline-flex;align-items:center;gap:5px;padding:0 10px;white-space:nowrap;color:oklch(38% 0.006 260);font-weight:500;transition:color .25s}
+.seg button:hover{color:oklch(15% 0 0)}
+.seg button[aria-selected=true],.seg button[aria-selected=true]:hover{color:#fff}
+.seg button[aria-selected=true]{background:linear-gradient(180deg,oklch(30% 0.004 260),oklch(14% 0 0));box-shadow:0 4px 12px oklch(0% 0 0 / .28)}
 .seg.slid button[aria-selected=true]{background:none;box-shadow:none}
-.seg .ind{position:absolute;z-index:0;border-radius:999px;background:var(--surface);box-shadow:0 1px 2px oklch(0% 0 0 / .08),0 4px 12px oklch(0% 0 0 / .08),inset 0 1px 0 oklch(100% 0 0);transition:left .35s cubic-bezier(.3,1.3,.5,1),top .35s cubic-bezier(.3,1.3,.5,1),width .35s cubic-bezier(.3,1.3,.5,1);pointer-events:none}
-.ti{width:15px;height:15px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;opacity:.75}
-.seg button[aria-selected=true] .ti{opacity:1}
+.seg .ind{position:absolute;z-index:0;border-radius:999px;pointer-events:none;
+  background:linear-gradient(180deg,oklch(30% 0.004 260),oklch(14% 0 0));
+  box-shadow:inset 0 1px 0 oklch(100% 0 0 / .18),0 2px 4px oklch(0% 0 0 / .2),0 6px 16px oklch(0% 0 0 / .25);
+  transition:left .4s cubic-bezier(.3,1.35,.5,1),top .4s cubic-bezier(.3,1.35,.5,1),width .4s cubic-bezier(.3,1.35,.5,1)}
+.ti{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 @media (prefers-color-scheme:dark){
-  .seg{background:oklch(22% 0.003 260 / .7);border-color:oklch(100% 0 0 / .08);box-shadow:inset 0 1px 0 oklch(100% 0 0 / .06)}
-  .seg .ind,.seg button[aria-selected=true]{background:oklch(34% 0.004 260);box-shadow:inset 0 1px 0 oklch(100% 0 0 / .12),0 2px 8px oklch(0% 0 0 / .4)}
+  .seg{border-color:oklch(100% 0 0 / .28);
+    background:linear-gradient(180deg,oklch(100% 0 0 / .2),oklch(100% 0 0 / .07));
+    box-shadow:inset 0 1px 0 oklch(100% 0 0 / .45),inset 1px 0 0 oklch(100% 0 0 / .12),0 10px 28px oklch(0% 0 0 / .55),0 1px 2px oklch(0% 0 0 / .5)}
+  .seg button{color:oklch(100% 0 0 / .82)}
+  .seg button:hover{color:#fff}
+  .seg button[aria-selected=true],.seg button[aria-selected=true]:hover{color:oklch(16% 0 0)}
+  .seg .ind,.seg button[aria-selected=true]{background:linear-gradient(180deg,#fff,oklch(90% 0.004 260));
+    box-shadow:inset 0 -1px 0 oklch(0% 0 0 / .1),0 2px 6px oklch(0% 0 0 / .45),0 8px 22px oklch(100% 0 0 / .16)}
   .seg.slid button[aria-selected=true]{background:none;box-shadow:none}
 }
 .seg button:active{transform:scale(.94)}
