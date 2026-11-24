@@ -42,7 +42,7 @@ kbd{font:11px var(--mono);color:var(--text-3);border:1px solid var(--line-2);bor
 .t-ok{color:var(--ok)}.t-warn{color:var(--warn)}.t-bad{color:var(--bad)}
 
 /* app frame */
-.app{display:grid;grid-template-rows:auto 1fr;height:100vh}
+.app{display:grid;grid-template-rows:auto 1fr;grid-template-columns:minmax(0,1fr);height:100vh}
 header{display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--surface);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);flex-wrap:wrap;position:relative;z-index:3}
 header h1{font-size:16px;font-weight:700;letter-spacing:-.01em;margin:0 8px 0 0;white-space:nowrap}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:12px;padding:3px;gap:2px;background:var(--tint)}
@@ -457,8 +457,20 @@ pre{white-space:pre-wrap;font:12px/1.6 var(--sans);margin:0;padding:12px;color:v
 /* ---- inviting + lively layer: colour on what you can press, motion only in answer to what you do ---- */
 :root{--grad:var(--accent);--glow:none}
 .seg button{transition:background .15s,color .15s,transform .1s,box-shadow .15s}
-.seg button:hover{background:var(--accent-tint);color:var(--text)}
-.seg button[aria-selected=true]{background:var(--grad);color:#fff;box-shadow:var(--glow)}
+.seg button:hover{color:var(--text)}
+.seg{position:relative;border-radius:999px;padding:4px;background:oklch(94% 0.003 260 / .7);border-color:oklch(100% 0 0 / .8);box-shadow:inset 0 1px 0 oklch(100% 0 0 / .9),0 1px 3px oklch(0% 0 0 / .06);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.seg button{position:relative;z-index:1;border-radius:999px;display:inline-flex;align-items:center;gap:5px;padding:4px 11px;white-space:nowrap}
+[role=tablist]{max-width:100%;min-width:0;scrollbar-width:none}
+.seg button[aria-selected=true]{background:var(--surface);color:var(--text);font-weight:500;box-shadow:0 1px 3px oklch(0% 0 0 / .12)}
+.seg.slid button[aria-selected=true]{background:none;box-shadow:none}
+.seg .ind{position:absolute;z-index:0;border-radius:999px;background:var(--surface);box-shadow:0 1px 2px oklch(0% 0 0 / .08),0 4px 12px oklch(0% 0 0 / .08),inset 0 1px 0 oklch(100% 0 0);transition:left .35s cubic-bezier(.3,1.3,.5,1),top .35s cubic-bezier(.3,1.3,.5,1),width .35s cubic-bezier(.3,1.3,.5,1);pointer-events:none}
+.ti{width:15px;height:15px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;opacity:.75}
+.seg button[aria-selected=true] .ti{opacity:1}
+@media (prefers-color-scheme:dark){
+  .seg{background:oklch(22% 0.003 260 / .7);border-color:oklch(100% 0 0 / .08);box-shadow:inset 0 1px 0 oklch(100% 0 0 / .06)}
+  .seg .ind,.seg button[aria-selected=true]{background:oklch(34% 0.004 260);box-shadow:inset 0 1px 0 oklch(100% 0 0 / .12),0 2px 8px oklch(0% 0 0 / .4)}
+  .seg.slid button[aria-selected=true]{background:none;box-shadow:none}
+}
 .seg button:active{transform:scale(.94)}
 .ghost{transition:background .15s,border-color .15s,color .15s,transform .12s,box-shadow .15s}
 .ghost:hover{border-color:var(--line-2);background:var(--hover);color:var(--text);transform:translateY(-1px)}
@@ -502,17 +514,17 @@ tbody tr:active{background:var(--accent-tint-2)}
   </div>
   <span class="hbreak" aria-hidden="true"></span>
   <div class="seg" role="tablist">
-    <button role="tab" data-view="dash" aria-selected="true">ภาพรวม</button>
-    <button role="tab" data-view="log">บันทึกรายวัน</button>
-    <button role="tab" data-view="today">รายคลินิก</button>
-    <button role="tab" data-view="leadnote">โน้ตแชท/ลีด</button>
-    <button role="tab" data-view="adsnote">แอดที่ปรับ</button>
-    <button role="tab" data-view="posts">โพสต์เพจ</button>
-    <button role="tab" data-view="angel">แอดนางฟ้า</button>
-    <button role="tab" data-view="media">คลังสื่อคู่แข่ง</button>
-    <button role="tab" data-view="reports">รีพอร์ต</button>
-    <button role="tab" data-view="history">ย้อนหลัง 14 วัน</button>
-    <button role="tab" data-view="text">ข้อความสรุป</button>
+    <button role="tab" data-view="dash" aria-selected="true"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>ภาพรวม</button>
+    <button role="tab" data-view="log"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>บันทึกรายวัน</button>
+    <button role="tab" data-view="today"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16"/><path d="M16 9h2a2 2 0 0 1 2 2v10"/><path d="M2 21h20M8 7h4M8 11h4M8 15h4"/></svg>รายคลินิก</button>
+    <button role="tab" data-view="leadnote"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-6.4A8 8 0 1 1 21 12Z"/></svg>โน้ตแชท/ลีด</button>
+    <button role="tab" data-view="adsnote"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg>แอดที่ปรับ</button>
+    <button role="tab" data-view="posts"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg>โพสต์เพจ</button>
+    <button role="tab" data-view="angel"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9Z"/><path d="M19 15v4M17 17h4"/></svg>แอดนางฟ้า</button>
+    <button role="tab" data-view="media"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.5"/><path d="m21 16-5-5-9 8"/></svg>คลังสื่อคู่แข่ง</button>
+    <button role="tab" data-view="reports"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18"/><path d="M8 17v-5M13 17V8M18 17v-9"/></svg>รีพอร์ต</button>
+    <button role="tab" data-view="history"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg>ย้อนหลัง 14 วัน</button>
+    <button role="tab" data-view="text"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M8 12h8M8 16h5"/></svg>ข้อความสรุป</button>
   </div>
   <button class="ghost icon bell" id="bell"  aria-label="แจ้งเตือน"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><b id="bellN"></b></button>
   <span class="spacer"></span>
@@ -1658,6 +1670,16 @@ function renderPanel(){
     <div class="foot"><span>ตัวเลขที่มีป้าย META อัปเดตเองทุกเช้า 08:45</span><span>สถานะที่กดเองจะไม่ถูกเปลี่ยน</span></div>`;
 }
 
+function slideSegs(){
+  for (const seg of document.querySelectorAll('.seg')) {
+    const b = seg.querySelector('button[aria-selected=true]'); let ind = seg.querySelector(':scope > .ind');
+    if (!b) { ind?.remove(); seg.classList.remove('slid'); continue; }
+    const fresh = !ind; if (fresh) { ind = document.createElement('span'); ind.className = 'ind'; ind.style.transition = 'none'; seg.prepend(ind); }
+    Object.assign(ind.style, {left: b.offsetLeft + 'px', top: b.offsetTop + 'px', width: b.offsetWidth + 'px', height: b.offsetHeight + 'px'});
+    seg.classList.add('slid'); if (fresh) requestAnimationFrame(() => ind.style.transition = '');
+  }
+}
+addEventListener('resize', slideSegs); document.fonts?.ready.then(slideSegs);
 function render(){
   $('#dayslot').innerHTML = rangeButton('day');
   document.querySelector('.datebox').style.display = ['dash', 'log', 'angel', 'media', 'reports'].includes(view) ? 'none' : '';
@@ -1667,7 +1689,7 @@ function render(){
   const key = `${view}|${OWNER}|${dayFrom}|${day}`, same = key === fxKey, before = same ? snapNums() : null;
   if (!(view === 'media' && $('#radar'))) $('#main').innerHTML = mainHTML();
   if (before) flashChanged(before); else countUp();
-  fxKey = key;
+  fxKey = key; slideSegs();
   renderPanel(); checkEmptyBal();
 }
 const open = c => { cur = c; render(); document.querySelector(`tr[data-c="${CSS.escape(c)}"]`)?.focus({preventScroll:false}); };
