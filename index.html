@@ -418,6 +418,36 @@ pre{white-space:pre-wrap;font:12px/1.6 var(--sans);margin:0;padding:12px;color:v
   .search{width:140px}
 }
 @media (max-width:560px){header h1{display:none}.metrics{grid-template-columns:1fr}main{padding:8px}}
+/* ---- inviting + lively layer: colour on what you can press, motion only in answer to what you do ---- */
+:root{--grad:linear-gradient(135deg,oklch(58% 0.21 292),oklch(62% 0.15 220));--glow:0 6px 20px oklch(58% 0.21 292 / .32)}
+.seg button{transition:background .15s,color .15s,transform .1s,box-shadow .15s}
+.seg button:hover{background:var(--accent-tint);color:var(--text)}
+.seg button[aria-selected=true]{background:var(--grad);color:#fff;box-shadow:var(--glow)}
+.seg button:active{transform:scale(.94)}
+.ghost{transition:background .15s,border-color .15s,color .15s,transform .12s,box-shadow .15s}
+.ghost:hover{border-color:var(--accent);background:var(--accent-tint);color:var(--text);transform:translateY(-1px);box-shadow:0 4px 14px oklch(58% 0.21 292 / .2)}
+.ghost:active{transform:translateY(0) scale(.95)}
+#pull{background:var(--grad);border-color:transparent;color:#fff;box-shadow:var(--glow)}
+#pull:hover{color:#fff;filter:brightness(1.1)}
+.live{width:8px;height:8px;border-radius:50%;background:oklch(80% 0.17 155);animation:live 2s ease-out infinite}
+.live[hidden]{display:none}
+@keyframes live{0%{box-shadow:0 0 0 0 oklch(80% 0.17 155 / .7)}100%{box-shadow:0 0 0 9px oklch(80% 0.17 155 / 0)}}
+tbody tr{transition:background .12s,box-shadow .12s}
+tbody tr:hover{background:var(--accent-tint);box-shadow:inset 3px 0 0 var(--accent)}
+tbody tr:active{background:var(--accent-tint-2)}
+.dots .dot{transition:transform .15s}tbody tr:hover .dots .dot{transform:scale(1.3)}
+.metric{transition:transform .2s,box-shadow .2s,border-color .2s}
+.metric:hover{transform:translateY(-3px);border-color:var(--accent-tint-2);box-shadow:var(--shadow),0 12px 32px oklch(58% 0.21 292 / .18)}
+.meter b{background:var(--grad);transition:width .6s cubic-bezier(.2,.8,.2,1)}
+.stat label{transition:background .15s,transform .1s}.stat label:hover{background:var(--accent-tint)}.stat label:active{transform:scale(.94)}
+.flash{animation:flash 1.4s ease-out}
+@keyframes flash{0%{background:oklch(76% 0.15 155 / .38)}100%{background:transparent}}
+.sw input.pop{animation:pop .35s ease-out}@keyframes pop{45%{transform:scale(1.18)}}
+.confetti{position:fixed;width:7px;height:7px;border-radius:2px;pointer-events:none;z-index:200;animation:conf .9s cubic-bezier(.2,.7,.3,1) forwards}
+@keyframes conf{to{transform:translate(var(--dx),var(--dy)) rotate(var(--r));opacity:0}}
+.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:var(--grad);color:#fff;padding:10px 20px;border-radius:999px;box-shadow:var(--glow);z-index:200;font-weight:500;animation:toastIn .35s cubic-bezier(.2,.8,.2,1)}
+@keyframes toastIn{from{opacity:0;transform:translate(-50%,12px)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}.metric:hover,.ghost:hover,.ghost:active,.seg button:active,tbody tr:hover .dots .dot{transform:none}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 @supports not (backdrop-filter:blur(1px)){:root{--surface:var(--surface-2)}}
 </style>
@@ -451,7 +481,7 @@ pre{white-space:pre-wrap;font:12px/1.6 var(--sans);margin:0;padding:12px;color:v
   <input class="search" id="q" type="search" placeholder="ค้นหาคลินิก" aria-label="ค้นหาคลินิก">
   <button class="ghost" id="pull" title="ดึงยอด 90 วัน + สถานะแอดล่าสุดจาก Meta">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>
-    <span id="pullTxt">ดึงจาก Meta</span></button>
+    <span id="pullTxt">ดึงจาก Meta</span><span class="live" id="pullLive" hidden title="ข้อมูลสด: ดึงจาก Meta ภายใน 40 นาทีที่ผ่านมา"></span></button>
   <button class="ghost" id="copy">คัดลอกสรุป</button>
   <details class="menu">
     <summary class="ghost icon" aria-label="เมนูเพิ่มเติม">⋯</summary>
@@ -783,6 +813,48 @@ function manualBalHTML(c){
 }
 // clinic name -> its campaigns in Ads Manager (new tab); clinics without a Meta account stay plain text
 const adsLink = (c, label) => c.act ? `<a class="acct-link" href="https://adsmanager.facebook.com/adsmanager/manage/campaigns?act=${encodeURIComponent(c.act)}" target="_blank" rel="noopener" title="เปิดแคมเปญใน Ads Manager">${label}</a>` : label;
+// ---- small celebrations and change cues (skipped when the system asks for reduced motion) ----
+const calm = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+let fxKey = '';
+function confetti(el){
+  if (calm()) return;
+  const r = el.getBoundingClientRect(), cs = getComputedStyle(document.documentElement);
+  const cols = ['--ok', '--warn', '--bad', '--accent', '--meta-blue'].map(v => cs.getPropertyValue(v));
+  for (let i = 0; i < 16; i++) {
+    const p = document.createElement('span'), a = Math.random() * Math.PI * 2, d = 40 + Math.random() * 60;
+    p.className = 'confetti';
+    p.style.cssText = `left:${r.left + r.width / 2}px;top:${r.top + r.height / 2}px;background:${cols[i % cols.length]};--dx:${Math.cos(a) * d}px;--dy:${Math.sin(a) * d - 20}px;--r:${Math.random() * 540}deg`;
+    document.body.append(p); setTimeout(() => p.remove(), 1000);
+  }
+}
+function toast(msg){
+  document.querySelector('.toast')?.remove();
+  const t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role', 'status'); t.textContent = msg;
+  document.body.append(t); setTimeout(() => t.remove(), 3200);
+}
+// numbers in the table that changed since the last render of the same view/day flash green once
+function snapNums(){
+  const m = {}; document.querySelectorAll('#main tr[data-c]').forEach(tr => [...tr.children].forEach((td, i) => { if (td.classList.contains('num')) m[tr.dataset.c + '|' + i] = td.textContent.trim(); }));
+  return m;
+}
+function flashChanged(before){
+  if (calm()) return;
+  document.querySelectorAll('#main tr[data-c]').forEach(tr => [...tr.children].forEach((td, i) => {
+    const k = tr.dataset.c + '|' + i; if (td.classList.contains('num') && k in before && before[k] !== td.textContent.trim()) td.classList.add('flash');
+  }));
+}
+// headline numbers count up when you arrive on a view or day
+function countUp(){
+  if (calm()) return;
+  document.querySelectorAll('#main .metric .v').forEach(v => {
+    const tn = [...v.childNodes].find(n => n.nodeType === 3 && /\d/.test(n.textContent)); if (!tn) return;
+    const txt = tn.textContent, num = +txt.replace(/[^\d.]/g, ''); if (!(num > 0)) return;
+    const pre = txt.match(/^[^\d]*/)[0], post = txt.match(/[^\d,.]*$/)[0], t0 = performance.now();
+    const step = t => { const k = Math.min(1, (t - t0) / 600), e = 1 - (1 - k) ** 3;
+      tn.textContent = pre + Math.round(num * e).toLocaleString('en-US') + post; if (k < 1) requestAnimationFrame(step); };
+    requestAnimationFrame(step);
+  });
+}
 function runwayCell(name){
   const w = runway(name);
   if (!w) return '<span class="muted">–</span>';
@@ -1372,7 +1444,10 @@ function render(){
   document.querySelectorAll('[role=tab]').forEach(b => b.setAttribute('aria-selected', b.dataset.view===view));
   // the media library is an iframe: keep it (and its scroll/filters) across the page's periodic re-renders
   if (boardBusy) return;   // mid-drag on the notes board: a rebuild would drop the item being moved
+  const key = `${view}|${OWNER}|${dayFrom}|${day}`, same = key === fxKey, before = same ? snapNums() : null;
   if (!(view === 'media' && $('#radar'))) $('#main').innerHTML = mainHTML();
+  if (before) flashChanged(before); else countUp();
+  fxKey = key;
   renderPanel(); checkEmptyBal();
 }
 const open = c => { cur = c; render(); document.querySelector(`tr[data-c="${CSS.escape(c)}"]`)?.focus({preventScroll:false}); };
@@ -1380,8 +1455,11 @@ const open = c => { cur = c; render(); document.querySelector(`tr[data-c="${CSS.
 // edits write straight into db; only the table + header area re-render so the focused field keeps focus
 let savedT;
 $('#panel').addEventListener('input', e => {
-  if (e.target.id === 'monChk') { topic(cur, 'ads').monitored = e.target.checked; save(day, cur);
-    if (view === 'today') $('#main').innerHTML = renderToday(); renderPanel(); $('#monChk')?.focus(); return; }
+  if (e.target.id === 'monChk') { const on = e.target.checked; topic(cur, 'ads').monitored = on; save(day, cur);
+    if (view === 'today') $('#main').innerHTML = renderToday(); renderPanel(); const sw = $('#monChk'); sw?.focus();
+    if (on && sw) { sw.classList.add('pop'); confetti(sw);
+      if (db.clinics.every(c => rec(day, c.name).ads?.monitored)) toast(`เช็คแอดครบทุกคลินิกแล้ว (${db.clinics.length} คลินิก)`); }
+    return; }
   const k = e.target.dataset.k; if (!k) return;
   const [t, f] = k.split('.');
   topic(cur, t)[f] = e.target.value;
@@ -1543,7 +1621,12 @@ async function runPull(){
   } catch (e) { alert('ดึงจาก Meta ไม่ได้: ' + e.message); }
   finally { b.classList.remove('busy'); showPulled(); }
 }
-function showPulled(){ const f = window.ADS_DATA?.[TODAY]?.fetched; $('#pullTxt').textContent = f ? `ดึงจาก Meta · ${f}` : 'ดึงจาก Meta'; }
+function showPulled(){
+  const f = window.ADS_DATA?.[TODAY]?.fetched; $('#pullTxt').textContent = f ? `ดึงจาก Meta · ${f}` : 'ดึงจาก Meta';
+  // green pulse = Bangkok-time "HH:MM" of the last pull is under 40 minutes old
+  const n = new Date(Date.now() + 7 * 3600e3), [h, m] = (f || '').split(':').map(Number);
+  $('#pullLive').hidden = !(f && (n.getUTCHours() * 60 + n.getUTCMinutes() - (h * 60 + m) + 1440) % 1440 < 40);
+}
 $('#pull').onclick = runPull;
 
 $('#addClinic').onclick = () => {
