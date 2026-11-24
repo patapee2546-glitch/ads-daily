@@ -510,6 +510,93 @@ tbody tr:active{background:var(--accent-tint-2)}
 @keyframes conf{to{transform:translate(var(--dx),var(--dy)) rotate(var(--r));opacity:0}}
 .toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 20px;border-radius:999px;box-shadow:var(--glow);z-index:200;font-weight:500;animation:toastIn .35s cubic-bezier(.2,.8,.2,1)}
 @keyframes toastIn{from{opacity:0;transform:translate(-50%,12px)}}
+
+/* ---- home: Vision-style cards that rise in once, glowing line, growing bars, filling gauges, star ranking ---- */
+.dash.enter > .card{animation:rise .6s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i,0) * 55ms)}
+@keyframes rise{from{opacity:0;transform:translateY(14px) scale(.985)}}
+.chart .ln{filter:drop-shadow(0 0 6px oklch(60% 0.2 285 / .7))}
+.dash.enter .chart .ln{stroke-dasharray:1;animation:draw 1.4s .35s cubic-bezier(.4,0,.2,1) both}
+@keyframes draw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+.hero{position:relative;overflow:hidden;padding:22px 24px;min-height:210px;display:flex;flex-direction:column;gap:10px;
+  background:linear-gradient(135deg,oklch(30% 0.12 275),oklch(22% 0.09 255) 60%,oklch(26% 0.1 300));color:#fff;border-color:oklch(100% 0 0 / .14)}
+.hero .orb{position:absolute;right:-60px;top:-70px;width:280px;height:280px;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle at 35% 35%,oklch(85% 0.12 250 / .9),oklch(60% 0.22 285 / .55) 40%,transparent 70%);filter:blur(6px);animation:orb 9s ease-in-out infinite alternate}
+@keyframes orb{to{transform:translate(-30px,24px) scale(1.12)}}
+.hero > *{position:relative}
+.hero-k{font-size:12px;color:oklch(100% 0 0 / .7)}
+.hero-t{font-size:28px;font-weight:700;letter-spacing:-.02em;line-height:1.25}
+.hero-t b{font-weight:800}.hero-t span{font-size:16px;font-weight:600;margin-left:6px}
+.hero .t-ok{color:oklch(85% 0.15 155)}.hero .t-bad{color:oklch(78% 0.15 25)}
+.hero-l{list-style:none;margin:4px 0 0;padding:0;display:grid;gap:8px;font-size:13px;color:oklch(100% 0 0 / .85)}
+.hero-l li{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.hero .link{color:#fff;font-weight:600}
+.hl{font-size:11px;font-weight:600;padding:2px 9px;border-radius:999px;background:oklch(100% 0 0 / .14);white-space:nowrap}
+.hl.ok{color:oklch(88% 0.14 155)}.hl.bad{color:oklch(82% 0.13 25)}.hl.warn{color:oklch(88% 0.13 80)}
+.gauge{display:flex;flex-direction:column;align-items:center;padding-bottom:14px}
+.gauge .card-h{align-self:stretch}
+.ring{width:150px;height:150px;margin-top:4px}
+.ring .rt{fill:none;stroke:var(--line-2);stroke-width:11}
+.ring .rv{fill:none;stroke:var(--accent);stroke-width:11;stroke-linecap:round;stroke-dashoffset:var(--off);filter:drop-shadow(0 0 6px oklch(60% 0.2 285 / .6))}
+.dash.enter .ring .rv{animation:fill 1.2s .3s cubic-bezier(.3,.8,.3,1) both}
+@keyframes fill{from{stroke-dashoffset:var(--c)}}
+.rbig{fill:var(--text);font:700 26px var(--sans);text-anchor:middle;dominant-baseline:middle}.rbig.sm{font-size:20px}
+.rsm{fill:var(--text-3);font:12px var(--sans);text-anchor:middle}
+.half{width:190px;margin-top:6px}
+.half .ht{fill:none;stroke:var(--line-2);stroke-width:12;stroke-linecap:round}
+.half .hv{fill:none;stroke-width:12;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:0}
+.dash.enter .half .hv{animation:draw 1.1s .3s ease-out both}
+.needle{transform-origin:80px 80px;transform:rotate(var(--a));stroke:var(--text);stroke-width:3;stroke-linecap:round;fill:var(--text)}
+.dash.enter .needle{animation:swing 1.3s .4s cubic-bezier(.3,1.5,.5,1) both}
+@keyframes swing{from{transform:rotate(-90deg)}}
+.gsub{font-size:12px;color:var(--text-3);text-align:center;padding:0 12px}
+.vbars{width:100%;height:auto;display:block;padding:8px 12px 4px}
+.vbars .vb{fill:var(--accent);filter:drop-shadow(0 0 5px oklch(60% 0.2 285 / .5));transform-box:fill-box;transform-origin:bottom}
+.vbars .hitb{fill:transparent}.vbars g:hover .vb{fill:oklch(72% 0.17 285)}
+.dash.enter .vbars .vb{animation:grow .7s cubic-bezier(.2,.9,.3,1.2) both;animation-delay:calc(.3s + var(--i) * 35ms)}
+@keyframes grow{from{transform:scaleY(0)}}
+.rank{display:grid;padding:4px 8px 8px}
+.rk{display:grid;grid-template-columns:24px minmax(0,1.4fr) auto minmax(0,1fr) 84px minmax(0,.9fr);gap:12px;align-items:center;padding:9px 8px;border-radius:10px;transition:background .15s}
+.rk.ad{grid-template-columns:24px minmax(0,2fr) auto minmax(0,1fr) minmax(0,.9fr)}
+.rk:hover{background:var(--hover)}
+.rk .no{font:600 12px var(--mono);color:var(--text-3);text-align:center}
+.rk .nm{text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.rk .nm b{display:block;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rk small{display:block;font-size:11px;color:var(--text-3);font-weight:400}
+.rk .cp,.rk .sp{text-align:right;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.stars{display:inline-flex;gap:1px;font-size:14px;line-height:1}
+.stars i{font-style:normal;color:var(--line-2)}.stars i.on{color:oklch(82% 0.15 85);text-shadow:0 0 8px oklch(82% 0.15 85 / .6)}
+.spark{width:80px;height:24px}.spark polyline{fill:none;stroke:var(--accent);stroke-width:1.6;stroke-linejoin:round;stroke-linecap:round}
+.pad{padding:16px}
+@media (max-width:900px){.rk{grid-template-columns:20px minmax(0,1fr) auto;row-gap:2px}.rk .cp,.rk .sp{grid-column:2/-1;text-align:left}.rk .spark{display:none}}
+
+/* ---- angle brain: neurons on a night field ---- */
+.bsel{height:34px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--text);padding:0 14px;max-width:260px}
+.brain-wrap{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:16px;height:calc(100vh - 190px);min-height:520px}
+.brain-stage{position:relative;border-radius:20px;overflow:hidden;border:1px solid oklch(100% 0 0 / .1);
+  background:radial-gradient(60% 70% at 40% 45%,oklch(26% 0.07 265),oklch(13% 0.03 265) 70%),oklch(11% 0.02 265)}
+#brain{width:100%;height:100%;display:block;cursor:grab}
+.brain-stage .dust circle{fill:oklch(90% 0.03 250);opacity:.25;animation:twinkle 4s ease-in-out infinite;animation-delay:var(--d)}
+@keyframes twinkle{50%{opacity:.75}}
+.dend{fill:none;stroke-opacity:.38;stroke-linecap:round;transition:opacity .25s}
+.sig{opacity:.95;filter:drop-shadow(0 0 4px currentColor)}
+.cell{cursor:pointer;transition:opacity .25s}
+.cell .halo{opacity:.55;animation:breathe 3.6s ease-in-out infinite;animation-delay:var(--d);transform-box:fill-box;transform-origin:center}
+@keyframes breathe{50%{opacity:.85;transform:scale(1.08)}}
+.cell:hover .core,.cell:focus-visible .core{stroke-width:3}
+.cell text{fill:#fff;font-weight:600;paint-order:stroke;stroke:oklch(13% 0.03 265 / .9);stroke-width:4px;pointer-events:none}
+.cell.tr text{fill:oklch(85% 0.02 260);font-weight:500}
+.brain-stage .dim{opacity:.07}
+.brain-legend{position:absolute;left:14px;bottom:12px;right:14px;display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:oklch(85% 0.02 260)}
+.brain-legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:-1px;box-shadow:0 0 6px currentColor}
+.brain-side{overflow:auto;border:1px solid var(--line);border-radius:20px;background:var(--surface);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);padding:16px 18px}
+.brain-side h2{margin:0 0 2px;font-size:18px}.brain-side h3{font-size:12px;color:var(--text-3);font-weight:500;margin:16px 0 4px}
+.brain-side .combo{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:9px 0;border-top:1px solid var(--line)}
+.brain-side .combo small{color:var(--text-3);grid-column:1/-1;font-size:11px}
+.bp{font-weight:600;white-space:nowrap}
+.bad-ad{padding:10px 12px;border:1px solid var(--line);border-radius:12px;margin:8px 0;font-size:13px;background:var(--tint)}
+.bad-ad .h{color:var(--text-2);margin:4px 0;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-line}
+.bad-ad small{color:var(--text-3);font-size:11px}
+@media (max-width:900px){.brain-wrap{grid-template-columns:1fr;height:auto}.brain-stage{height:62vh}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important}.metric:hover,.ghost:hover,.ghost:active,.seg button:active,tbody tr:hover .dots .dot{transform:none}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 @supports not (backdrop-filter:blur(1px)){:root{--surface:var(--surface-2)}}
@@ -522,11 +609,6 @@ tbody tr:active{background:var(--accent-tint-2)}
   <div class="seg" id="ownerSeg" aria-label="ลูกค้าของใคร">
     <button data-owner="ดิน">พี่ดิน</button><button data-owner="ใหม่">พี่ใหม่</button>
   </div>
-  <div class="datebox">
-    <button class="ghost icon" id="prev" aria-label="วันก่อนหน้า" title="วันก่อนหน้า (←)">‹</button>
-    <span id="dayslot"></span>
-    <button class="ghost icon" id="next" aria-label="วันถัดไป" title="วันถัดไป (→)">›</button>
-  </div>
   <span class="hbreak" aria-hidden="true"></span>
   <div class="seg" role="tablist">
     <button role="tab" data-view="dash" aria-selected="true"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>ภาพรวม</button>
@@ -536,12 +618,18 @@ tbody tr:active{background:var(--accent-tint-2)}
     <button role="tab" data-view="text"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M8 12h8M8 16h5"/></svg>ข้อความสรุป</button>
     <button role="tab" data-view="history"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg>ย้อนหลัง 14 วัน</button>
     <button role="tab" data-view="reports"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18"/><path d="M8 17v-5M13 17V8M18 17v-9"/></svg>รีพอร์ต</button>
+    <button role="tab" data-view="brain"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><circle cx="4.5" cy="6" r="1.8"/><circle cx="19.5" cy="6" r="1.8"/><circle cx="5" cy="19" r="1.8"/><circle cx="19" cy="18.5" r="1.8"/><path d="M6 7.2 9.6 10.3M18 7.2l-3.6 3.1M6.4 17.9l3.3-3.6M17.6 17.4l-3.3-3.2"/></svg>สมองมุมขาย</button>
     <button role="tab" data-view="posts"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg>โพสต์เพจ</button>
     <button role="tab" data-view="angel"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9Z"/><path d="M19 15v4M17 17h4"/></svg>แอดนางฟ้า</button>
     <button role="tab" data-view="media"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.5"/><path d="m21 16-5-5-9 8"/></svg>คลังสื่อคู่แข่ง</button>
   </div>
   <button class="ghost icon bell" id="bell"  aria-label="แจ้งเตือน"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><b id="bellN"></b></button>
   <span class="spacer"></span>
+  <div class="datebox">
+    <button class="ghost icon" id="prev" aria-label="วันก่อนหน้า" title="วันก่อนหน้า (←)">‹</button>
+    <span id="dayslot"></span>
+    <button class="ghost icon" id="next" aria-label="วันถัดไป" title="วันถัดไป (→)">›</button>
+  </div>
   <input class="search" id="q" type="search" placeholder="ค้นหาคลินิก" aria-label="ค้นหาคลินิก">
   <button class="ghost" id="pull" title="ดึงยอด 90 วัน + สถานะแอดล่าสุดจาก Meta">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>
@@ -912,7 +1000,7 @@ function flashChanged(before){
 // headline numbers count up when you arrive on a view or day
 function countUp(){
   if (calm()) return;
-  document.querySelectorAll('#main .metric .v').forEach(v => {
+  document.querySelectorAll('#main .metric .v, #main .hero-t b').forEach(v => {
     const tn = [...v.childNodes].find(n => n.nodeType === 3 && /\d/.test(n.textContent)); if (!tn) return;
     const txt = tn.textContent, num = +txt.replace(/[^\d.]/g, ''); if (!(num > 0)) return;
     const pre = txt.match(/^[^\d]*/)[0], post = txt.match(/[^\d,.]*$/)[0], t0 = performance.now();
@@ -1002,7 +1090,7 @@ function areaChart(id, rows, key, fmt, fill = true){
     ${ticks.map(t => `<line class="gl" x1="${L}" x2="${W-R}" y1="${y(t)}" y2="${y(t)}"/><text class="ax" x="${L-6}" y="${y(t)+4}" text-anchor="end">${short(t)}</text>`).join('')}
     ${xl.map(i => `<text class="ax" x="${x(i)}" y="${H-6}" text-anchor="${i===0?'start':i===n-1?'end':'middle'}">${dmy(rows[i].d)}</text>`).join('')}
     ${area ? `<path d="${area}" fill="url(#g-${id})"/>` : ''}
-    <path d="${line}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    <path class="ln" pathLength="1" d="${line}" fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>
     <line class="xh" x1="0" x2="0" y1="${T}" y2="${H-B}"/><circle class="pt" r="4.5"/>
     <rect class="hit" x="${L}" y="0" width="${W-L-R}" height="${H}"/></svg><div class="tip"></div></div>`;
 }
@@ -1064,7 +1152,7 @@ function rangeButton(target, extra = ''){
   return `<div class="rp-wrap"><button class="rangebtn ${target === 'main' ? '' : 'sm'}" data-rbtn="${target}" aria-haspopup="dialog" aria-expanded="${open}">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
       ${target === 'day' && !dayFrom ? `<span>${thLong(day, true)}</span>` : `<span>${thLong(r.from)} – ${thLong(r.to, true)}</span><small>${spanDays(r.from, r.to)} วัน</small>`}<span class="chev" aria-hidden="true">▾</span></button>
-      ${extra}${open ? `<div class="rp ${({main:'', cpr:'up', day:'left'})[target]}" role="dialog" aria-label="${target === 'day' ? 'เลือกวันที่' : 'เลือกช่วงวันที่'}">${pickerHTML()}</div>` : ''}</div>`;
+      ${extra}${open ? `<div class="rp ${({main:'', cpr:'up', day:''})[target]}" role="dialog" aria-label="${target === 'day' ? 'เลือกวันที่' : 'เลือกช่วงวันที่'}">${pickerHTML()}</div>` : ''}</div>`;
 }
 // spend / results / cap per clinic over a range; days without data are skipped
 function perClinic(from, to){
@@ -1077,44 +1165,255 @@ function perClinic(from, to){
   });
 }
 
+// ---- nightly per-ad snapshot (ad_snapshots): home ad ranking + angle brain. Loaded once per page view.
+// ponytail: whole 90-day snapshot (~2-3 MB) in one select; split body text into its own column if it gets slow
+let snaps = null, snapsBusy = false, fxEnter = false;
+async function loadSnaps(){
+  if (snaps || snapsBusy) return; snapsBusy = true;
+  const {data, error} = await sb.from('ad_snapshots').select('clinic_id,data,updated_at');
+  snapsBusy = false;
+  if (error) { console.error('ad_snapshots', error); setTimeout(loadSnaps, 60e3); return; }
+  snaps = data; if (['dash', 'brain'].includes(view) && !typingInMain()) { fxKey = ''; render(); }
+}
+// stars from an index = cost per chat ÷ the clinic's own normal (1 = normal, 0.8 = 20% cheaper)
+const starsOf = i => i == null ? 0 : i <= .7 ? 5 : i <= .85 ? 4 : i <= 1 ? 3 : i <= 1.2 ? 2 : 1;
+const starHTML = n => `<span class="stars" role="img" aria-label="${n} ดาว">${[1,2,3,4,5].map(k => `<i class="${k <= n ? 'on' : ''}">★</i>`).join('')}</span>`;
+const vsNormal = i => i == null ? 'ยังไม่มีค่าปกติ' : i < 1 ? `ถูกกว่าปกติ ${Math.round((1 - i) * 100)}%` : `แพงกว่าปกติ ${Math.round((i - 1) * 100)}%`;
+console.assert(starsOf(.6) === 5 && starsOf(1) === 3 && starsOf(1.5) === 1 && starsOf(null) === 0 && vsNormal(.8) === 'ถูกกว่าปกติ 20%', 'stars');
+let ci = 0; const cardI = () => `style="--i:${ci++}"`;
+// full ring (share) and half gauge (index 0.5…1.5, needle)
+function ring(frac, big, small, label){
+  const C = 2 * Math.PI * 52, f = Math.max(0, Math.min(1, frac || 0));
+  return `<svg class="ring" viewBox="0 0 140 140" role="img" aria-label="${esc(label)}"><circle cx="70" cy="70" r="52" class="rt"/>
+    <circle cx="70" cy="70" r="52" class="rv" stroke-dasharray="${C.toFixed(1)}" style="--off:${(C * (1 - f)).toFixed(1)};--c:${C.toFixed(1)}" transform="rotate(-90 70 70)"/>
+    <text x="70" y="70" class="rbig">${esc(big)}</text><text x="70" y="92" class="rsm">${esc(small)}</text></svg>`;
+}
+function halfGauge(i, big, small, label){
+  const v = i == null ? .5 : Math.max(0, Math.min(1, (i - .5))), ang = Math.PI * (1 - v), x = 80 + 58 * Math.cos(ang), y = 80 - 58 * Math.sin(ang);
+  return `<svg class="half" viewBox="0 0 160 104" role="img" aria-label="${esc(label)}">
+    <defs><linearGradient id="hg" x1="0" x2="1"><stop offset="0" stop-color="var(--ok)"/><stop offset=".5" stop-color="var(--text-3)"/><stop offset="1" stop-color="var(--bad)"/></linearGradient></defs>
+    <path d="M22 80A58 58 0 0 1 138 80" class="ht"/><path d="M22 80A58 58 0 0 1 138 80" stroke="url(#hg)" class="hv" pathLength="1"/>
+    <g class="needle" style="--a:${(-90 + v * 180).toFixed(1)}deg"><line x1="80" y1="80" x2="80" y2="30"/><circle cx="80" cy="80" r="5"/></g>
+    <circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="0"/>
+    <text x="80" y="100" class="rbig sm">${esc(big)}</text></svg><div class="gsub">${small}</div>`;
+}
+// vertical bars, one hue, rounded data-ends, hover = native title
+function vbars(rows, key, fmt){
+  const W = 320, H = 170, B = 22, T = 8, n = rows.length, max = niceMax(Math.max(1, ...rows.map(r => r[key] || 0))), bw = (W / n) * .56;
+  return `<svg class="vbars" viewBox="0 0 ${W} ${H}" role="img" aria-label="แชทรายวัน ${n} วัน">${rows.map((r, i) => {
+    const v = r[key] || 0, h = (H - B - T) * v / max, x = i * W / n + (W / n - bw) / 2;
+    return `<g><title>${dmy(r.d)}: ${r[key] == null ? 'ไม่มีข้อมูล' : fmt(v)}</title><rect class="hitb" x="${(i * W / n).toFixed(1)}" y="0" width="${(W / n).toFixed(1)}" height="${H - B}"/>
+      <rect class="vb" style="--i:${i}" x="${x.toFixed(1)}" y="${(H - B - h).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(h, 0).toFixed(1)}" rx="${Math.min(4, bw / 2).toFixed(1)}"/></g>`; }).join('')}
+    ${[0, Math.floor((n - 1) / 2), n - 1].map((i, k) => `<text class="ax" x="${(i * W / n + W / n / 2).toFixed(1)}" y="${H - 6}" text-anchor="${k === 0 ? 'start' : k === 2 ? 'end' : 'middle'}">${dmy(rows[i].d)}</text>`).join('')}</svg>`;
+}
+const spark = vals => { const xs = vals.map(v => v ?? null), m = Math.max(1, ...xs.filter(v => v != null)), n = xs.length;
+  const pts = xs.map((v, i) => v == null ? null : `${(i * 76 / Math.max(1, n - 1) + 2).toFixed(1)},${(22 - v / m * 18).toFixed(1)}`).filter(Boolean);
+  return `<svg class="spark" viewBox="0 0 80 24" aria-hidden="true"><polyline points="${pts.join(' ')}"/></svg>`; };
+// clinic ranking: cost per chat in range vs the same clinic's previous 28 days
+function clinicRank(){
+  const from = rng.from, to = rng.to, bFrom = shiftDay(from, -28), bTo = shiftDay(from, -1);
+  const now = perClinic(from, to), base = Object.fromEntries(perClinic(bFrom, bTo).map(p => [p.name, p.cpr]));
+  return now.filter(p => p.spend > 0).map(p => {
+    const i = p.cpr && base[p.name] ? p.cpr / base[p.name] : p.res ? null : 9;
+    const days = Array.from({length: spanDays(from, to)}, (_, k) => +rec(shiftDay(from, k), p.name).ads?.results || null);
+    return {...p, i, st: i === 9 ? 1 : starsOf(i), days};
+  }).sort((a, b) => b.st - a.st || (a.i ?? 5) - (b.i ?? 5));
+}
+// ad ranking from the snapshot: the last two weekly buckets, scored against the clinic's 90-day normal
+function adRank(){
+  if (!snaps) return null;
+  const mine = new Set(db.clinics.map(c => c.id)), since = shiftDay(TODAY, -15), out = [];
+  for (const sn of snaps) { if (!mine.has(sn.clinic_id)) continue; const avg = sn.data.avg; if (!avg) continue;
+    for (const a of sn.data.ads || []) { let sp = 0, r = 0, pu = 0;
+      for (const [f, s, rr, pp] of a.wk || []) if (f >= since) { sp += s; r += rr; pu += pp; }
+      if (sp < 800 || r < 4) continue;
+      const i = sp / r / avg; out.push({name: a.name, clinic: sn.data.clinic, sp, r, pu, cpr: sp / r, i, st: starsOf(i)}); } }
+  return out.sort((a, b) => a.i - b.i);
+}
+
 function renderDash(){
+  ci = 0; if (!snaps) loadSnaps();
   const n = spanDays(rng.from, rng.to), rows = daily(rng.from, rng.to), prev = daily(shiftDay(rng.from, -n), shiftDay(rng.from, -1));
   const S = sum(rows,'spend'), R = sum(rows,'results'), P = sum(rows,'purchases'), V = sum(rows,'purchase_value');
   const Sp = sum(prev,'spend'), Rp = sum(prev,'results'), Pp = sum(prev,'purchases'), Vp = sum(prev,'purchase_value');
-  const per = perClinic(rng.from, rng.to), rc = rangeOf('cpr');
-  const perCpr = rngCpr ? perClinic(rc.from, rc.to) : per;
+  const cpr = R ? S / R : null, cprP = Rp ? Sp / Rp : null, ci0 = cpr && cprP ? cpr / cprP : null;
   const today = db.clinics.map(c => ({c, w: worst(rec(rng.to, c.name))}));
   const by = k => today.filter(t => t.w === k);
-  return `<div class="dash-h"><h2>ภาพรวมแอด</h2><p>ทุกคลินิกรวมกัน</p><span class="spacer"></span>
-    ${rangeButton('main')}</div>
-  <div class="dash">
-    <div class="card stat-card span-3">${icon('wallet')}<div><div class="lb">ยอดใช้รวม</div><div class="v">${baht(S)}</div><div class="chg">${change(S,Sp)}</div></div></div>
-    <div class="card stat-card span-3">${icon('chat')}<div><div class="lb">ผลลัพธ์ (แชท/ลีด)</div><div class="v">${int(R)}</div><div class="chg">${change(R,Rp)}</div></div></div>
-    <div class="card stat-card span-3">${icon('tag')}<div><div class="lb">ต้นทุนต่อผลลัพธ์</div><div class="v">${R ? baht(S/R) : '–'}</div><div class="chg">${R && Rp ? change(S/R, Sp/Rp) : 'ไม่มีข้อมูลช่วงก่อนหน้า'}</div></div></div>
-    <div class="card stat-card span-3">${icon('cart')}<div><div class="lb">การซื้อ</div><div class="v">${int(P)}</div><div class="chg">${change(P,Pp)}${V ? ` · มูลค่า ${baht(V)}` : ''}</div></div></div>
+  const checked = db.clinics.filter(c => rec(rng.to, c.name).ads?.monitored).length;
+  const rank = clinicRank(), ads = adRank();
+  const runs = db.clinics.map(c => ({c, w: runway(c.name)})).filter(x => x.w && !x.w.card).sort((a,b) => (a.w.days ?? 1e9) - (b.w.days ?? 1e9));
+  const low = runs.filter(x => x.w.days != null && x.w.days < 3);
+  const best = rank.find(x => x.i != null && x.i < 1), bad = [...rank].reverse().find(x => x.st <= 2);
+  return `<div class="dash-h"><h2>ภาพรวมแอด</h2><p>ทุกคลินิกรวมกัน</p><span class="spacer"></span>${rangeButton('main')}</div>
+  <div class="dash ${fxEnter ? 'enter' : ''}">
+    <div class="card stat-card metric span-3" ${cardI()}>${icon('wallet')}<div><div class="lb">ยอดใช้รวม</div><div class="v">${baht(S)}</div><div class="chg">${change(S,Sp)}</div></div></div>
+    <div class="card stat-card metric span-3" ${cardI()}>${icon('chat')}<div><div class="lb">ผลลัพธ์ (แชท/ลีด)</div><div class="v">${int(R)}</div><div class="chg">${change(R,Rp)}</div></div></div>
+    <div class="card stat-card metric span-3" ${cardI()}>${icon('tag')}<div><div class="lb">ต้นทุนต่อผลลัพธ์</div><div class="v">${cpr ? baht(cpr) : '–'}</div><div class="chg">${ci0 ? change(cpr, cprP) : 'ไม่มีข้อมูลช่วงก่อนหน้า'}</div></div></div>
+    <div class="card stat-card metric span-3" ${cardI()}>${icon('cart')}<div><div class="lb">การซื้อ</div><div class="v">${int(P)}</div><div class="chg">${change(P,Pp)}${V ? ` · มูลค่า ${baht(V)}` : ''}</div></div></div>
 
-    <div class="card chart-card span-8"><div class="card-h"><b>ยอดใช้รายวัน</b><span>ทุกคลินิก</span></div>${areaChart('spend', rows, 'spend', baht)}</div>
-    <div class="card span-4"><div class="card-h"><b>สถานะ ณ วันสุดท้าย</b><span>${thDate(rng.to)}</span></div>
-      <div class="slist">${[['bad','มีปัญหา'],['warn','เฝ้าดู'],['ok','ปกติ'],['','ยังไม่เช็ค']].map(([k,l]) => { const xs = by(k);
-        return `<div class="r"><span class="dot d-${k}"></span>${l}<span class="c">${xs.length}</span></div>${xs.length && k ? `<div class="names">${xs.map(t => `<button class="link" data-open="${esc(t.c.name)}">${esc(t.c.name)}</button>`).join(', ')}</div>` : ''}`; }).join('')}</div></div>
+    <div class="card hero span-6" ${cardI()}><div class="orb" aria-hidden="true"></div>
+      <div class="hero-k">สรุป ${n} วัน · ${thLong(rng.from)} – ${thLong(rng.to, true)}</div>
+      <div class="hero-t">${cpr ? `ได้แชทละ <b>${baht(cpr)}</b>` : 'ยังไม่มีแชทในช่วงนี้'}${ci0 ? ` <span class="${ci0 < 1 ? 't-ok' : 't-bad'}">${ci0 < 1 ? 'ถูกลง' : 'แพงขึ้น'} ${Math.abs(Math.round((ci0 - 1) * 100))}%</span>` : ''}</div>
+      <ul class="hero-l">
+        ${best ? `<li><span class="hl ok">ดาวเด่น</span><button class="link" data-open="${esc(best.name)}">${esc(best.name)}</button> ${vsNormal(best.i)}</li>` : ''}
+        ${bad ? `<li><span class="hl bad">ต้องดู</span><button class="link" data-open="${esc(bad.name)}">${esc(bad.name)}</button> ${bad.i === 9 ? 'ใช้เงินแต่ยังไม่มีแชท' : vsNormal(bad.i)}</li>` : ''}
+        ${low.length ? `<li><span class="hl warn">เงินใกล้หมด</span>${low.map(x => `<button class="link" data-open="${esc(x.c.name)}">${esc(x.c.name)}</button> ${x.w.days.toFixed(1)} วัน`).join(' · ')}</li>` : ''}
+        ${by('bad').length ? `<li><span class="hl bad">มีปัญหา</span>${by('bad').map(t => `<button class="link" data-open="${esc(t.c.name)}">${esc(t.c.name)}</button>`).join(', ')}</li>` : ''}
+      </ul></div>
+    <div class="card gauge span-3" ${cardI()}><div class="card-h"><b>เช็คแอดแล้ว</b><span>${thDate(rng.to)}</span></div>
+      ${ring(checked / Math.max(1, db.clinics.length), `${checked}/${db.clinics.length}`, 'คลินิก', `เช็คแอดแล้ว ${checked} จาก ${db.clinics.length} คลินิก`)}</div>
+    <div class="card gauge span-3" ${cardI()}><div class="card-h"><b>฿/แชท เทียบช่วงก่อน</b><span>${n} วันก่อนหน้า</span></div>
+      ${halfGauge(ci0, cpr ? baht(cpr) : '–', ci0 ? `<span class="${ci0 < 1 ? 't-ok' : 't-bad'}">${ci0 < 1 ? 'ถูกลง' : 'แพงขึ้น'} ${Math.abs(Math.round((ci0 - 1) * 100))}%</span> จาก ${baht(cprP)}` : 'ยังไม่มีข้อมูลช่วงก่อน', 'ต้นทุนต่อแชทเทียบช่วงก่อน')}</div>
 
-    <div class="card chart-card span-4"><div class="card-h"><b>ผลลัพธ์รายวัน</b><span>แชท + ลีด</span></div>${areaChart('results', rows, 'results', int)}</div>
-    <div class="card chart-card span-4"><div class="card-h"><b>ต้นทุนต่อผลลัพธ์รายวัน</b><span>ยอดใช้ ÷ ผลลัพธ์</span></div>${areaChart('cpr', rows, 'cpr', baht, false)}</div>
-    <div class="card span-4"><div class="card-h"><b>เงินพอรันอีก</b><span>บัญชีเติมเงิน/มีวงเงิน</span></div>
-      <div class="runlist">${(() => { const ws = db.clinics.map(c => ({c, w: runway(c.name)})).filter(x => x.w && !x.w.card).sort((a,b) => (a.w.days ?? 1e9) - (b.w.days ?? 1e9));
-        return ws.length ? ws.map(({c,w}) => `<div class="rr ${runTone(w)}"><button class="link nm" data-open="${esc(c.name)}">${esc(c.name)}</button>
+    <div class="card chart-card span-8" ${cardI()}><div class="card-h"><b>ยอดใช้รายวัน</b><span>ทุกคลินิก</span></div>${areaChart('spend', rows, 'spend', baht)}</div>
+    <div class="card chart-card span-4" ${cardI()}><div class="card-h"><b>แชทรายวัน</b><span>แชท + ลีด</span></div>${vbars(rows, 'results', int)}</div>
+
+    <div class="card span-7" ${cardI()}><div class="card-h"><b>อันดับคลินิก</b><span>฿/แชท เทียบ 28 วันก่อนหน้าของคลินิกเอง</span></div>
+      <div class="rank">${rank.map((x, k) => `<div class="rk"><span class="no">${k + 1}</span><button class="link nm" data-open="${esc(x.name)}">${esc(x.name)}</button>${starHTML(x.st)}
+        <span class="cp">${x.cpr ? baht(x.cpr) : '–'}<small class="${x.i != null && x.i < 1 ? 't-ok' : x.st <= 2 ? 't-bad' : ''}">${x.i === 9 ? 'ยังไม่มีแชท' : vsNormal(x.i)}</small></span>
+        ${spark(x.days)}<span class="sp">${baht(x.spend)}<small>${int(x.res)} แชท</small></span></div>`).join('') || '<div class="muted pad">ยังไม่มีข้อมูลช่วงนี้</div>'}</div>
+      <div class="legend-note">★5 = ถูกกว่าปกติ ≥30% · ★4 = 15–30% · ★3 = ใกล้ปกติ · ★2 = แพงกว่า ≤20% · ★1 = แพงกว่านั้น · เส้นเล็ก = แชทรายวัน</div></div>
+    <div class="card span-5" ${cardI()}><div class="card-h"><b>เงินพอรันอีก</b><span>บัญชีเติมเงิน/มีวงเงิน</span></div>
+      <div class="runlist">${runs.length ? runs.map(({c,w}) => `<div class="rr ${runTone(w)}"><button class="link nm" data-open="${esc(c.name)}">${esc(c.name)}</button>
           <span class="dd ${runTone(w)}">${w.days == null ? 'ไม่ได้ใช้เงิน' : w.days.toFixed(1) + ' วัน'}</span>
           <span class="tr"><b style="width:${w.days == null ? 100 : Math.min(w.days/14, 1)*100}%"></b></span>
-          <span class="ex">${runMoney(w)} · ใช้เฉลี่ย ${baht(w.avg)}/วัน</span></div>`).join('')
-          : '<span class="muted">ยังไม่มีข้อมูลเงินคงเหลือจาก Meta</span>'; })()}</div>
+          <span class="ex">${runMoney(w)} · ใช้เฉลี่ย ${baht(w.avg)}/วัน</span></div>`).join('') : '<span class="muted">ยังไม่มีข้อมูลเงินคงเหลือจาก Meta</span>'}</div>
       <div class="legend-note">แดง = ไม่ถึง 2 วัน · เหลือง = ไม่ถึง 5 วัน · แถบเต็ม = 14 วันขึ้นไป</div></div>
 
-    <div class="card span-6"><div class="card-h"><b>ยอดใช้ต่อคลินิก</b><span>${n} วัน</span></div>
-      ${hbars(per.filter(p => p.spend || p.cap).sort((a,b) => b.spend-a.spend).map(p => ({name:p.name, v:p.spend, mark:p.cap, over:p.cap && p.spend>p.cap})), baht, 'เส้นขีด = เพดานรวมของช่วงนี้ · ตัวเลขสีแดง = เกินเพดาน')}</div>
-    <div class="card span-6 has-rp ${rp?.target === 'cpr' ? 'rp-open' : ''}"><div class="card-h"><b>ต้นทุนต่อผลลัพธ์ต่อคลินิก</b><span>ถูกสุดอยู่บน</span><span class="spacer"></span>
-        ${rangeButton('cpr', rngCpr ? '<button class="link" data-cpr-reset title="กลับไปใช้ช่วงเดียวกับด้านบน">ใช้ช่วงด้านบน</button>' : '')}</div>
-      ${hbars(perCpr.filter(p => p.cpr).sort((a,b) => a.cpr-b.cpr).map(p => ({name:p.name, v:p.cpr})), baht)}</div>
+    <div class="card span-7" ${cardI()}><div class="card-h"><b>แอดดาวรุ่ง</b><span>2 สัปดาห์ล่าสุด · เทียบ ฿/แชทปกติ 90 วันของคลินิก</span>
+      <span class="spacer"></span>${snaps ? `<span class="muted" style="font-size:11px">อัปเดต ${new Date(Math.max(...snaps.map(x => Date.parse(x.updated_at)))).toLocaleString('th-TH', {timeZone: 'Asia/Bangkok', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'})}</span>` : ''}</div>
+      <div class="rank">${!ads ? '<div class="muted pad">กำลังโหลดแอด…</div>' : ads.slice(0, 8).map((a, k) => `<div class="rk ad"><span class="no">${k + 1}</span><span class="nm"><b title="${esc(a.name)}">${esc(a.name)}</b><small>${esc(a.clinic)}</small></span>${starHTML(a.st)}
+        <span class="cp">${baht(a.cpr)}<small class="${a.i < 1 ? 't-ok' : 't-bad'}">${vsNormal(a.i)}</small></span><span class="sp">${baht(a.sp)}<small>${int(a.r)} แชท${a.pu ? ` · ${int(a.pu)} ซื้อ` : ''}</small></span></div>`).join('') || '<div class="muted pad">2 สัปดาห์นี้ยังไม่มีแอดที่ใช้เงินพอจะจัดอันดับ</div>'}</div>
+      <div class="legend-note">นับแอดที่ใช้ ≥฿800 และได้ ≥4 แชท · ข้อมูลแอดอัปเดตทุกคืนตี 2 · ดูมุมขายที่ได้ผลในแท็บสมองมุมขาย</div></div>
+    <div class="card span-5" ${cardI()}><div class="card-h"><b>สถานะ ณ วันสุดท้าย</b><span>${thDate(rng.to)}</span></div>
+      <div class="slist">${[['bad','มีปัญหา'],['warn','เฝ้าดู'],['ok','ปกติ'],['','ยังไม่เช็ค']].map(([k,l]) => { const xs = by(k);
+        return `<div class="r"><span class="dot d-${k}"></span>${l}<span class="c">${xs.length}</span></div>${xs.length && k ? `<div class="names">${xs.map(t => `<button class="link" data-open="${esc(t.c.name)}">${esc(t.c.name)}</button>`).join(', ')}</div>` : ''}`; }).join('')}</div></div>
   </div>`;
+}
+
+// ---- angle brain: every snapshot ad tagged by sales angle (from its hook) + treatment, scored vs its clinic's normal ฿/chat
+// ponytail: keyword rules, not a model; ~25% of spend matches no angle. Upgrade path = LLM tagging in the nightly job.
+const ANGLES = {
+  'ราคา/โปร': /\d[\d,]{2,}\s*\.?-|บาท|฿|โปร|ลด\s?\d|ส่วนลด|ฟรี|แถม|ผ่อน|ราคาพิเศษ|เริ่มต้น|เพียง/i,
+  'รีวิว/ก่อน-หลัง': /รีวิว|review|𝗥𝗲𝘃𝗶𝗲𝘄|ก่อน\s*[-–/]?\s*หลัง|before|after|เคสจริง|ผลลัพธ์จริง|หลังทำ|หลังเสริม|ลูกค้าจริง|คนไข้จริง/i,
+  'หมอ/ผู้เชี่ยวชาญ': /คุณหมอ|แพทย์|หมอ[ก-๙a-z]|ผู้เชี่ยวชาญ|ประสบการณ์\s?\d|เชี่ยวชาญ/i,
+  'ปัญหา/ความกังวล': /ปัญหา|กังวล|เคยเป็นไหม|ไม่มั่นใจ|กลัว|เจ็บ|ทรมาน|ปวด|หย่อนคล้อย|หุ่นพัง|ไม่หาย|ใครเป็น/i,
+  'ความปลอดภัย/เชื่อใจ': /ปลอดภัย|มาตรฐาน|อย\.|ของแท้|รับประกัน|ใบรับรอง|ไม่มีเซลล์|ไม่ขายคอร์ส|ไม่ยัดเยียด|มั่นใจได้/i,
+  'เทคโนโลยี/เครื่อง': /เครื่อง|เทคโนโลยี|นวัตกรรม|\bkj\b|ช็อต|shot|hifu|ulthera|thermage|oligio|onda|laser|เลเซอร์|pico/i,
+  'เร่งด่วน/จำกัด': /ด่วน|จำกัด|วันนี้เท่านั้น|ถึงวันที่|ถึง\s?\d{1,2}\s?[ก-๙]|สุดท้าย|รีบ|เหลือ\s?\d|ก่อนหมด|เฉพาะเดือน/i,
+  'ให้ความรู้': /\bep\s?\d|รู้หรือไม่|วิธี|เคล็ดลับ|สาเหตุ|ทำไม|ความจริง|ต่างกันยังไง|คืออะไร/i,
+};
+const TREATS = [['จมูก', /จมูก/], ['ตา', /ตาสองชั้น|ทำตา|เปลือกตา|ถุงใต้ตา/], ['Botox', /botox|โบท็อก|โบท๊อก/i], ['Filler', /filler|ฟิลเลอร์/i],
+  ['ยกกระชับ', /hifu|ulthera|ulthe|thermage|oligio|ยกกระชับ|หน้ายก|ร้อยไหม/i], ['ปรับรูปร่าง', /onda|ไขมัน|พุง|หุ่น|สลายไข|ต้นแขน|เอว/i],
+  ['กำจัดขน', /กำจัดขน|ขนรักแร้/], ['สิว/รอย', /สิว|รอยดำ|หลุมสิว|ฝ้า/], ['ผิว/ดริป', /ดริป|วิตามิน|ผิวใส|ทรีตเมนต์|treatment|ผิวขาว|รูขุมขน/i],
+  ['ทันตกรรม', /ฟัน|จัดฟัน|วีเนียร์|ขูดหินปูน/], ['กระดูก/ข้อ', /เอ็น|ไหล่|ข้อเข่า|กระดูก|ออฟฟิศซินโดรม|กายภาพ/], ['พัฒนาการเด็ก', /ลูกรัก|ลูกน้อย|เด็ก|พัฒนาการ|we grow/i],
+  ['ผม', /ผมร่วง|ปลูกผม|หัวล้าน/], ['ศัลยกรรมอื่น', /ศัลยกรรม|เสริมหน้าอก|ดูดไขมัน/]];
+console.assert(ANGLES['ราคา/โปร'].test('ราคา 9,990.-') && !ANGLES['รีวิว/ก่อน-หลัง'].test('โปรกำจัดขน'), 'angle rules');
+let brainAds = null, brainClinic = '', brainSim = null, brainSel = null;
+function brainData(){
+  if (brainAds || !snaps) return brainAds;
+  brainAds = [];
+  for (const sn of snaps) { const avg = sn.data.avg; if (!avg) continue;
+    for (const a of sn.data.ads || []) {
+      const hook = (a.name + '\n' + (a.body || '').slice(0, 140)), all = a.name + '\n' + (a.body || '');
+      brainAds.push({c: sn.data.clinic, n: a.name, h: hook.slice(0, 220), s: a.spend, r: a.results, p: a.purchases, e: a.results * avg,
+        ang: Object.keys(ANGLES).filter(k => ANGLES[k].test(hook)), tr: (TREATS.find(([, rx]) => rx.test(all)) || ['อื่นๆ'])[0]}); } }
+  return brainAds;
+}
+const bIdx = xs => { const e = xs.reduce((a, x) => a + x.e, 0); return e ? xs.reduce((a, x) => a + x.s, 0) / e : null; };
+const bCol = i => i == null ? 'var(--bad)' : i <= .85 ? 'oklch(80% 0.17 155)' : i <= .95 ? 'oklch(78% 0.11 175)' : i <= 1.05 ? 'oklch(78% 0.04 250)' : i <= 1.2 ? 'oklch(82% 0.14 75)' : 'oklch(70% 0.19 22)';
+console.assert(Math.abs(bIdx([{s: 80, e: 100}]) - .8) < 1e-9, 'brain index');
+function renderBrain(){
+  if (!snaps) { loadSnaps(); return '<div class="card pad muted">กำลังโหลดแอดของทุกคลินิก…</div>'; }
+  const cl = [...new Set(brainData().map(a => a.c))].sort();
+  return `<div class="dash-h"><h2>สมองมุมขาย</h2><p>มุมขายไหนได้แชทถูก กับหัตถการไหน · 90 วันล่าสุด · เทียบ ฿/แชทปกติของแต่ละคลินิก</p><span class="spacer"></span>
+    <select id="brainClin" class="bsel" aria-label="เลือกคลินิก"><option value="">ทุกคลินิก (${cl.length})</option>${cl.map(c => `<option ${c === brainClinic ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></div>
+  <div class="brain-wrap"><div class="brain-stage"><svg id="brain" role="img" aria-label="กราฟเซลล์: วงใหญ่คือมุมขาย วงเล็กคือหัตถการ"></svg>
+    <div class="brain-legend"><span><i style="background:${bCol(.8)}"></i>ถูกกว่าปกติ ≥15%</span><span><i style="background:${bCol(.9)}"></i>ถูกกว่า 5–15%</span><span><i style="background:${bCol(1)}"></i>ใกล้ปกติ</span><span><i style="background:${bCol(1.1)}"></i>แพงกว่า 5–20%</span><span><i style="background:${bCol(1.3)}"></i>แพงกว่า &gt;20%</span><span>วงใหญ่ = มุมขาย · วงเล็ก = หัตถการ · กดวงเพื่อดูแอดจริง</span></div></div>
+    <div class="brain-side" id="brainSide"></div></div>`;
+}
+const loadD3 = () => window.d3 ? Promise.resolve() : new Promise((ok, no) => { const sc = document.createElement('script');
+  sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js'; sc.onload = ok; sc.onerror = no; document.head.append(sc); });
+async function drawBrain(){
+  const el = document.getElementById('brain'); if (!el || !brainData()) return;
+  try { await loadD3(); } catch { el.outerHTML = '<div class="muted pad">โหลดตัววาดกราฟไม่ได้ ลองรีเฟรช</div>'; return; }
+  const ads = brainAds.filter(a => !brainClinic || a.c === brainClinic), MIN = brainClinic ? 3000 : 15000;
+  const nodes = new Map(), links = [];
+  const add = (id, kind, xs) => nodes.set(id, {id, kind, ads: xs, spend: xs.reduce((a, x) => a + x.s, 0), i: bIdx(xs)});
+  const angles = [...new Set(ads.flatMap(a => a.ang))];
+  for (const k of angles) add('a:' + k, 'ang', ads.filter(a => a.ang.includes(k)));
+  for (const k of angles) for (const [t, xs] of d3.group(ads.filter(a => a.ang.includes(k)), a => a.tr)) {
+    const sp = xs.reduce((a, x) => a + x.s, 0); if (t === 'อื่นๆ' || sp < MIN || xs.length < 3) continue;
+    if (!nodes.has('t:' + t)) add('t:' + t, 'tr', ads.filter(a => a.tr === t));
+    links.push({source: 'a:' + k, target: 't:' + t, ads: xs, spend: sp, i: bIdx(xs), clinics: new Set(xs.map(x => x.c)).size});
+  }
+  const N = [...nodes.values()].filter(n => n.kind === 'ang' || links.some(l => l.target === n.id));
+  const svg = d3.select(el), W = el.clientWidth, H = el.clientHeight, still = calm();
+  svg.selectAll('*').remove(); brainSim?.stop(); brainSel = null; svg.attr('viewBox', [0, 0, W, H]);
+  const defs = svg.append('defs');
+  const glow = defs.append('filter').attr('id', 'bglow').attr('x', '-80%').attr('y', '-80%').attr('width', '260%').attr('height', '260%');
+  glow.append('feGaussianBlur').attr('stdDeviation', 7).attr('result', 'b');
+  const fm = glow.append('feMerge'); fm.append('feMergeNode').attr('in', 'b'); fm.append('feMergeNode').attr('in', 'SourceGraphic');
+  N.forEach((n, k) => { const g = defs.append('radialGradient').attr('id', 'soma' + k);
+    g.append('stop').attr('offset', '0').attr('stop-color', '#fff').attr('stop-opacity', .95);
+    g.append('stop').attr('offset', '.35').attr('stop-color', bCol(n.i)).attr('stop-opacity', .9);
+    g.append('stop').attr('offset', '1').attr('stop-color', bCol(n.i)).attr('stop-opacity', .05); n.grad = 'soma' + k; });
+  // faint star-dust behind the cells
+  const dust = svg.append('g').attr('class', 'dust');
+  for (let k = 0; k < 70; k++) dust.append('circle').attr('cx', Math.random() * W).attr('cy', Math.random() * H).attr('r', Math.random() * 1.3 + .3).style('--d', (Math.random() * 4).toFixed(2) + 's');
+  const zg = svg.append('g');
+  svg.call(d3.zoom().scaleExtent([.4, 3]).on('zoom', e => zg.attr('transform', e.transform)));
+  const maxL = d3.max(links, l => l.spend) || 1, maxN = d3.max(N, n => n.spend) || 1;
+  const r = n => n.kind === 'ang' ? 20 + 28 * Math.sqrt(n.spend / maxN) : 7 + 11 * Math.sqrt(n.spend / maxN);
+  const link = zg.append('g').selectAll('path').data(links).join('path').attr('class', 'dend').attr('id', (l, k) => 'dend' + k)
+    .attr('stroke', l => bCol(l.i)).attr('stroke-width', l => .8 + 5 * Math.sqrt(l.spend / maxL));
+  // signals: dots that travel each dendrite, more and faster where it pays off
+  if (!still) zg.append('g').selectAll('circle').data(links.flatMap((l, k) => d3.range(1 + Math.round(2 * Math.sqrt(l.spend / maxL))).map(j => ({l, k, j}))))
+    .join('circle').attr('class', 'sig').attr('r', 2.2).attr('fill', d => bCol(d.l.i))
+    .each(function(d){ const dur = (2.2 + 2.5 * Math.min(1.6, d.l.i || 1.6)).toFixed(2);
+      d3.select(this).append('animateMotion').attr('dur', dur + 's').attr('begin', (d.j * dur / 3).toFixed(2) + 's').attr('repeatCount', 'indefinite')
+        .append('mpath').attr('href', '#dend' + d.k); });
+  const node = zg.append('g').selectAll('g').data(N).join('g').attr('class', n => 'cell ' + n.kind).attr('tabindex', 0).attr('role', 'button')
+    .attr('aria-label', n => `${n.id.slice(2)} ${vsNormal(n.i)}`)
+    .on('click', (e, n) => { e.stopPropagation(); focus(n); }).on('keydown', (e, n) => e.key === 'Enter' && focus(n))
+    .call(d3.drag().on('start', (e, n) => { if (!e.active) brainSim.alphaTarget(.2).restart(); n.fx = n.x; n.fy = n.y; })
+      .on('drag', (e, n) => { n.fx = e.x; n.fy = e.y; }).on('end', (e, n) => { if (!e.active) brainSim.alphaTarget(0); n.fx = n.fy = null; }));
+  node.append('circle').attr('class', 'halo').attr('r', n => r(n) * 1.9).attr('fill', n => `url(#${n.grad})`).style('--d', () => (Math.random() * 3).toFixed(2) + 's');
+  node.append('circle').attr('class', 'core').attr('r', n => r(n)).attr('fill', n => n.kind === 'ang' ? `url(#${n.grad})` : 'oklch(22% 0.03 260 / .9)')
+    .attr('stroke', n => bCol(n.i)).attr('stroke-width', n => n.kind === 'ang' ? 1.2 : 2.4).attr('filter', n => n.kind === 'ang' ? 'url(#bglow)' : null);
+  node.append('text').text(n => n.id.slice(2)).attr('text-anchor', 'middle').attr('dy', n => r(n) + 17).attr('font-size', n => n.kind === 'ang' ? 14 : 12);
+  brainSim = d3.forceSimulation(N)
+    .force('link', d3.forceLink(links).id(n => n.id).distance(l => 170 - 50 * Math.sqrt(l.spend / maxL)).strength(.35))
+    .force('charge', d3.forceManyBody().strength(n => n.kind === 'ang' ? -1300 : -380))
+    .force('center', d3.forceCenter(W / 2, H / 2)).force('x', d3.forceX(W / 2).strength(.06)).force('y', d3.forceY(H / 2).strength(.09))
+    .force('collide', d3.forceCollide(n => r(n) + 22))
+    .on('tick', () => {
+      link.attr('d', l => { const dx = l.target.x - l.source.x, dy = l.target.y - l.source.y, k = Math.hypot(dx, dy) * 2.2;
+        return `M${l.source.x},${l.source.y}A${k},${k} 0 0,1 ${l.target.x},${l.target.y}`; });
+      node.attr('transform', n => `translate(${n.x},${n.y})`);
+    });
+  if (still) { brainSim.stop(); for (let k = 0; k < 300; k++) brainSim.tick(); brainSim.on('tick')(); }
+  const hl = n => { const near = new Set(n ? [n.id] : []); links.forEach(l => { if (n && (l.source.id === n.id || l.target.id === n.id)) { near.add(l.source.id); near.add(l.target.id); } });
+    node.classed('dim', x => n && !near.has(x.id)); link.classed('dim', l => n && l.source.id !== n.id && l.target.id !== n.id);
+    zg.selectAll('.sig').classed('dim', d => n && d.l.source.id !== n.id && d.l.target.id !== n.id); };
+  function focus(n){ brainSel = brainSel === n ? null : n; hl(brainSel); brainPanel(brainSel, links); }
+  svg.on('click', () => { brainSel = null; hl(null); brainPanel(null, links); });
+  brainPanel(null, links);
+}
+const bAd = a => { const i = bIdx([a]); return `<div class="bad-ad"><span style="color:${bCol(i)}" class="bp">${vsNormal(i)}</span> · ${baht(a.s)} · ${int(a.r)} แชท${a.p ? ` · ${int(a.p)} ซื้อ` : ''}<div class="h">${esc(a.h)}</div><small>${esc(a.c)} · ${esc(a.n)}</small></div>`; };
+const bCombo = l => `<div class="combo"><b>${esc(l.source.id.slice(2))} × ${esc(l.target.id.slice(2))}</b><span class="bp" style="color:${bCol(l.i)}">${vsNormal(l.i)}</span><small>${baht(l.spend)} · ${l.ads.length} แอด · ${l.clinics} คลินิก</small></div>`;
+function brainPanel(n, links){
+  const side = document.getElementById('brainSide'); if (!side) return;
+  if (!n) { const ls = links.filter(l => brainClinic || l.clinics >= 2).sort((a, b) => a.i - b.i);
+    side.innerHTML = `<h3>คู่ที่ได้ผลดีที่สุด</h3>${ls.slice(0, 6).map(bCombo).join('') || '<div class="muted">ข้อมูลยังน้อยเกินไป</div>'}
+      <h3>คู่ที่แพงที่สุด</h3>${ls.slice(-5).reverse().filter(l => l.i > 1).map(bCombo).join('')}
+      <p class="muted" style="font-size:11px">${brainClinic ? 'คลินิกเดียว: แสดงคู่ที่ใช้ ≥฿3,000' : 'แสดงคู่ที่ใช้ ≥฿15,000 และมีอย่างน้อย 2 คลินิก'} · มุมขายแยกด้วยคำใน Hook แอดบางตัวจึงไม่มีมุม</p>`; return; }
+  const mine = links.filter(l => l.source.id === n.id || l.target.id === n.id).sort((a, b) => a.i - b.i);
+  const good = n.ads.filter(a => a.s >= 2000 && a.r >= 3).sort((a, b) => bIdx([a]) - bIdx([b]));
+  side.innerHTML = `<h2>${esc(n.id.slice(2))}</h2><div class="muted"><span class="bp" style="color:${bCol(n.i)}">${vsNormal(n.i)}</span> · ${baht(n.spend)} · ${n.ads.length} แอด · ${new Set(n.ads.map(a => a.c)).size} คลินิก</div>
+    <h3>${n.kind === 'ang' ? 'ใช้กับหัตถการ' : 'มุมขายที่ใช้'}</h3>${mine.map(bCombo).join('')}
+    <h3>แอดที่ถูกที่สุด</h3>${good.slice(0, 5).map(bAd).join('') || '<div class="muted">ยังไม่มีแอดที่ใช้เงินพอจะสรุปได้</div>'}
+    <h3>แอดที่แพงที่สุด</h3>${good.slice(-3).reverse().map(bAd).join('')}`;
 }
 
 // ---- daily log: one page per day for every clinic; a new empty day starts after midnight ----
@@ -1612,7 +1911,7 @@ function renderReports(){
           : j.status === 'done' ? '<div class="muted" style="font-size:12px;margin-top:6px">ไม่มีรีพอร์ตที่ถึงกำหนดในรอบนี้</div>' : ''}
         ${j.log ? `<details><summary>ดู log</summary><pre>${esc(j.log)}</pre></details>` : ''}</div>`; }).join('') || '<div class="job muted">ยังไม่เคยกด Run จากเว็บ</div>'}</div>`;
 }
-const mainHTML = () => view === 'dash' ? renderDash() : view === 'reports' ? renderReports() : view === 'posts' ? renderPosts() : view === 'angel' ? renderAngel() : view === 'media' ? `<iframe id="radar" src="radar/index.html" title="คลังสื่อคู่แข่ง (Competitor Ad Radar)"></iframe>` : view === 'log' ? renderLog() : view === 'today' ? renderToday() : view === 'leadnote' ? renderLeadNote('lead') : view === 'adsnote' ? renderLeadNote('adsb') : view === 'history' ? renderHistory()
+const mainHTML = () => view === 'dash' ? renderDash() : view === 'reports' ? renderReports() : view === 'posts' ? renderPosts() : view === 'angel' ? renderAngel() : view === 'media' ? `<iframe id="radar" src="radar/index.html" title="คลังสื่อคู่แข่ง (Competitor Ad Radar)"></iframe>` : view === 'log' ? renderLog() : view === 'today' ? renderToday() : view === 'leadnote' ? renderLeadNote('lead') : view === 'adsnote' ? renderLeadNote('adsb') : view === 'history' ? renderHistory() : view === 'brain' ? renderBrain()
   : `<div class="card"><div class="card-h"><b>ข้อความสรุป ${thDate(day)}</b><span>วางใน LINE หรือ Obsidian ได้</span></div><pre>${esc(summaryText(day))}</pre></div>`;
 const typingInMain = () => /INPUT|TEXTAREA/.test(document.activeElement?.tagName) && document.activeElement.closest('#main');
 
@@ -1700,14 +1999,15 @@ function slideSegs(){
   }
 }
 addEventListener('resize', slideSegs); document.fonts?.ready.then(slideSegs);
+document.addEventListener('change', e => { if (e.target.id === 'brainClin') { brainClinic = e.target.value; drawBrain(); } });
 function render(){
   $('#dayslot').innerHTML = rangeButton('day');
   document.querySelector('.datebox').style.display = ['dash', 'log', 'angel', 'media', 'reports'].includes(view) ? 'none' : '';
   document.querySelectorAll('[role=tab]').forEach(b => b.setAttribute('aria-selected', b.dataset.view===view));
   // the media library is an iframe: keep it (and its scroll/filters) across the page's periodic re-renders
   if (boardBusy) return;   // mid-drag on the notes board: a rebuild would drop the item being moved
-  const key = `${view}|${OWNER}|${dayFrom}|${day}`, same = key === fxKey, before = same ? snapNums() : null;
-  if (!(view === 'media' && $('#radar'))) $('#main').innerHTML = mainHTML();
+  const key = `${view}|${OWNER}|${dayFrom}|${day}`, same = key === fxKey, before = same ? snapNums() : null; fxEnter = !same;
+  if (!(view === 'media' && $('#radar')) && !(view === 'brain' && $('#brain') && same)) { $('#main').innerHTML = mainHTML(); if (view === 'brain') drawBrain(); }
   if (before) flashChanged(before); else countUp();
   fxKey = key; slideSegs();
   renderPanel(); checkEmptyBal();
