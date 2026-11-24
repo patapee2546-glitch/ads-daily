@@ -583,6 +583,9 @@ tbody tr:active{background:var(--accent-tint-2)}
 .brain-side .combo{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:9px 0;border-top:1px solid var(--line)}
 .brain-side .combo small{color:var(--text-3);grid-column:1/-1;font-size:11px}
 .bp{font-weight:600;white-space:nowrap}
+.rtab{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}
+.rtab th{font-weight:500;color:var(--text-3);text-align:right;padding:4px 4px}.rtab th:first-child{text-align:left}
+.rtab td{padding:6px 4px;border-top:1px solid var(--line);text-align:right;white-space:nowrap}.rtab td:first-child{text-align:left;white-space:normal}
 .bad-ad{padding:10px 12px;border:1px solid var(--line);border-radius:12px;margin:8px 0;font-size:13px;background:var(--tint)}
 .bad-ad .h{color:var(--text-2);margin:4px 0;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-line}
 .bad-ad small{color:var(--text-3);font-size:11px}
@@ -688,6 +691,7 @@ tbody tr:active{background:var(--accent-tint-2)}
     <button role="tab" data-view="history"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg>ย้อนหลัง</button>
     <button role="tab" data-view="reports"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18"/><path d="M8 17v-5M13 17V8M18 17v-9"/></svg>รีพอร์ต</button>
     <button role="tab" data-view="brain"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><circle cx="4.5" cy="6" r="1.8"/><circle cx="19.5" cy="6" r="1.8"/><circle cx="5" cy="19" r="1.8"/><circle cx="19" cy="18.5" r="1.8"/><path d="M6 7.2 9.6 10.3M18 7.2l-3.6 3.1M6.4 17.9l3.3-3.6M17.6 17.4l-3.3-3.2"/></svg>สมองมุมขาย</button>
+    <button role="tab" data-view="rebrain"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15.5 6.2L3 16"/><path d="M3 21v-5h5"/></svg>สมอง RE</button>
     <button role="tab" data-view="policy"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6Z"/><path d="m9 12 2 2 4-4"/></svg>ตรวจกฎ Meta</button>
     <button role="tab" data-view="running"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v12H4z"/><path d="m10 8 4 2-4 2z"/><path d="M8 20h8"/></svg>โพสต์รันแอด</button>
     <button role="tab" data-view="posts"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg>โพสต์เพจ</button>
@@ -1254,7 +1258,7 @@ async function loadSnaps(){
   snapsBusy = false;
   if (error) { console.error('ad_snapshots', error); setTimeout(loadSnaps, 60e3); return; }
   // home: redraw in place (resetting fxKey would replay the card entrance = a second flash); brain needs the reset to mount its graph
-  snaps = data; if (['dash', 'brain'].includes(view) && !typingInMain()) { if (view === 'brain') fxKey = ''; render(); }
+  snaps = data; if (['dash', 'brain', 'rebrain'].includes(view) && !typingInMain()) { if (view !== 'dash') fxKey = ''; render(); }
 }
 // stars from an index = cost per chat ÷ the clinic's own normal (1 = normal, 0.8 = 20% cheaper)
 const starsOf = i => i == null ? 0 : i <= .7 ? 5 : i <= .85 ? 4 : i <= 1 ? 3 : i <= 1.2 ? 2 : 1;
@@ -1576,6 +1580,78 @@ document.addEventListener('click', e => {
 });
 document.addEventListener('keydown', e => { if (e.target.id === 'polUrl' && e.key === 'Enter') policyFetch(); });
 
+// ---- graph builders for drawBrain ----
+function angleGraph(ads, MIN){
+  const nodes = new Map(), links = [];
+  const add = (id, kind, xs) => nodes.set(id, {id, kind, ads: xs, spend: xs.reduce((a, x) => a + x.s, 0), i: bIdx(xs)});
+  const angles = [...new Set(ads.flatMap(a => a.ang))];
+  for (const k of angles) add('a:' + k, 'ang', ads.filter(a => a.ang.includes(k)));
+  for (const k of angles) for (const [t, xs] of d3.group(ads.filter(a => a.ang.includes(k)), a => a.tr)) {
+    const sp = xs.reduce((a, x) => a + x.s, 0); if (t === 'อื่นๆ' || sp < MIN || xs.length < 3) continue;
+    if (!nodes.has('t:' + t)) add('t:' + t, 'tr', ads.filter(a => a.tr === t));
+    links.push({source: 'a:' + k, target: 't:' + t, ads: xs, spend: sp, i: bIdx(xs), clinics: new Set(xs.map(x => x.c)).size});
+  }
+  return {nodes, links};
+}
+// RE vs opening ("ตัวเปิด"): kind comes from the names (Re/RE = retargeting, Inbox/ตัวเปิด = opening; see angel-ads funnelKind).
+// RE ad sets are described by their audiences: source (chat / engage / video …) + days back, and whether one ad set mixes
+// several sources ("รวม") or targets one ("แยก"). Opening ads by sales angle, as in the angle brain.
+const AUD_SRC = {chat: 'ส่งข้อความ', engage: 'มีส่วนร่วม', video: 'ดูวิดีโอ', ig: 'IG', web: 'เว็บไซต์', lead: 'ฟอร์มลีด', customer: 'รายชื่อลูกค้า', lookalike: 'Lookalike', fans: 'ถูกใจเพจ', other: 'อื่นๆ'};
+// ad set name fallback when Meta gives no audience details
+function audFromName(t){
+  const n = String(t || '').toLowerCase(), out = [], d = (n.match(/(\d{2,3})\s*(วัน|d\b|day)/) || n.match(/\b(30|60|90|180|365)\b/) || [])[1];
+  if (/inbox|แชท|ข้อความ|ทัก/.test(n)) out.push({src: 'chat', days: d ? +d : null});
+  if (/ส่วนร่วม|engag|เอนเกจ/.test(n)) out.push({src: 'engage', days: d ? +d : null});
+  if (/วิดีโอ|วีดีโอ|vdo|video|คลิป/.test(n)) out.push({src: 'video', days: d ? +d : null});
+  return out;
+}
+const recipeOf = a => { const au = (a.aud.length ? a.aud : audFromName(a.adset)).filter(x => !['customer', 'other', 'lookalike'].includes(x.src) || a.aud.length === 1);
+  const parts = [...new Set(au.map(x => `${AUD_SRC[x.src] || x.src} ${x.days ? x.days + ' วัน' : '(ไม่ระบุวัน)'}`))].sort();
+  return parts.length ? parts.join(' + ') : 'ไม่รู้กลุ่ม'; };
+console.assert(recipeOf({aud: [{src: 'engage', days: 365}, {src: 'chat', days: 365}], adset: ''}) === 'มีส่วนร่วม 365 วัน + ส่งข้อความ 365 วัน'
+  && recipeOf({aud: [], adset: 'RE : ส่วนร่วมเพจ 60 วัน'}) === 'มีส่วนร่วม 60 วัน', 'RE recipe');
+function reGraph(ads, MIN){
+  const nodes = new Map(), links = [], small = Math.max(2000, MIN / 2);   // only recipes/angles with real spend become cells
+  const add = (id, kind, xs) => nodes.set(id, {id, kind, ads: xs, spend: xs.reduce((a, x) => a + x.s, 0), i: bIdx(xs)});
+  const op = ads.filter(a => a.kind === 'open'), re = ads.filter(a => a.kind === 're');
+  if (op.length) add('k:ตัวเปิด', 'hub', op); if (re.length) add('k:RE', 'hub', re);
+  const link = (src, id, xs) => { const sp = xs.reduce((t, x) => t + x.s, 0); if (sp < small) return false;
+    links.push({source: src, target: id, ads: xs, spend: sp, i: bIdx(xs), clinics: new Set(xs.map(x => x.c)).size}); return true; };
+  // opening: hub -> sales angle -> treatment
+  for (const [k, xs] of d3.group(op.flatMap(a => (a.ang.length ? a.ang : ['ไม่ระบุมุม']).map(g => [g, a])), ([g]) => g)) {
+    const list = xs.map(([, a]) => a); add('a:' + k, 'ang', list); if (!link('k:ตัวเปิด', 'a:' + k, list)) nodes.delete('a:' + k);
+  }
+  for (const [t, xs] of d3.group(op, a => a.tr)) { if (t === 'อื่นๆ') continue;
+    for (const [g, ys] of d3.group(xs.flatMap(a => a.ang.map(g => [g, a])), ([g]) => g)) {
+      if (!nodes.has('a:' + g)) continue; const list = ys.map(([, a]) => a), sp = list.reduce((q, x) => q + x.s, 0);
+      if (sp < MIN || list.length < 2) continue; if (!nodes.has('t:' + t)) add('t:' + t, 'tr', op.filter(a => a.tr === t)); link('a:' + g, 't:' + t, list); } }
+  // RE: hub -> audience recipe -> treatment
+  for (const [k, list] of d3.group(re, recipeOf)) { add('r:' + k, 'ang', list); if (!link('k:RE', 'r:' + k, list)) nodes.delete('r:' + k); }
+  for (const [k, xs] of d3.group(re, recipeOf)) { if (!nodes.has('r:' + k)) continue;
+    for (const [t, list] of d3.group(xs, a => a.tr)) { if (t === 'อื่นๆ') continue; const sp = list.reduce((q, x) => q + x.s, 0);
+      if (sp < MIN / 2 || list.length < 2) continue; if (!nodes.has('t:' + t)) add('t:' + t, 'tr', ads.filter(a => a.tr === t)); link('r:' + k, 't:' + t, list); } }
+  return {nodes, links};
+}
+// default side panel of the RE brain: the comparisons the team asked for
+function reSummary(ads){
+  const row = (label, xs) => { const sp = xs.reduce((t, a) => t + a.s, 0), ch = xs.reduce((t, a) => t + a.r, 0), buy = xs.reduce((t, a) => t + a.p, 0), i = bIdx(xs);
+    return xs.length ? `<tr><td>${esc(label)}</td><td>${baht(sp)}</td><td>${ch ? baht(sp / ch) : '–'}</td><td style="color:${bCol(i)}">${vsNormal(i)}</td><td>${int(buy)}</td></tr>` : ''; };
+  const tbl = (title, rows) => rows.join('') ? `<h3>${title}</h3><table class="rtab"><tr><th></th><th>ใช้</th><th>฿/แชท</th><th>เทียบปกติ</th><th>ซื้อ</th></tr>${rows.join('')}</table>` : '';
+  const op = ads.filter(a => a.kind === 'open'), re = ads.filter(a => a.kind === 're');
+  const srcs = a => [...new Set((a.aud.length ? a.aud : audFromName(a.adset)).map(x => x.src))].filter(x => !['customer', 'other'].includes(x));
+  const win = a => { const ds = (a.aud.length ? a.aud : audFromName(a.adset)).map(x => x.days).filter(Boolean); return ds.length ? Math.max(...ds) : null; };
+  const bySrc = Object.keys(AUD_SRC).map(k => row(AUD_SRC[k] + (re.some(a => srcs(a).length === 1 && srcs(a)[0] === k) ? '' : ''), re.filter(a => srcs(a).length === 1 && srcs(a)[0] === k)));
+  const wins = [...new Set(re.map(win).filter(Boolean))].sort((x, y) => x - y).map(d => row(d + ' วัน', re.filter(a => win(a) === d)));
+  const top = [...d3.group(re, recipeOf)].map(([k, xs]) => ({k, xs, sp: xs.reduce((t, a) => t + a.s, 0)})).filter(x => x.sp >= 1000 && x.xs.reduce((t, a) => t + a.r, 0) >= 5)
+    .sort((x, y) => bIdx(x.xs) - bIdx(y.xs)).slice(0, 5).map(x => row(x.k, x.xs));
+  return `${tbl('ตัวเปิด vs RE', [row('ตัวเปิด (Inbox)', op), row('RE', re), row('ไม่ระบุในชื่อ', ads.filter(a => !a.kind))])}
+    ${tbl('RE แบบรวมกลุ่ม vs แยกกลุ่ม', [row('รวม (2+ กลุ่มในชุดเดียว)', re.filter(a => srcs(a).length >= 2)), row('แยก (กลุ่มเดียว)', re.filter(a => srcs(a).length === 1))])}
+    ${tbl('RE แยก: รีจากกลุ่มไหนดี', bySrc)}
+    ${tbl('RE: จำนวนวันย้อนหลัง', wins)}
+    ${tbl('สูตร RE ที่ได้ผลดีที่สุด', top)}
+    <p class="muted" style="font-size:11px">RE = ชื่อแคมเปญ/ชุดโฆษณา/แอดมีคำว่า RE หรือ Re · ตัวเปิด = มีคำว่า Inbox หรือตัวเปิด · กลุ่มเป้าหมายอ่านจากการตั้งค่าชุดโฆษณาใน Meta (ถ้าอ่านไม่ได้ ใช้ชื่อชุดโฆษณา) · 90 วันล่าสุด · "เทียบปกติ" = เทียบ ฿/แชทปกติของแต่ละคลินิก</p>`;
+}
+
 // ---- angle brain: every snapshot ad tagged by sales angle (from its hook) + treatment, scored vs its clinic's normal ฿/chat
 // ponytail: keyword rules, not a model; ~25% of spend matches no angle. Upgrade path = LLM tagging in the nightly job.
 const ANGLES = {
@@ -1601,13 +1677,15 @@ function brainData(){
   for (const sn of snaps) { const avg = sn.data.avg; if (!avg) continue;
     for (const a of sn.data.ads || []) {
       const hook = (a.name + '\n' + (a.body || '').slice(0, 140)), all = a.name + '\n' + (a.body || '');
-      brainAds.push({c: sn.data.clinic, n: a.name, h: hook.slice(0, 220), s: a.spend, r: a.results, p: a.purchases, e: a.results * avg,
+      brainAds.push({kind: a.kind || null, aud: (a.aud || []).map(id => sn.data.auds?.[id]).filter(Boolean), adset: a.adset || '', aset: a.adset_id || a.adset || a.name, c: sn.data.clinic, n: a.name, h: hook.slice(0, 220), s: a.spend, r: a.results, p: a.purchases, e: a.results * avg,
         ang: Object.keys(ANGLES).filter(k => ANGLES[k].test(hook)), tr: (TREATS.find(([, rx]) => rx.test(all)) || ['อื่นๆ'])[0]}); } }
   return brainAds;
 }
 const bIdx = xs => { const e = xs.reduce((a, x) => a + x.e, 0); return e ? xs.reduce((a, x) => a + x.s, 0) / e : null; };
 const bCol = i => i == null ? 'var(--bad)' : i <= .85 ? 'oklch(80% 0.17 155)' : i <= .95 ? 'oklch(78% 0.11 175)' : i <= 1.05 ? 'oklch(78% 0.04 250)' : i <= 1.2 ? 'oklch(82% 0.14 75)' : 'oklch(70% 0.19 22)';
 console.assert(Math.abs(bIdx([{s: 80, e: 100}]) - .8) < 1e-9, 'brain index');
+function renderReBrain(){ return renderBrain().replace('<h2>สมองมุมขาย</h2><p>มุมขายไหนได้แชทถูก กับหัตถการไหน · 90 วันล่าสุด · เทียบ ฿/แชทปกติของแต่ละคลินิก</p>',
+  '<h2>สมอง RE / ตัวเปิด</h2><p>ตัวเปิดเปิดด้วยมุมไหน เรื่องอะไร · RE รีจากกลุ่มไหน กี่วัน รวมหรือแยก · 90 วันล่าสุด</p>').replace('วงใหญ่ = มุมขาย · วงเล็ก = หัตถการ', 'วงใหญ่สุด = ตัวเปิด / RE · วงกลาง = มุมขาย หรือสูตรกลุ่ม RE · วงเล็ก = หัตถการ'); }
 function renderBrain(){
   if (!snaps) { loadSnaps(); return '<div class="card pad muted">กำลังโหลดแอดของทุกคลินิก…</div>'; }
   const cl = [...new Set(brainData().map(a => a.c))].sort();
@@ -1623,16 +1701,8 @@ async function drawBrain(){
   const el = document.getElementById('brain'); if (!el || !brainData()) return;
   try { await loadD3(); } catch { el.outerHTML = '<div class="muted pad">โหลดตัววาดกราฟไม่ได้ ลองรีเฟรช</div>'; return; }
   const ads = brainAds.filter(a => !brainClinic || a.c === brainClinic), MIN = brainClinic ? 3000 : 15000;
-  const nodes = new Map(), links = [];
-  const add = (id, kind, xs) => nodes.set(id, {id, kind, ads: xs, spend: xs.reduce((a, x) => a + x.s, 0), i: bIdx(xs)});
-  const angles = [...new Set(ads.flatMap(a => a.ang))];
-  for (const k of angles) add('a:' + k, 'ang', ads.filter(a => a.ang.includes(k)));
-  for (const k of angles) for (const [t, xs] of d3.group(ads.filter(a => a.ang.includes(k)), a => a.tr)) {
-    const sp = xs.reduce((a, x) => a + x.s, 0); if (t === 'อื่นๆ' || sp < MIN || xs.length < 3) continue;
-    if (!nodes.has('t:' + t)) add('t:' + t, 'tr', ads.filter(a => a.tr === t));
-    links.push({source: 'a:' + k, target: 't:' + t, ads: xs, spend: sp, i: bIdx(xs), clinics: new Set(xs.map(x => x.c)).size});
-  }
-  const N = [...nodes.values()].filter(n => n.kind === 'ang' || links.some(l => l.target === n.id));
+  const {nodes, links} = view === 'rebrain' ? reGraph(ads, MIN) : angleGraph(ads, MIN);
+  const N = [...nodes.values()].filter(n => n.kind !== 'tr' || links.some(l => l.target === n.id));
   const svg = d3.select(el), W = el.clientWidth, H = el.clientHeight, still = calm();
   svg.selectAll('*').remove(); brainSim?.stop(); brainSel = null; svg.attr('viewBox', [0, 0, W, H]);
   const defs = svg.append('defs');
@@ -1649,7 +1719,7 @@ async function drawBrain(){
   const zg = svg.append('g');
   svg.call(d3.zoom().scaleExtent([.4, 3]).on('zoom', e => zg.attr('transform', e.transform)));
   const maxL = d3.max(links, l => l.spend) || 1, maxN = d3.max(N, n => n.spend) || 1;
-  const r = n => n.kind === 'ang' ? 20 + 28 * Math.sqrt(n.spend / maxN) : 7 + 11 * Math.sqrt(n.spend / maxN);
+  const r = n => n.kind === 'hub' ? 44 : n.kind === 'ang' ? 20 + 28 * Math.sqrt(n.spend / maxN) : 7 + 11 * Math.sqrt(n.spend / maxN);
   const link = zg.append('g').selectAll('path').data(links).join('path').attr('class', 'dend').attr('id', (l, k) => 'dend' + k)
     .attr('stroke', l => bCol(l.i)).attr('stroke-width', l => .8 + 5 * Math.sqrt(l.spend / maxL));
   // signals: dots that travel each dendrite, more and faster where it pays off
@@ -1664,14 +1734,15 @@ async function drawBrain(){
     .call(d3.drag().on('start', (e, n) => { if (!e.active) brainSim.alphaTarget(.2).restart(); n.fx = n.x; n.fy = n.y; })
       .on('drag', (e, n) => { n.fx = e.x; n.fy = e.y; }).on('end', (e, n) => { if (!e.active) brainSim.alphaTarget(0); n.fx = n.fy = null; }));
   node.append('circle').attr('class', 'halo').attr('r', n => r(n) * 1.9).attr('fill', n => `url(#${n.grad})`).style('--d', () => (Math.random() * 3).toFixed(2) + 's');
-  node.append('circle').attr('class', 'core').attr('r', n => r(n)).attr('fill', n => n.kind === 'ang' ? `url(#${n.grad})` : 'oklch(22% 0.03 260 / .9)')
-    .attr('stroke', n => bCol(n.i)).attr('stroke-width', n => n.kind === 'ang' ? 1.2 : 2.4).attr('filter', n => n.kind === 'ang' ? 'url(#bglow)' : null);
-  node.append('text').text(n => n.id.slice(2)).attr('text-anchor', 'middle').attr('dy', n => r(n) + 17).attr('font-size', n => n.kind === 'ang' ? 14 : 12);
+  node.append('circle').attr('class', 'core').attr('r', n => r(n)).attr('fill', n => n.kind !== 'tr' ? `url(#${n.grad})` : 'oklch(22% 0.03 260 / .9)')
+    .attr('stroke', n => bCol(n.i)).attr('stroke-width', n => n.kind !== 'tr' ? 1.2 : 2.4).attr('filter', n => n.kind !== 'tr' ? 'url(#bglow)' : null);
+  node.append('text').text(n => n.id.slice(2)).attr('text-anchor', 'middle').attr('dy', n => r(n) + 17).attr('font-size', n => n.kind === 'hub' ? 17 : n.kind === 'ang' ? 14 : 12);
   brainSim = d3.forceSimulation(N)
     .force('link', d3.forceLink(links).id(n => n.id).distance(l => 170 - 50 * Math.sqrt(l.spend / maxL)).strength(.35))
-    .force('charge', d3.forceManyBody().strength(n => n.kind === 'ang' ? -1300 : -380))
+    .force('charge', d3.forceManyBody().strength(n => n.kind === 'hub' ? -1800 : n.kind === 'ang' ? (view === 'rebrain' ? -700 : -1300) : -380))
     .force('center', d3.forceCenter(W / 2, H / 2)).force('x', d3.forceX(W / 2).strength(.06)).force('y', d3.forceY(H / 2).strength(.09))
     .force('collide', d3.forceCollide(n => r(n) + 22))
+    .force('side', d3.forceX(n => n.id === 'k:ตัวเปิด' ? W * .3 : n.id === 'k:RE' ? W * .7 : W / 2).strength(n => n.kind === 'hub' ? .3 : 0))
     .on('tick', () => {
       link.attr('d', l => { const dx = l.target.x - l.source.x, dy = l.target.y - l.source.y, k = Math.hypot(dx, dy) * 2.2;
         return `M${l.source.x},${l.source.y}A${k},${k} 0 0,1 ${l.target.x},${l.target.y}`; });
@@ -1689,6 +1760,7 @@ const bAd = a => { const i = bIdx([a]); return `<div class="bad-ad"><span style=
 const bCombo = l => `<div class="combo"><b>${esc(l.source.id.slice(2))} × ${esc(l.target.id.slice(2))}</b><span class="bp" style="color:${bCol(l.i)}">${vsNormal(l.i)}</span><small>${baht(l.spend)} · ${l.ads.length} แอด · ${l.clinics} คลินิก</small></div>`;
 function brainPanel(n, links){
   const side = document.getElementById('brainSide'); if (!side) return;
+  if (!n && view === 'rebrain') { side.innerHTML = reSummary(brainAds.filter(a => !brainClinic || a.c === brainClinic)); return; }
   if (!n) { const ls = links.filter(l => brainClinic || l.clinics >= 2).sort((a, b) => a.i - b.i);
     side.innerHTML = `<h3>คู่ที่ได้ผลดีที่สุด</h3>${ls.slice(0, 6).map(bCombo).join('') || '<div class="muted">ข้อมูลยังน้อยเกินไป</div>'}
       <h3>คู่ที่แพงที่สุด</h3>${ls.slice(-5).reverse().filter(l => l.i > 1).map(bCombo).join('')}
@@ -2340,7 +2412,7 @@ function renderReports(){
           : j.status === 'done' ? '<div class="muted" style="font-size:12px;margin-top:6px">ไม่มีรีพอร์ตที่ถึงกำหนดในรอบนี้</div>' : ''}
         ${j.log ? `<details><summary>ดู log</summary><pre>${esc(j.log)}</pre></details>` : ''}</div>`; }).join('') || '<div class="job muted">ยังไม่เคยกด Run จากเว็บ</div>'}</div>`;
 }
-const mainHTML = () => view === 'dash' ? renderDash() : view === 'reports' ? renderReports() : view === 'posts' ? renderPosts() : view === 'angel' ? renderAngel() : view === 'media' ? `<iframe id="radar" src="radar/index.html" title="คลังสื่อคู่แข่ง (Competitor Ad Radar)"></iframe>` : view === 'log' ? renderLog() : view === 'today' ? renderToday() : view === 'leadnote' ? renderLeadNote('lead') : view === 'adsnote' ? renderLeadNote('adsb') : view === 'history' ? renderHistory() : view === 'brain' ? renderBrain() : view === 'policy' ? renderPolicy() : view === 'running' ? renderRunning() : view === 'listen' ? renderListen()
+const mainHTML = () => view === 'dash' ? renderDash() : view === 'reports' ? renderReports() : view === 'posts' ? renderPosts() : view === 'angel' ? renderAngel() : view === 'media' ? `<iframe id="radar" src="radar/index.html" title="คลังสื่อคู่แข่ง (Competitor Ad Radar)"></iframe>` : view === 'log' ? renderLog() : view === 'today' ? renderToday() : view === 'leadnote' ? renderLeadNote('lead') : view === 'adsnote' ? renderLeadNote('adsb') : view === 'history' ? renderHistory() : view === 'brain' ? renderBrain() : view === 'rebrain' ? renderReBrain() : view === 'policy' ? renderPolicy() : view === 'running' ? renderRunning() : view === 'listen' ? renderListen()
   : `<div class="card"><div class="card-h"><b>ข้อความสรุป ${thDate(day)}</b><span>วางใน LINE หรือ Obsidian ได้</span></div><pre>${esc(summaryText(day))}</pre></div>`;
 const typingInMain = () => /INPUT|TEXTAREA/.test(document.activeElement?.tagName) && document.activeElement.closest('#main');
 
@@ -2443,7 +2515,7 @@ function render(){
   // the media library is an iframe: keep it (and its scroll/filters) across the page's periodic re-renders
   if (boardBusy) return;   // mid-drag on the notes board: a rebuild would drop the item being moved
   const key = `${view}|${OWNER}|${dayFrom}|${day}`, same = key === fxKey, before = same ? snapNums() : null; fxEnter = !same;
-  if (!(view === 'media' && $('#radar')) && !(view === 'brain' && $('#brain') && same) && !(view === 'policy' && $('#polText') && same) && !(view === 'running' && $('#polUrl') && same) && !(view === 'angel' && funnelDraft && same)) { $('#main').innerHTML = mainHTML(); if (view === 'brain') drawBrain(); }
+  if (!(view === 'media' && $('#radar')) && !(['brain', 'rebrain'].includes(view) && $('#brain') && same) && !(view === 'policy' && $('#polText') && same) && !(view === 'running' && $('#polUrl') && same) && !(view === 'angel' && funnelDraft && same)) { $('#main').innerHTML = mainHTML(); if (['brain', 'rebrain'].includes(view)) drawBrain(); }
   if (before) flashChanged(before); else countUp();
   fxKey = key; slideSegs();
   renderPanel(); checkEmptyBal();
