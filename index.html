@@ -293,7 +293,13 @@ aside{border-left:1px solid var(--line);background:var(--surface);backdrop-filte
 .bmenu .del{color:#ff6369}.bmenu .cols{display:flex;gap:8px;padding:6px 10px}.bmenu .cols button{width:20px;height:20px;padding:0;border-radius:50%;border:2px solid transparent}
 .marq{position:absolute;border:1px dashed var(--accent);background:color-mix(in oklab,var(--accent) 12%,transparent);pointer-events:none;z-index:9999}
 .bcols{display:inline-flex;gap:4px;align-items:center}.bcols button{width:18px;height:18px;border-radius:50%;border:2px solid transparent;padding:0;cursor:pointer}
-.bcols button[aria-pressed="true"]{border-color:var(--text)}
+.bcols button[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+.bcols button[data-bcol="#ffffff"]{border-color:var(--line-2)}
+.bws{display:inline-flex;gap:2px;align-items:center;border:1px solid var(--line);border-radius:8px;padding:2px}
+.bws button{display:inline-flex;align-items:center;gap:6px;border:0;background:none;color:var(--text-2);font:inherit;font-size:13px;padding:4px 8px;border-radius:6px;cursor:pointer}
+.bws button i,.bwi i{display:inline-block;width:18px;border-radius:9px;background:currentColor}
+.bws button[aria-pressed="true"]{background:var(--surface-2);color:var(--text)}
+.bmenu .cols .bwi{width:34px;height:24px;border-radius:6px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--text)}
 .leadpast{list-style:none;margin:0;padding:0}.leadpast li{padding:10px 16px;border-top:1px solid var(--line)}.leadpast p{margin:4px 0 0;white-space:pre-wrap;color:var(--text-2)}
 .bell{position:relative;margin-left:4px}.bell b[hidden]{display:none}.bell b{position:absolute;top:-4px;right:-4px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:oklch(58% 0.2 25);color:#fff;font:600 11px/17px var(--sans);text-align:center}
 .mbal{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px;margin:8px 0}.mbal label{display:grid;gap:4px;font-size:12px;color:var(--text-2);flex:1 1 220px}.mbal small{flex-basis:100%;font-size:12px}
@@ -1100,10 +1106,12 @@ function boardCommit(noHist, typing){
 }
 const boardH = b => Math.max(640, ...b.map(i => (i.type === 'arrow' ? Math.max(i.y1, i.y2) : i.y + i.h) + 160));
 // vectors: 'arrow' {x1,y1,x2,y2,color}, 'box' / 'ell' {x,y,w,h,color}
-const BCOLS = ['#ff3b30', '#ffcc00', '#0a84ff', '#34c759'];
-let bColor = BCOLS[0];
-const AP = 14;   // padding around an arrow's bounding box so the head and handles stay inside it
+const BCOLS = ['#ffffff', '#ff3b30', '#ffcc00', '#0a84ff', '#34c759'];
+const BWS = [[3, 'บาง'], [5, 'กลาง'], [9, 'หนา']];   // line thickness; the arrow head grows with it
+let bColor = BCOLS[0], bWidth = 5;
+const swOf = it => it.sw || (it.type === 'arrow' ? 4 : 3);
 function arrowGeom(it){
+  const AP = 10 + swOf(it) * 3;   // padding so the head and handles stay inside the box
   const l = Math.min(it.x1, it.x2) - AP, t = Math.min(it.y1, it.y2) - AP;
   return {l, t, w: Math.abs(it.x2 - it.x1) + 2 * AP, h: Math.abs(it.y2 - it.y1) + 2 * AP, a: [it.x1 - l, it.y1 - t], b: [it.x2 - l, it.y2 - t]};
 }
@@ -1118,8 +1126,8 @@ function itemHTML(it, z){
     const g = arrowGeom(it), c = esc(it.color || BCOLS[0]), mk = 'ah-' + it.id.slice(0, 8);
     return `<div class="bi bi-arrow${boardSel === it.id ? ' sel' : ''}" data-id="${it.id}" style="left:${g.l}px;top:${g.t}px;width:${g.w}px;height:${g.h}px;z-index:${z}">
       <svg aria-label="ลูกศร"><defs><marker id="${mk}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="${c}"/></marker></defs>
-      <line x1="${g.a[0]}" y1="${g.a[1]}" x2="${g.b[0]}" y2="${g.b[1]}" stroke="${c}" stroke-width="4" stroke-linecap="round" marker-end="url(#${mk})"/>
-      <line class="hit" x1="${g.a[0]}" y1="${g.a[1]}" x2="${g.b[0]}" y2="${g.b[1]}"/></svg>
+      <line x1="${g.a[0]}" y1="${g.a[1]}" x2="${g.b[0]}" y2="${g.b[1]}" stroke="${c}" stroke-width="${swOf(it)}" stroke-linecap="round" marker-end="url(#${mk})"/>
+      <line class="hit" style="stroke-width:${Math.max(18, swOf(it) + 12)}" x1="${g.a[0]}" y1="${g.a[1]}" x2="${g.b[0]}" y2="${g.b[1]}"/></svg>
       <span class="hd" data-end="1" style="left:${g.a[0]}px;top:${g.a[1]}px" title="ลากปลายลูกศร"></span><span class="hd" data-end="2" style="left:${g.b[0]}px;top:${g.b[1]}px" title="ลากหัวลูกศร"></span>
       <button class="bx" data-bdel aria-label="ลบ" title="ลบ" style="left:${(g.a[0] + g.b[0]) / 2 - 12}px;top:${(g.a[1] + g.b[1]) / 2 - 30}px;right:auto">×</button></div>`;
   }
@@ -1127,8 +1135,8 @@ function itemHTML(it, z){
   if (it.type === 'box' || it.type === 'ell')
     return `<div class="bi bi-shape${boardSel === it.id ? ' sel' : ''}" data-id="${it.id}" style="${box}">
       <svg aria-label="${it.type === 'ell' ? 'วงกลม' : 'กรอบ'}">${['edge', 'hit'].map(k => it.type === 'ell'
-        ? `<ellipse class="${k}" cx="50%" cy="50%" rx="50%" ry="50%" fill="none" stroke="${esc(it.color || BCOLS[0])}" stroke-width="3"/>`
-        : `<rect class="${k}" x="0" y="0" width="100%" height="100%" rx="6" fill="none" stroke="${esc(it.color || BCOLS[0])}" stroke-width="3"/>`).join('')}</svg>
+        ? `<ellipse class="${k}" cx="50%" cy="50%" rx="50%" ry="50%" fill="none" stroke="${esc(it.color || BCOLS[0])}" stroke-width="${swOf(it)}"${k === 'hit' ? ` style="stroke-width:${swOf(it) + 14}"` : ''}/>`
+        : `<rect class="${k}" x="0" y="0" width="100%" height="100%" rx="6" fill="none" stroke="${esc(it.color || BCOLS[0])}" stroke-width="${swOf(it)}"${k === 'hit' ? ` style="stroke-width:${swOf(it) + 14}"` : ''}/>`).join('')}</svg>
       <button class="bx" data-bdel aria-label="ลบ" title="ลบ">×</button><span class="rz" data-rz title="ลากเพื่อย่อ/ขยาย"></span></div>`;
   const inner = it.type === 'img'
     ? `<img data-path="${esc(it.path)}" src="${esc(urlCache[it.path]?.url || '')}" alt="รูปที่แปะไว้" draggable="false">`
@@ -1187,8 +1195,8 @@ function addText(x, y, text = ''){
 }
 function addVector(type){
   const n = leadBoard(leadClinic).filter(v => v.color).length % 6, p0 = dropPoint(), p = {x: p0.x + n * 24, y: p0.y + n * 24}, id = crypto.randomUUID(); boardSel = id; boardMulti = new Set([id]);   // fan out so new ones don't stack
-  leadBoard(leadClinic).push(type === 'arrow' ? {id, type, x1: p.x + 20, y1: p.y + 60, x2: p.x + 200, y2: p.y + 60, color: bColor}
-    : {id, type, x: p.x + 20, y: p.y + 20, w: type === 'ell' ? 180 : 220, h: type === 'ell' ? 120 : 120, color: bColor});
+  leadBoard(leadClinic).push(type === 'arrow' ? {id, type, x1: p.x + 20, y1: p.y + 60, x2: p.x + 200, y2: p.y + 60, color: bColor, sw: bWidth}
+    : {id, type, x: p.x + 20, y: p.y + 20, w: type === 'ell' ? 180 : 220, h: type === 'ell' ? 120 : 120, color: bColor, sw: bWidth});
   boardCommit(); drawBoard();
 }
 function delItem(id){
@@ -1215,6 +1223,7 @@ function renderLeadNote(){
       <button class="ghost" id="bAddText">+ ข้อความ</button><label class="ghost btnlike">+ รูป<input type="file" id="bFile" accept="image/*" multiple hidden></label>
       <button class="ghost" data-bvec="arrow" title="เพิ่มลูกศร ลากจุดที่ปลายเพื่อชี้">↗ ลูกศร</button><button class="ghost" data-bvec="box" title="เพิ่มกรอบ">▭ กรอบ</button><button class="ghost" data-bvec="ell" title="เพิ่มวงกลม">◯ วงกลม</button>
       <span class="bcols" role="group" aria-label="สีลูกศร/กรอบ">${BCOLS.map(c => `<button data-bcol="${c}" style="background:${c}" aria-pressed="${c === bColor}" aria-label="สี ${c}"></button>`).join('')}</span>
+      <span class="bws" role="group" aria-label="ความหนาเส้น">${BWS.map(([w, n]) => `<button data-bw="${w}" aria-pressed="${w === bWidth}" title="เส้น${n}"><i style="height:${w}px"></i>${n}</button>`).join('')}</span>
       <span class="spacer"></span><span class="muted" id="bState"></span><span class="muted">วางรูป ⌘V · ลากย้าย · ลากมุมขวาล่างย่อ/ขยาย · Delete ลบ · ลากที่ว่างเพื่อเลือกหลายชิ้น · ⌘Z ย้อน · ⌘D ทำซ้ำ · ⌘C/⌘V คัดลอก · คลิกขวาเปิดเมนู · บันทึกอัตโนมัติ</span></div>
     <div class="board" id="board" tabindex="0" aria-label="กระดานโน้ต ${esc(c.name)} ${thDate(day)}" style="height:${boardH(leadBoard(c.name))}px">${boardHTML()}</div></div>
   ${past.length ? `<div class="card"><div class="card-h"><b>โน้ตวันก่อนๆ</b><span>${past.length} วัน</span></div>
@@ -1274,7 +1283,8 @@ function bMenuHTML(onItem){
   const undo = b('undo', '↶ ย้อนกลับ', K('Z'), bHist.stack.length < 2) + b('redo', '↷ ทำซ้ำสิ่งที่ย้อน', K('⇧Z'), !bHist.redo.length);
   if (!onItem) return b('paste', 'วางที่นี่', K('V'), !bClip?.length) + '<hr>' + b('text', '+ ข้อความ') + b('arrow', '↗ ลูกศร') + b('box', '▭ กรอบ') + b('ell', '◯ วงกลม') + '<hr>' + undo;
   return b('dup', 'ทำซ้ำ', K('D')) + b('copy', 'คัดลอก', K('C')) + b('paste', 'วาง', K('V'), !bClip?.length) + '<hr>'
-    + (vec ? `<div class="cols" role="group" aria-label="เปลี่ยนสี">${BCOLS.map(c => `<button data-bm="color" data-c="${c}" style="background:${c}" aria-label="สี ${c}"></button>`).join('')}</div><hr>` : '')
+    + (vec ? `<div class="cols" role="group" aria-label="เปลี่ยนสี">${BCOLS.map(c => `<button data-bm="color" data-c="${c}" style="background:${c}" aria-label="สี ${c}"></button>`).join('')}</div>
+      <div class="cols" role="group" aria-label="ความหนาเส้น">${BWS.map(([w, n]) => `<button data-bm="width" data-w="${w}" class="bwi" title="เส้น${n}"><i style="height:${w}px"></i></button>`).join('')}</div><hr>` : '')
     + b('front', 'ไว้หน้าสุด') + b('back', 'ไว้หลังสุด') + '<hr>' + undo + '<hr>' + b('del', `ลบ${sel.length > 1 ? ` ${sel.length} ชิ้น` : ''}`, '<kbd>Delete</kbd>', false, 'del');
 }
 $('#main').addEventListener('contextmenu', e => {
@@ -1299,6 +1309,7 @@ document.addEventListener('click', e => {
     const q = bClip.map(itemBox), mx = Math.min(...q.map(v => v.x)), my = Math.min(...q.map(v => v.y));
     boardPaste(bClip, 0, pt.x - mx, pt.y - my);
   }
+  else if (act === 'width') { sel.forEach(i => { if (i.color) i.sw = +btn.dataset.w; }); boardCommit(); drawBoard(); selectOnly($('#board'), sel.map(i => i.id)); }
   else if (act === 'color') { sel.forEach(i => { if (i.color) i.color = btn.dataset.c; }); boardCommit(); drawBoard(); selectOnly($('#board'), sel.map(i => i.id)); }
   else if (act === 'front' || act === 'back') { const rest = b.filter(i => !boardMulti.has(i.id)); b.length = 0; b.push(...(act === 'front' ? [...rest, ...sel] : [...sel, ...rest])); boardCommit(); drawBoard(); selectOnly($('#board'), sel.map(i => i.id)); }
   else if (act === 'del') { sel.forEach(i => delItem(i.id)); boardMulti = new Set(); }
@@ -1733,9 +1744,13 @@ $('#main').addEventListener('click', e => {
   const gd = e.target.closest('[data-goday]'); if (gd) { day = gd.dataset.goday; dayFrom = null; boardSel = boardPt = null; render(); scrollTo(0, 0); return; }
   if (e.target.closest('#bAddText')) { const p = dropPoint(); addText(p.x, p.y); return; }
   const bv = e.target.closest('[data-bvec]'); if (bv) { addVector(bv.dataset.bvec); return; }
+  const bw = e.target.closest('[data-bw]'); if (bw) {   // thickness for new vectors, and for the selected ones
+    bWidth = +bw.dataset.bw; document.querySelectorAll('[data-bw]').forEach(x => x.setAttribute('aria-pressed', x === bw));
+    const sel = leadBoard(leadClinic).filter(v => boardMulti.has(v.id) && v.color); if (sel.length) { sel.forEach(v => v.sw = bWidth); boardCommit(); drawBoard(); selectOnly($('#board'), sel.map(v => v.id)); }
+    return; }
   const bc = e.target.closest('[data-bcol]'); if (bc) {   // pick the colour for new vectors, and recolour the selected one
     bColor = bc.dataset.bcol; document.querySelectorAll('[data-bcol]').forEach(x => x.setAttribute('aria-pressed', x === bc));
-    const it = leadBoard(leadClinic).find(v => v.id === boardSel && v.color); if (it) { it.color = bColor; boardCommit(); drawBoard(); }
+    const sel = leadBoard(leadClinic).filter(v => boardMulti.has(v.id) && v.color); if (sel.length) { sel.forEach(v => v.color = bColor); boardCommit(); drawBoard(); selectOnly($('#board'), sel.map(v => v.id)); }
     return; }
   if (e.target.closest('[data-rep-run]')) {
     if (!confirm('สั่งรันรีพอร์ตจริงตอนนี้? ระบบจะสร้าง PDF อัปโหลด Drive และส่ง Telegram ให้ลูกค้าทุกคลินิกที่ถึงกำหนด')) return;
