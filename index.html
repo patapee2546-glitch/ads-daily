@@ -86,6 +86,12 @@ header .menu .pop{background:var(--pop);min-width:240px}
 .body{display:grid;grid-template-columns:minmax(0,1fr) 0;min-height:0;transition:grid-template-columns .15s}
 .body.open{grid-template-columns:minmax(0,1fr) 460px}
 main{overflow:auto;padding:20px;scrollbar-gutter:stable}
+/* scrollbars blend with the glass theme (the default light track glared in dark mode) */
+:root{color-scheme:light dark}
+*{scrollbar-width:thin;scrollbar-color:var(--line-2) transparent}
+::-webkit-scrollbar{width:10px;height:10px;background:transparent}::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:10px;border:3px solid transparent;background-clip:padding-box}
+::-webkit-scrollbar-thumb:hover{background-color:var(--text-3)}::-webkit-scrollbar-corner{background:transparent}
 
 /* metrics: one hero + supports */
 .metrics{display:grid;grid-template-columns:1.3fr 1fr 1fr 1fr;gap:12px;margin-bottom:16px}
@@ -253,7 +259,7 @@ aside{border-left:1px solid var(--line);background:var(--surface);backdrop-filte
 #leadNote{display:block;width:100%;box-sizing:border-box;min-height:max(320px,55vh);resize:vertical;border:0;border-top:1px solid var(--line);padding:16px;background:transparent;color:var(--text);font:15px/1.7 var(--sans)}
 #leadNote:focus{outline:none;box-shadow:inset 0 0 0 2px var(--accent)}
 .leadpast{list-style:none;margin:0;padding:0}.leadpast li{padding:10px 16px;border-top:1px solid var(--line)}.leadpast p{margin:4px 0 0;white-space:pre-wrap;color:var(--text-2)}
-.bell{position:relative}.bell b{position:absolute;top:-4px;right:-4px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:oklch(58% 0.2 25);color:#fff;font:600 11px/17px var(--sans);text-align:center}
+.bell{position:relative;margin-left:4px}.bell b[hidden]{display:none}.bell b{position:absolute;top:-4px;right:-4px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:oklch(58% 0.2 25);color:#fff;font:600 11px/17px var(--sans);text-align:center}
 .mbal{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px;margin:8px 0}.mbal label{display:grid;gap:4px;font-size:12px;color:var(--text-2);flex:1 1 220px}.mbal small{flex-basis:100%;font-size:12px}
 .acct-link{color:inherit;text-decoration:none;border-radius:6px}.acct-link:hover{color:#1877f2;text-decoration:underline;text-underline-offset:3px}.acct-link:focus-visible{outline:2px solid #1877f2;outline-offset:2px}
 .ph h2{margin:0;font-size:18px;font-weight:600;flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -422,13 +428,13 @@ pre{white-space:pre-wrap;font:12px/1.6 var(--sans);margin:0;padding:12px;color:v
     <button role="tab" data-view="history">ย้อนหลัง 14 วัน</button>
     <button role="tab" data-view="text">ข้อความสรุป</button>
   </div>
+  <button class="ghost icon bell" id="bell"  aria-label="แจ้งเตือน"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><b id="bellN"></b></button>
   <span class="spacer"></span>
   <input class="search" id="q" type="search" placeholder="ค้นหาคลินิก" aria-label="ค้นหาคลินิก">
   <button class="ghost" id="pull" title="ดึงยอด 90 วัน + สถานะแอดล่าสุดจาก Meta">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>
     <span id="pullTxt">ดึงจาก Meta</span></button>
   <button class="ghost" id="copy">คัดลอกสรุป</button>
-  <button class="ghost icon bell" id="bell" hidden aria-label="แจ้งเตือน"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><b id="bellN"></b></button>
   <details class="menu">
     <summary class="ghost icon" aria-label="เมนูเพิ่มเติม">⋯</summary>
     <div class="pop">
@@ -1226,9 +1232,9 @@ async function saveManualBal(){ const v = $('#mbalIn').value, m = await setManua
 const emptyBal = () => db.clinics.filter(c => { const w = runway(c.name); return w?.manual && w.balance <= 0; });
 function checkEmptyBal(){
   const n = emptyBal().length, b = $('#bell');
-  b.hidden = !n; $('#bellN').textContent = n || '';
-  b.title = n ? `ยอดเงินหมดแล้ว ${n} บัญชี: ${emptyBal().map(c => c.name).join(', ')} · กดเพื่อกรอกยอดใหม่` : '';
-  b.setAttribute('aria-label', n ? `แจ้งเตือน ${n} รายการ: ยอดเงินหมดแล้ว` : 'แจ้งเตือน');
+  $('#bellN').textContent = n || ''; $('#bellN').hidden = !n;
+  b.title = n ? `ยอดเงินหมดแล้ว ${n} บัญชี: ${emptyBal().map(c => c.name).join(', ')} · กดเพื่อกรอกยอดใหม่` : 'ไม่มีแจ้งเตือน';
+  b.setAttribute('aria-label', n ? `แจ้งเตือน ${n} รายการ: ยอดเงินหมดแล้ว` : 'แจ้งเตือน (ไม่มี)');
 }
 function openBalDlg(){
   const c = emptyBal()[0]; if (!c) return;
@@ -1237,7 +1243,7 @@ function openBalDlg(){
   $('#balHint').textContent = `กรอกไว้ ${baht(w.manual.typed)} ใช้ไปแล้ว ${baht(w.manual.used)} ตามยอดใช้จาก Meta ถ้าเติมเงินแล้วให้ใส่ยอดใหม่ ระบบจะเริ่มหักจากยอดนี้`;
   dlg.showModal(); $('#balIn').focus();
 }
-$('#bell').onclick = openBalDlg;
+$('#bell').onclick = () => emptyBal().length ? openBalDlg() : alert('ยังไม่มีแจ้งเตือน');
 $('#balForm').onsubmit = async e => { e.preventDefault(); const d = $('#balDlg'), v = $('#balIn').value;
   const m = await setManualBal(d.dataset.c, v === '' ? NaN : +v); if (m) { $('#balErr').textContent = m; return; } d.close(); openBalDlg(); };
 $('#balLater').onclick = () => $('#balDlg').close();
