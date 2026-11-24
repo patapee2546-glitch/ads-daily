@@ -88,10 +88,13 @@ header .menu .pop{background:var(--pop);min-width:240px}
 main{overflow:auto;padding:20px;scrollbar-gutter:stable}
 /* scrollbars blend with the glass theme (the default light track glared in dark mode) */
 :root{color-scheme:light dark}
-*{scrollbar-width:thin;scrollbar-color:var(--line-2) transparent}
-::-webkit-scrollbar{width:10px;height:10px;background:transparent}::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:10px;border:3px solid transparent;background-clip:padding-box}
-::-webkit-scrollbar-thumb:hover{background-color:var(--text-3)}::-webkit-scrollbar-corner{background:transparent}
+/* solid colours, not transparent: Chrome on Windows swaps a transparent track for its default white one on hover */
+:root{--sb-thumb:oklch(78% 0.02 280);--sb-track:oklch(95% 0.008 280)}
+@media (prefers-color-scheme:dark){:root{--sb-thumb:oklch(42% 0.03 280);--sb-track:oklch(19% 0.025 280)}}
+*{scrollbar-width:thin;scrollbar-color:var(--sb-thumb) var(--sb-track)}
+::-webkit-scrollbar{width:10px;height:10px;background:var(--sb-track)}::-webkit-scrollbar-track{background:var(--sb-track)}
+::-webkit-scrollbar-thumb{background:var(--sb-thumb);border-radius:10px;border:3px solid var(--sb-track)}
+::-webkit-scrollbar-thumb:hover{background:var(--text-3)}::-webkit-scrollbar-corner{background:var(--sb-track)}
 
 /* metrics: one hero + supports */
 .metrics{display:grid;grid-template-columns:1.3fr 1fr 1fr 1fr;gap:12px;margin-bottom:16px}
