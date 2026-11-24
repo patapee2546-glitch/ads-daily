@@ -771,6 +771,8 @@ function manualBalHTML(c){
     <button class="ghost" id="mbalSave">บันทึกยอด</button>
     <small class="muted">${w.manual ? `ตอนนี้เหลือ ${baht(w.balance)} (กรอก ${baht(w.manual.typed)} − ใช้ไป ${baht(w.manual.used)})` : 'ยังไม่ได้กรอก · ตอนนี้ "รันได้อีก" คิดจากวงเงินบัญชี'}</small></div>`;
 }
+// clinic name -> its campaigns in Ads Manager (new tab); clinics without a Meta account stay plain text
+const adsLink = (c, label) => c.act ? `<a class="acct-link" href="https://adsmanager.facebook.com/adsmanager/manage/campaigns?act=${encodeURIComponent(c.act)}" target="_blank" rel="noopener" title="เปิดแคมเปญใน Ads Manager">${label}</a>` : label;
 function runwayCell(name){
   const w = runway(name);
   if (!w) return '<span class="muted">–</span>';
@@ -789,7 +791,7 @@ function renderToday(){
         const r = sumRec(c.name), k = calc(r), cap = capOf(r, c.name), pct = +r.budget?.spend && +cap ? r.budget.spend/cap*100 : null;
         const m = sumMeta(c.name), err = m.error;  // raw Meta numbers (reach / frequency / 3-s plays)
         return `<tr tabindex="0" data-c="${esc(c.name)}" aria-selected="${c.name===cur}">
-          <td class="name">${esc(c.name)}<small>${r.ads?.monitored ? '<span class="mon">✓ มอนิเตอร์แล้ว</span> · ' : ''}${r.ads?.state ? esc(r.ads.state) : r._history ? 'ย้อนหลังจาก Meta' : err ? 'ดึงจาก Meta ไม่ได้' : 'กรอกเอง'}</small></td>
+          <td class="name">${adsLink(c, esc(c.name))}<small>${r.ads?.monitored ? '<span class="mon">✓ มอนิเตอร์แล้ว</span> · ' : ''}${r.ads?.state ? esc(r.ads.state) : r._history ? 'ย้อนหลังจาก Meta' : err ? 'ดึงจาก Meta ไม่ได้' : 'กรอกเอง'}</small></td>
           <td><span class="dots">${TOPICS.map(t => `<span class="dot d-${r[t.id]?.status||''}" title="${t.name}: ${ST[r[t.id]?.status]||'ยังไม่เช็ค'}"></span>`).join('')}</span></td>
           <td class="num"><div class="cap"><span>${baht(r.budget?.spend)} <span class="muted">/ ${baht(cap)}</span></span>
             ${pct != null ? `<span class="bar" title="${pct.toFixed(0)}% ของเพดาน"><b class="${pct>100?'over':''}" style="width:${Math.min(pct,100)/1.25}%"></b><i style="left:80%"></i></span>` : ''}</div></td>
@@ -1323,7 +1325,7 @@ function renderPanel(){
   if (!c) { p.innerHTML = ''; return; }
   const r = rec(day, cur), k = calc(r), fed = !!r._why, meta = window.ADS_DATA?.[day], err = meta?.clinics?.[cur]?.error;
   p.innerHTML = `
-    <div class="ph"><div class="row"><h2>${c.act ? `<a class="acct-link" href="https://adsmanager.facebook.com/adsmanager/manage/campaigns?act=${encodeURIComponent(c.act)}" target="_blank" rel="noopener" title="เปิดบัญชีโฆษณาใน Ads Manager">${esc(c.name)}</a>` : esc(c.name)}</h2>
+    <div class="ph"><div class="row"><h2>${adsLink(c, esc(c.name))}</h2>
       <label class="sw" title="ติ๊กเมื่อเช็คแอดของวันนี้แล้ว"><input type="checkbox" role="switch" id="monChk" ${r.ads?.monitored ? 'checked' : ''}>${r.ads?.monitored ? 'มอนิเตอร์แอดแล้ว' : 'ยังไม่มอนิเตอร์'}</label>
       <button class="ghost icon" data-step="-1" aria-label="คลินิกก่อนหน้า" title="ก่อนหน้า (K)">↑</button>
       <button class="ghost icon" data-step="1" aria-label="คลินิกถัดไป" title="ถัดไป (J)">↓</button>
@@ -1480,6 +1482,7 @@ $('#main').addEventListener('click', e => {
   }
   const g = e.target.closest('[data-go]'); if (g) { day = g.dataset.go; cur = g.dataset.c; view = 'today'; render(); return; }
   const o = e.target.closest('[data-open]'); if (o) return open(o.dataset.open);
+  if (e.target.closest('a.acct-link')) return;   // the name link opens Ads Manager, not the panel
   const tr = e.target.closest('tr[data-c]'); if (tr) open(tr.dataset.c);
 });
 function step(n){
