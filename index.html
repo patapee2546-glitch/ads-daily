@@ -2177,7 +2177,9 @@ function renderAngel(){
         <div class="sub">${esc(a.campaign || '')} › ${esc(a.adset || '')}${a.post ? ` · <a href="${esc(a.post)}" target="_blank" rel="noopener">ดูโพสต์</a>` : ''}</div>
         <div class="kv"><span>ใช้ <b>${baht(a.spend)}</b></span><span>ผลลัพธ์ <b>${int(a.results)}</b></span><span>ต้นทุน <b>${a.cpr ? baht(a.cpr) : '–'}</b></span>
           <span>ซื้อ <b>${int(a.purchases)}</b>${a.value ? ` · ${baht(a.value)}` : ''}</span>
-          <span>คอมเมนต์ <b>${int(a.comments || 0)}</b></span><span>ไลค์ <b>${int(a.reactions || 0)}</b></span><span>แชร์ <b>${int(a.shares || 0)}</b></span></div>
+          ${(() => { const e = a.post_eng, pe = !!e;   // post totals = what people see on the post (every ad + organic); else this ad's own paid engagement
+            return `<span title="${pe ? 'ยอดรวมของโพสต์ ทุกแอด + ที่ไม่ได้มาจากแอด ตลอดอายุโพสต์' : 'เฉพาะจากแอดตัวนี้ ในช่วงที่เลือก (ยังอ่านยอดรวมของโพสต์ไม่ได้)'}" class="${pe ? '' : 'muted'}">${pe ? 'โพสต์:' : 'จากแอดนี้:'}</span>
+              <span>ไลค์ <b>${int((e ?? a).reactions || 0)}</b></span><span>คอมเมนต์ <b>${int((e ?? a).comments || 0)}</b></span>${e && e.shares == null ? '' : `<span>แชร์ <b>${int((e ?? a).shares || 0)}</b></span>`}`; })()}</div>
         <div class="parts" aria-hidden="true">${[['ซื้อ', a.parts?.buy], ['฿/แชท', a.parts?.cpr], ['เอนเกจ', a.parts?.eng]].map(([l, v]) => `<span><i style="width:${Math.round((v || 0) * 100)}%"></i>${l}</span>`).join('')}</div>
         <div class="strip" aria-label="ช่วงที่แอดนี้ต้นทุนถูกกว่าค่าเฉลี่ย">${a.periods.map(p => `<i class="${p.good ? 'on' : 'sp'}" title="${pd(p)}: ใช้ ${baht(p.spend)} · ผลลัพธ์ ${int(p.results)}${p.results ? ' · ' + baht(p.spend / p.results) + '/ผลลัพธ์' : ''}${p.purchases ? ' · ซื้อ ' + int(p.purchases) : ''}"></i>`).join('')}
           <small>${(() => { const g = a.periods.filter(p => p.good); return g.length ? `ถูกช่วง ${pd(g[0]).split('–')[0]} – ${pd(g[g.length-1]).split('–')[1]} (${g.length}/${a.periods.length} ${unit})` : 'ยังไม่มีช่วงที่ต้นทุนต่ำกว่าค่าเฉลี่ย'; })()}</small></div></div></div>`).join('')
