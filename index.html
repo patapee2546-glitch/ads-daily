@@ -178,6 +178,9 @@ tbody tr[aria-selected=true]{background:var(--accent-tint);box-shadow:inset 2px 
 #radar{display:block;width:100%;height:calc(100vh - 120px);border:0;background:transparent;color-scheme:light dark}
 .rep-top{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:14px}
 .rep-top .grow{flex:1;min-width:220px;font-size:13px;color:var(--text-2)}
+.rep-mode{padding:12px 14px 0}.mrep{display:grid;gap:14px;padding:14px}.mrow{display:grid;gap:6px}.mrow .link{font-size:12px}
+.mtitle{font-size:13px;color:var(--text-2);padding:8px 12px;border:1px dashed var(--line-2);border-radius:10px}.mtitle b{color:var(--text)}
+.rep-run.sm{padding:6px 12px;font-size:12px;margin-left:auto}
 .rep-run{background:var(--accent);color:var(--pop);border:0;border-radius:10px;padding:10px 18px;font-weight:600;cursor:pointer}
 .rep-run[disabled]{opacity:.45;cursor:not-allowed}
 .wk{display:inline-flex;gap:6px;align-items:center;font-size:12px;color:var(--text-3);white-space:nowrap}.job a{color:var(--accent)}
@@ -2421,7 +2424,7 @@ document.addEventListener('click', e => { const b = e.target.closest('[data-lsd]
 let REP = null;  // {jobs, worker, names}
 async function loadReports(){
   const [j, w, m] = await Promise.all([
-    sb.from('report_jobs').select('id,requested_by,status,attempts,note,results,log,progress,created_at,started_at,finished_at').order('created_at', {ascending: false}).limit(15),
+    sb.from('report_jobs').select('id,requested_by,status,attempts,note,results,log,progress,created_at,started_at,finished_at,params,pdf_path').order('created_at', {ascending: false}).limit(15),
     sb.from('report_worker').select('last_seen,host').maybeSingle(),
     sb.from('members').select('user_id,display_name')]);
   REP = {jobs: j.data || [], worker: w.data, names: Object.fromEntries((m.data || []).map(x => [x.user_id, x.display_name])), err: j.error?.message};
@@ -2467,6 +2470,76 @@ function pipeHTML(j){
     ${j.status === 'running' && pr.current ? `<div class="flow-now">ล่าสุด: ${esc(pr.current)}${pr.at ? ' · อัปเดต ' + bkkTime(pr.at) : ''}</div>` : ''}`;
 }
 const bkkDateTime = t => t ? new Date(t).toLocaleString('th-TH', {day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok'}) : '–';
+// ---- "สร้างเอง": one report for one Asana task + a chosen end date, built on the Mac (PDF only, no Drive / Telegram).
+// The viewer's Asana token stays in THIS browser (localStorage): each person's own Asana, never sent to our server.
+let repMode = 'auto', REPT = null, repTaskGid = '', repEnd = null;
+const ASANA_KEY = 'ads-daily-asana-token';
+const asanaTok = () => { try { return localStorage.getItem(ASANA_KEY) || ''; } catch { return ''; } };
+async function asanaGet(path){
+  const r = await fetch('https://app.asana.com/api/1.0/' + path, {headers: {Authorization: 'Bearer ' + asanaTok(), Accept: 'application/json'}});
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(r.status === 401 ? 'token ใช้ไม่ได้ หรือหมดอายุ' : (j.errors?.[0]?.message || 'Asana ' + r.status));
+  return j;
+}
+// my open tasks whose name looks like a report ("Report Ads Facebook - <clinic> <cycle> (N วัน)"), across my workspaces
+async function loadAsanaTasks(){
+  REPT = 'loading'; render();
+  try {
+    const out = [];
+    for (const ws of (await asanaGet('workspaces?limit=50')).data || []) {
+      let next = `tasks?assignee=me&workspace=${ws.gid}&completed_since=now&limit=100&opt_fields=name,due_on,completed,modified_at,projects.name`;
+      for (let i = 0; i < 10 && next; i++) {
+        const j = await asanaGet(next);
+        for (const t of j.data || []) if (/report\s*ads/i.test(t.name)) out.push({gid: t.gid, name: t.name, dueOn: t.due_on || null, completed: !!t.completed,
+          modifiedAt: t.modified_at || null, projects: (t.projects || []).map(p => ({gid: p.gid, name: p.name}))});
+        next = j.next_page?.offset ? `tasks?assignee=me&workspace=${ws.gid}&completed_since=now&limit=100&offset=${j.next_page.offset}&opt_fields=name,due_on,completed,modified_at,projects.name` : null;
+      }
+    }
+    REPT = out.sort((a, b) => (a.dueOn || '9') < (b.dueOn || '9') ? -1 : 1);
+    if (!REPT.some(t => t.gid === repTaskGid)) repTaskGid = REPT[0]?.gid || '';
+  } catch (e) { REPT = {error: e.message}; }
+  if (view === 'reports') { fxKey = ''; render(); }
+}
+const daysOfTask = n => +((String(n).match(/\((\d+)\s*วัน\)/) || [])[1] || 0);
+console.assert(daysOfTask('Report Ads Facebook - Mabella Skin M21/P2 (30 วัน)') === 30 && daysOfTask('x') === 0, 'task days');
+function manualRepHTML(active, online){
+  const has = !!asanaTok(), end = repEnd || dayBefore(TODAY), t = Array.isArray(REPT) ? REPT.find(x => x.gid === repTaskGid) : null, n = t ? daysOfTask(t.name) : 0;
+  const from = n ? new Date(Date.parse(end) - (n - 1) * 864e5).toISOString().slice(0, 10) : null;
+  return `<div class="mrep">
+    <div class="mrow"><label class="pl" for="repTok">Asana token ของคุณ <small class="muted">(เก็บในเครื่องนี้เท่านั้น แต่ละเครื่องใช้ของตัวเอง)</small></label>
+      <div class="prow"><input id="repTok" class="pinput" type="password" autocomplete="off" placeholder="${has ? '•••••••• บันทึกในเครื่องนี้แล้ว · วางใหม่เพื่อเปลี่ยน' : 'วาง Personal Access Token ของ Asana'}">
+        <button class="ghost" id="repTokSave">บันทึก</button>${has ? '<button class="ghost" id="repTokDel">ลบ</button>' : ''}</div>
+      <a class="link" href="https://app.asana.com/0/my-apps" target="_blank" rel="noopener">ไปหน้าสร้าง token ที่ Asana ↗</a>
+      <small class="muted"> · กด "Create new token" ตั้งชื่ออะไรก็ได้ แล้วคัดลอกมาวาง</small></div>
+    ${has ? `<div class="mrow"><div class="prow"><button class="ghost" id="repLoad">${REPT === 'loading' ? 'กำลังดึง…' : 'ดึงงานรีพอร์ตจาก Asana'}</button>
+        ${REPT?.error ? `<span class="t-bad" style="font-size:12px">${esc(REPT.error)}</span>` : Array.isArray(REPT) ? `<span class="muted" style="font-size:12px">เจอ ${REPT.length} งาน (งานที่ยังไม่เสร็จและมอบให้คุณ)</span>` : ''}</div></div>` : ''}
+    ${Array.isArray(REPT) && REPT.length ? `<div class="mrow"><label class="pl" for="repTask">งานรีพอร์ต</label>
+        <select id="repTask" class="pinput">${REPT.map(x => `<option value="${x.gid}" ${x.gid === repTaskGid ? 'selected' : ''}>${esc(x.name)}${x.dueOn ? ' · กำหนด ' + thDate(x.dueOn) : ''}</option>`).join('')}</select>
+        ${t ? `<div class="mtitle">ข้อความใต้ภาพบนปก: <b>${esc(t.name)}</b></div>` : ''}</div>
+      <div class="mrow"><label class="pl" for="repEnd">ถึงวันที่</label>
+        <div class="prow"><input id="repEnd" class="pinput" type="date" value="${end}" max="${TODAY}" style="max-width:200px">
+          <span class="muted" style="font-size:12px">${n ? `ช่วง ${n} วันตามชื่องาน: ${thDate(from)} – ${thDate(end)} · พร้อมเทียบ 5 ช่วงก่อนหน้า` : 'ชื่องานไม่มี (N วัน) ระบบจะไม่รู้ความยาวช่วง'}</span></div></div>
+      <div class="mrow"><button class="rep-run" id="repMake" ${active || !online || !t || !n ? 'disabled' : ''}>สร้างรีพอร์ต PDF</button>
+        <span class="muted" style="font-size:12px"> ${active ? 'มีงานรออยู่แล้ว รอให้เสร็จก่อน' : !online ? 'เครื่อง Mac ออฟไลน์' : 'สร้างแค่ PDF ให้ดาวน์โหลด ไม่อัปโหลด Drive ไม่ส่ง Telegram ใช้เวลาประมาณ 1 นาที'}</span></div>` : ''}
+  </div>`;
+}
+document.addEventListener('click', async e => {
+  const m = e.target.closest('[data-repmode]'); if (m) { repMode = m.dataset.repmode; fxKey = ''; render(); return; }
+  const id = e.target.id;
+  if (id === 'repTokSave') { const v = $('#repTok').value.trim(); if (!v) return; try { localStorage.setItem(ASANA_KEY, v); } catch {} REPT = null; loadAsanaTasks(); }
+  if (id === 'repTokDel') { try { localStorage.removeItem(ASANA_KEY); } catch {} REPT = null; fxKey = ''; render(); }
+  if (id === 'repLoad') loadAsanaTasks();
+  if (id === 'repMake') {
+    const t = REPT.find(x => x.gid === repTaskGid); if (!t) return; e.target.disabled = true;
+    const {error} = await sb.from('report_jobs').insert({requested_by: me, params: {task: t, endOn: repEnd || dayBefore(TODAY)}, note: 'สร้างเอง: ' + t.name});
+    if (error) alert('สั่งสร้างไม่ได้: ' + error.message); loadReports();
+  }
+  const pdf = e.target.closest('[data-rep-pdf]');
+  if (pdf) { const {data, error} = await sb.storage.from('reports').createSignedUrl(pdf.dataset.repPdf, 3600, {download: pdf.dataset.repName});
+    if (error) alert('ดาวน์โหลดไม่ได้: ' + error.message); else location.href = data.signedUrl; }
+});
+document.addEventListener('change', e => { if (e.target.id === 'repTask') { repTaskGid = e.target.value; fxKey = ''; render(); } if (e.target.id === 'repEnd') { repEnd = e.target.value; fxKey = ''; render(); } });
+
 function renderReports(){
   if (!REP) { loadReports(); return '<div class="card"><div class="card-h"><b>รีพอร์ต</b><span>กำลังโหลด…</span></div></div>'; }
   if (REP.err) return `<div class="card"><div class="card-h"><b>รีพอร์ต</b><span>โหลดไม่ได้: ${esc(REP.err)}</span></div></div>`;
@@ -2475,15 +2548,18 @@ function renderReports(){
   const ST_LABEL = {queued: ['รอคิว', 'warn'], running: ['กำลังรัน', 'warn'], done: ['เสร็จ', 'ok'], failed: ['ไม่สำเร็จ', 'bad']};
   const step = (v, okv, label) => v == null ? '<span class="muted">–</span>' : `<span class="pill ${v === okv ? 'ok' : /fail|uncertain/.test(v) ? 'bad' : 'warn'}">${esc(label[v] || v)}</span>`;
   const DRV = {uploaded: 'อัปโหลดแล้ว', failed: 'ไม่สำเร็จ', pending: 'รอ', uploading: 'กำลังอัป'}, TG = {sent: 'ส่งแล้ว', failed: 'ไม่สำเร็จ', pending: 'รอ', sending: 'กำลังส่ง', uncertain: 'ไม่แน่ใจว่าส่งถึง'};
-  return `<div class="card"><div class="card-h"><b>รีพอร์ตลูกค้า</b><span>ADSIDEA Reports บนเครื่อง Mac</span></div>
-    <div class="rep-top"><button class="rep-run" data-rep-run ${active || !online ? 'disabled' : ''}>Run Report</button>
+  const top = repMode === 'manual' ? manualRepHTML(active, online) : `<div class="rep-top"><button class="rep-run" data-rep-run ${active || !online ? 'disabled' : ''}>Run Report</button>
       <div class="grow">ตรวจงาน Asana ที่ถึงกำหนดและค้างอยู่ → สร้าง PDF → อัปโหลด Google Drive → ส่ง Telegram ของแต่ละคลินิก (ระบบเดิม กันส่งซ้ำ)
         ${active ? '<br><b>มีงานรออยู่แล้ว รอให้เสร็จก่อน</b>' : ''}</div>
-      <span class="wk"><span class="dot ${online ? 'd-ok' : 'd-bad'}"></span>${online ? 'เครื่อง Mac ออนไลน์' : 'เครื่อง Mac ออฟไลน์' + (REP.worker?.last_seen ? ' · เห็นล่าสุด ' + bkkDateTime(REP.worker.last_seen) : '') + ' · เปิดเครื่องแล้วงานจะรันต่อเอง'}</span></div>
+      <span class="wk"><span class="dot ${online ? 'd-ok' : 'd-bad'}"></span>${online ? 'เครื่อง Mac ออนไลน์' : 'เครื่อง Mac ออฟไลน์' + (REP.worker?.last_seen ? ' · เห็นล่าสุด ' + bkkDateTime(REP.worker.last_seen) : '') + ' · เปิดเครื่องแล้วงานจะรันต่อเอง'}</span></div>`;
+  return `<div class="card"><div class="card-h"><b>รีพอร์ตลูกค้า</b><span>ADSIDEA Reports บนเครื่อง Mac</span></div>
+    <div class="rep-mode"><span class="seg" role="group" aria-label="โหมด"><button data-repmode="auto" aria-selected="${repMode === 'auto'}">อัตโนมัติ</button><button data-repmode="manual" aria-selected="${repMode === 'manual'}">สร้างเอง (เลือกวันที่)</button></span></div>
+    ${top}
     ${REP.jobs.map(j => { const [l, t] = ST_LABEL[j.status] || [j.status, ''], rs = j.results || [];
       return `<div class="job"><div class="job-h"><span class="pill ${t}">${l}</span><b>${bkkDateTime(j.created_at)}</b>
         <span class="muted">${esc(REP.names[j.requested_by] || (j.requested_by ? 'สมาชิก' : 'ระบบ'))}${j.finished_at ? ' · จบ ' + bkkDateTime(j.finished_at) : j.started_at ? ' · เริ่ม ' + bkkDateTime(j.started_at) : ''}</span>
-        ${j.note ? `<span class="muted">${esc(j.note)}</span>` : ''}</div>
+        ${j.params?.task ? '<span class="pill">สร้างเอง</span>' : ''}${j.note ? `<span class="muted">${esc(j.note)}</span>` : ''}
+        ${j.pdf_path ? `<button class="rep-run sm" data-rep-pdf="${esc(j.pdf_path)}" data-rep-name="${esc(j.note || 'report.pdf')}">ดาวน์โหลด PDF</button>` : ''}</div>
         ${j === REP.jobs[0] ? pipeHTML(j) : flowHTML(j)}
         ${rs.length ? `<div class="scroll"><table><thead><tr><th>คลินิก</th><th>สร้าง PDF</th><th>Drive</th><th>Telegram</th><th>ข้อผิดพลาด</th></tr></thead><tbody>${rs.map(r => `<tr>
           <td>${esc(r.client || r.taskGid)}</td><td>${step(r.status, 'success', {success: 'สำเร็จ', failed: 'ไม่สำเร็จ', running: 'กำลังทำ'})}</td>
