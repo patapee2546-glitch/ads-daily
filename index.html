@@ -130,6 +130,8 @@ main{overflow:auto;padding:20px;scrollbar-gutter:stable}
 
 /* table */
 .card{border:1px solid var(--line);border-radius:16px;background:var(--surface);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);box-shadow:var(--shadow);overflow:hidden}
+/* soft light that follows the mouse over a card (--mx/--my set by one pointermove listener) */
+.card,.metric{background-image:radial-gradient(320px circle at var(--mx,-999px) var(--my,-999px),var(--accent-tint),transparent 70%)}
 .card-h{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--edge);flex-wrap:wrap;font-size:13px;color:var(--text-2)}
 .card-h b{color:var(--text);font-weight:600}
 .scroll{overflow-x:auto}
@@ -1208,6 +1210,20 @@ function flashChanged(before){
     const k = tr.dataset.c + '|' + i; if (td.classList.contains('num') && k in before && before[k] !== td.textContent.trim()) td.classList.add('flash');
   }));
 }
+// switching tab: the page's blocks and first table rows glide in, staggered (GSAP, loaded on first use).
+// Only on a real tab change, not on the many in-place re-renders; home/brain/media have their own entrances.
+const loadGsap = () => window.gsap ? Promise.resolve() : new Promise((ok, no) => { const sc = document.createElement('script');
+  sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js'; sc.onload = ok; sc.onerror = no; document.head.append(sc); });
+let enteredView = '';
+function enterView(){
+  if (view === enteredView) return; enteredView = view;
+  if (calm() || ['dash', 'brain', 'media'].includes(view)) return;
+  loadGsap().then(() => { const items = [...document.querySelectorAll('#main > *, #main > * > *:not(table), #main tbody tr')].slice(0, 36);
+    gsap.from(items, {opacity: 0, y: 14, duration: .5, ease: 'power3.out', stagger: .022, clearProps: 'opacity,transform'}); }).catch(() => {});
+}
+document.addEventListener('pointermove', e => { const c = e.target.closest?.('.card,.metric'); if (!c) return;
+  const r = c.getBoundingClientRect(); c.style.setProperty('--mx', e.clientX - r.left + 'px'); c.style.setProperty('--my', e.clientY - r.top + 'px'); }, {passive: true});
+document.addEventListener('pointerout', e => { const c = e.target.closest?.('.card,.metric'); if (c && !c.contains(e.relatedTarget)) c.style.removeProperty('--mx'); });
 // headline numbers count up when you arrive on a view or day
 function countUp(){
   if (calm()) return;
@@ -3015,6 +3031,7 @@ function render(){
   const key = `${view}|${OWNER}|${dayFrom}|${day}`, same = key === fxKey, before = same ? snapNums() : null; fxEnter = !same;
   if (!(view === 'media' && $('#radar')) && !(view === 'brain' && $('#brain') && same) && !(view === 'policy' && $('#polText') && same) && !(view === 'running' && $('#polUrl') && same) && !(view === 'angel' && funnelDraft && same)) { $('#main').innerHTML = mainHTML(); if (view === 'brain') drawBrain(); }
   if (before) flashChanged(before); else countUp();
+  enterView();
   fxKey = key; slideSegs();
   renderPanel(); checkEmptyBal();
 }
