@@ -202,6 +202,9 @@ tbody tr[aria-selected=true]{background:var(--accent-tint);box-shadow:inset 2px 
 .cal-d.out{background:color-mix(in oklab,var(--text) 2.5%,transparent)}.cal-d.out .cal-n{color:var(--text-3);opacity:.6}
 .cal-n{font-size:13px;font-weight:500;color:var(--text-2);min-width:26px;height:26px;padding:0 6px;display:inline-grid;place-items:center;align-self:flex-start;border-radius:999px;font-variant-numeric:tabular-nums}
 .cal-n small{font-size:11px;font-weight:400}
+.cal-top{display:flex;align-items:center;gap:6px;min-width:0}
+.cal-hol{font-size:11px;font-weight:600;color:#fff;background:oklch(55% 0.19 15);padding:2px 8px;border-radius:999px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.cal-d.hol{background:color-mix(in oklab,oklch(60% 0.19 15) 12%,transparent)}.cal-d.hol .cal-n{color:oklch(75% 0.15 15)}
 .cal-d.today{background:var(--accent-tint)}.cal-d.today .cal-n{background:var(--accent);color:#fff;font-weight:600}
 .cal-t{all:unset;box-sizing:border-box;cursor:pointer;display:grid;gap:1px;padding:6px 8px 6px 9px;border-radius:9px;color:var(--text);
   background:color-mix(in oklab,var(--c) 62%,oklch(24% 0.01 260));box-shadow:inset 3px 0 0 color-mix(in oklab,var(--c) 70%,white);color:#fff;transition:filter .12s,transform .12s}
@@ -2577,6 +2580,10 @@ async function asanaGet(path){
   return j;
 }
 // budget top-up tasks ("แจ้งเติมงบโฆษณา - Mediren", "เติมงบ Lalida", "ตั้งเบิกงบ GG") ride on the same calendar
+// company holidays (ประกาศวันหยุดประจำปีบริษัทฯ ปี 2569) -- add next year's sheet here
+const HOLIDAYS = {'2026-01-01': 'วันขึ้นปีใหม่', '2026-01-02': 'วันขึ้นปีใหม่', '2026-03-03': 'วันมาฆบูชา', '2026-04-13': 'วันสงกรานต์', '2026-04-14': 'วันสงกรานต์',
+  '2026-04-15': 'วันสงกรานต์', '2026-05-01': 'วันแรงงานแห่งชาติ', '2026-06-01': 'ชดเชยวันวิสาขบูชา', '2026-07-30': 'วันเข้าพรรษา', '2026-08-12': 'วันแม่แห่งชาติ',
+  '2026-10-23': 'วันปิยมหาราช', '2026-12-10': 'ชดเชยวันพ่อแห่งชาติ', '2026-12-31': 'วันสิ้นปี'};
 const TOPUP_RE = /เติมงบ|เบิกงบ/;
 const topupLabel = t => String(t.name).replace(/^(แจ้ง|ตั้ง)?(เติม|เบิก)งบ(โฆษณา)?\s*[-–:]?\s*/, '').trim() || (t.projects[0]?.name || '').replace(/\s*x\s*adsidea\s*$/i, '');
 console.assert(topupLabel({name: 'แจ้งเติมงบโฆษณา - Mediren', projects: []}) === 'Mediren' && topupLabel({name: 'เติมงบ', projects: [{name: 'Lalida x Adsidea'}]}) === 'Lalida', 'topupLabel');
@@ -2649,8 +2656,9 @@ function manualRepHTML(active, online){
     // one page = one month: days of the neighbouring months stay blank
     if (out) { cells.push('<div class="cal-d out" role="gridcell" aria-hidden="true"></div>'); continue; }
     const ts = (by.get(d) || []).sort((a, b) => isDone(a) - isDone(b) || a.name.localeCompare(b.name));
-    cells.push(`<div class="cal-d${out ? ' out' : ''}${d === TODAY ? ' today' : ''}${dow === 0 || dow === 6 ? ' we' : ''}" role="gridcell" aria-label="${thShort(d, 1)}${ts.length ? ' · ' + ts.length + ' งาน' : ''}">
-      <span class="cal-n">${+d.slice(8)}${d.slice(8) === '01' && out ? ' <small>' + thShort(d).split(' ')[1] + '</small>' : ''}</span>
+    const hol = HOLIDAYS[d];
+    cells.push(`<div class="cal-d${d === TODAY ? ' today' : ''}${dow === 0 || dow === 6 ? ' we' : ''}${hol ? ' hol' : ''}" role="gridcell" aria-label="${thShort(d, 1)}${hol ? ' · วันหยุด ' + hol : ''}${ts.length ? ' · ' + ts.length + ' งาน' : ''}">
+      <span class="cal-top"><span class="cal-n">${+d.slice(8)}</span>${hol ? `<span class="cal-hol">${hol}</span>` : ''}</span>
       ${ts.map(t => { if (t.kind === 'topup') return `<a class="cal-t topup${t.completed ? ' done' : ''}" href="https://app.asana.com/0/0/${t.gid}" target="_blank" rel="noopener" title="${esc(t.name)} · เปิดใน Asana">
           <span class="ct-c">${t.completed ? '<i class="ct-ok" aria-label="ทำแล้ว">✓</i>' : '<i class="ct-baht" aria-hidden="true">฿</i>'}${esc(topupLabel(t))}</span><span class="ct-m">${t.completed ? 'เติมงบแล้ว' : 'ต้องเติมงบ'}</span></a>`;
         const j = jobOfTask(t.gid), st = j && ST[j.status], q = taskParts(t.name), dn = isDone(t), late = !dn && t.dueOn < TODAY;
@@ -2669,7 +2677,7 @@ function manualRepHTML(active, online){
       <button class="ghost icon" id="repLoad" aria-label="รีเฟรชจาก Asana" title="รีเฟรชจาก Asana">${REPT === 'loading' ? '…' : '↻'}</button></div>
     <div class="cal-stats">${stat(inMonth.length, 'งานรีพอร์ตเดือนนี้')}${stat(open.length, 'ยังไม่ได้ทำ', open.length ? 'warnv' : '')}${stat(soon, 'ถึงกำหนดใน 7 วัน')}${stat(made, 'PDF ที่สร้างจากเว็บ')}${stat(`${tops.length}${topsOpen ? ` <small>· ค้าง ${topsOpen}</small>` : ''}`, 'เติมงบเดือนนี้', topsOpen ? 'topv' : '')}</div>
     <div class="cal" role="grid" aria-label="ปฏิทินงานรีพอร์ต ${mName} ${yName}">${['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัส', 'ศุกร์', 'เสาร์'].map((x, i) => `<div class="cal-h${i === 0 || i === 6 ? ' we' : ''}" role="columnheader">${x}</div>`).join('')}${cells.join('')}</div>
-    <p class="cal-foot"><span><i class="ct-ok">✓</i> ทำแล้ว (สร้างซ้ำได้)</span><span><i class="ct-late"></i> เลยกำหนด ยังไม่ได้ทำ</span><span><i class="ct-baht" style="background:oklch(50% 0.2 25);color:#fff">฿</i> เติมงบ (กดเปิดใน Asana)</span><span>PDF โหลดลง Downloads ของเครื่องนี้ · ไม่ลง Drive · ไม่ส่ง Telegram</span></p>
+    <p class="cal-foot"><span><i class="ct-ok">✓</i> ทำแล้ว (สร้างซ้ำได้)</span><span><i class="ct-late"></i> เลยกำหนด ยังไม่ได้ทำ</span><span><i class="cal-hol" style="font-style:normal;padding:0 6px">หยุด</i> วันหยุดบริษัท</span><span><i class="ct-baht" style="background:oklch(50% 0.2 25);color:#fff">฿</i> เติมงบ (กดเปิดใน Asana)</span><span>PDF โหลดลง Downloads ของเครื่องนี้ · ไม่ลง Drive · ไม่ส่ง Telegram</span></p>
   </div>`;
 }
 function genRangeText(){
