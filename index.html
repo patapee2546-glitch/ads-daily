@@ -239,6 +239,9 @@ tbody tr[aria-selected=true]{background:var(--accent-tint);box-shadow:inset 2px 
 #genDlg,#asanaDlg{width:min(520px,calc(100vw - 32px))}
 @media (max-width:760px){.cal-stats{grid-template-columns:repeat(2,1fr)}.cal-d{min-height:84px;padding:4px}.cal-t{padding:4px 5px}.ct-c{font-size:11px}.ct-m{display:none}.cal-h{padding:8px 4px;font-size:11px}.cal-info{order:9;flex-basis:100%}}.mrep{display:grid;gap:14px;padding:14px}.mrow{display:grid;gap:6px}.mrow .link{font-size:12px}
 .mtitle{font-size:13px;color:var(--text-2);padding:8px 12px;border:1px dashed var(--line-2);border-radius:10px}.mtitle b{color:var(--text)}
+.rep-msg{margin:10px 0 2px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.rep-msg-h{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;border-bottom:1px solid var(--line)}.rep-msg-h b{font-size:13px}
+.job .rep-msg pre{margin:0;padding:12px;white-space:pre-wrap;font:14px/1.65 var(--sans);color:var(--text);max-height:none;overflow:visible}
 .rep-cancel+.rep-run.sm{margin-left:8px}
 .rep-cancel{margin-left:auto;height:28px;padding:0 12px;font-size:12px}
 .rep-run.sm{padding:6px 12px;font-size:12px;margin-left:auto}
@@ -2851,6 +2854,9 @@ document.addEventListener('click', e => {
   const ix = e.target.closest('[data-iss-x]');
   if (ix) { e.stopImmediatePropagation(); const c = ix.dataset.issX, r = ((db.days[day] ??= {})[c] ??= {});
     r.issue_cleared = [...new Set([...(r.issue_cleared || []), ...openIssues(c).map(o => o.id + '|' + o.note)])]; save(day, c); fxKey = ''; render(); return; }
+  const cm = e.target.closest('[data-copy-msg]');
+  if (cm) { const j = REP.jobs.find(x => x.id === +cm.dataset.copyMsg), txt = reportMessage(j?.results?.[0]?.summary, daysOfTask(j?.params?.task?.name));
+    navigator.clipboard.writeText(txt).then(() => { cm.textContent = '✓ คัดลอกแล้ว'; setTimeout(() => { cm.textContent = 'คัดลอกข้อความ'; }, 1800); }); return; }
   const pdf = e.target.closest('[data-rep-pdf]'); if (pdf) dlPdf(pdf.dataset.repPdf, pdf.dataset.repName);
   const cx = e.target.closest('[data-rep-cancel]');
   if (cx && confirm(cx.dataset.q ? 'ยกเลิกงานรีพอร์ตที่รอคิวอยู่นี้?' : 'ลบงานนี้ออกจากประวัติ? (PDF ของงานนี้บนเว็บจะถูกลบด้วย)')) { cx.disabled = true;
@@ -2861,6 +2867,23 @@ document.addEventListener('click', e => {
       else if (path) await sb.storage.from('reports').remove([path]);
       loadReports(); }); }
 });
+
+// the app's Thai summary (one block) -> the message the team sends the client, laid out in paragraphs:
+// greeting + period · usage · vs the previous period · best campaign / best ad. The average-cost clause is left out.
+function reportMessage(summary, days){
+  const t = String(summary || '').replace(/\s+/g, ' ').trim(); if (!t) return '';
+  const m = t.match(/^ช่วงวันที่ (.+?) ถึง (.+?) สำหรับ “[^”]*”\s*/);
+  let rest = m ? t.slice(m[0].length) : t;
+  rest = rest.replace(/\s*ต้นทุนเฉลี่ย [\d,.]+ บาทต่อ(?:การทัก|ยอดซื้อ)(?: และ\s*[\d,.]+ บาทต่อยอดซื้อ)?/, '');
+  const cut = (txt, ...marks) => { const i = Math.min(...marks.map(k => { const x = txt.indexOf(k); return x < 0 ? Infinity : x; })); return i === Infinity ? [txt, ''] : [txt.slice(0, i), txt.slice(i)]; };
+  const [usage, a1] = cut(rest, 'เมื่อเทียบกับช่วง', 'แคมเปญ ', 'ส่วนชิ้นงานเด่น');
+  const [compare, a2] = cut(a1, 'แคมเปญ ', 'ส่วนชิ้นงานเด่น');
+  const [camp, ad] = cut(a2, 'ส่วนชิ้นงานเด่น');
+  const head = `สวัสดีครับ ขออนุญาตส่ง Report รอบ ${days || ''} วัน`.replace('  ', ' ').replace(' รอบ  วัน', '') + (m ? `\nตั้งแต่วันที่ ${m[1]} ถึง ${m[2]}` : '');
+  return [head, usage.trim(), compare.trim(), [camp.trim().replace(/ (สร้างยอด)/, '\n$1'), ad.trim()].filter(Boolean).join('\n')].filter(Boolean).join('\n\n');
+}
+console.assert(reportMessage('ช่วงวันที่ 5 พฤศจิกายน 2569 ถึง 18 พฤศจิกายน 2569 สำหรับ “X” ใช้งบโฆษณา 10 บาท และยอดปิดการขาย 8 ครั้ง ต้นทุนเฉลี่ย 1.00 บาทต่อการทัก และ2.00 บาทต่อยอดซื้อ เมื่อเทียบกับช่วง A ยอดทักเพิ่มขึ้นประมาณ 17% แคมเปญ “B” ทำผลงานดีที่สุด สร้างยอดปิดการขาย 3 ครั้ง ส่วนชิ้นงานเด่นคือ “C” สร้างยอดปิดการขาย 2 ครั้ง', 14)
+  === 'สวัสดีครับ ขออนุญาตส่ง Report รอบ 14 วัน\nตั้งแต่วันที่ 5 พฤศจิกายน 2569 ถึง 18 พฤศจิกายน 2569\n\nใช้งบโฆษณา 10 บาท และยอดปิดการขาย 8 ครั้ง\n\nเมื่อเทียบกับช่วง A ยอดทักเพิ่มขึ้นประมาณ 17%\n\nแคมเปญ “B” ทำผลงานดีที่สุด\nสร้างยอดปิดการขาย 3 ครั้ง\nส่วนชิ้นงานเด่นคือ “C” สร้างยอดปิดการขาย 2 ครั้ง', 'reportMessage');
 
 function renderReports(){
   if (!REP) { loadReports(); return '<div class="card"><div class="card-h"><b>รีพอร์ต</b><span>กำลังโหลด…</span></div></div>'; }
@@ -2878,6 +2901,7 @@ function renderReports(){
         ${j.status !== 'running' && j.requested_by === me ? `<button class="ghost rep-cancel" data-rep-cancel="${j.id}" data-q="${j.status === 'queued' ? 1 : ''}">${j.status === 'queued' ? 'ยกเลิก' : 'ลบ'}</button>` : ''}
         ${j.pdf_path ? `<button class="rep-run sm" data-rep-pdf="${esc(j.pdf_path)}" data-rep-name="${esc(j.note || 'report.pdf')}">ดาวน์โหลด PDF</button>` : ''}</div>
         ${live ? pipeHTML(j) : ''}
+        ${(msg => msg ? `<div class="rep-msg"><div class="rep-msg-h"><b>ข้อความพร้อมส่ง</b><button class="ghost" data-copy-msg="${j.id}">คัดลอกข้อความ</button></div><pre>${esc(msg)}</pre></div>` : '')(reportMessage(j.results?.[0]?.summary, daysOfTask(j.params?.task?.name)))}
         ${j.log && j.status === 'failed' ? `<details><summary>ดู log</summary><pre>${esc(j.log)}</pre></details>` : ''}</div>`; }).join('')
       || `<div class="job muted">ยังไม่ได้สร้างรีพอร์ตจากเครื่องนี้ · กดงานในปฏิทินด้านบน</div>`}</div>`;
 }
