@@ -215,6 +215,7 @@ tbody tr[aria-selected=true]{background:var(--accent-tint);box-shadow:inset 2px 
 .cal-foot{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:12px;color:var(--text-3);margin:0}.cal-foot span{display:inline-flex;align-items:center;gap:6px}
 .cal-empty{display:grid;gap:8px;justify-items:start;padding:18px;border:1px dashed var(--line-2);border-radius:14px}.cal-empty span{color:var(--text-2);font-size:13px}
 .gen-task{display:flex;gap:12px;align-items:flex-start;margin:10px 0 14px}.gen-task>div{display:grid;gap:4px;min-width:0}
+.gen-sw{margin:0 0 6px}
 .gen-dot{width:10px;height:10px;border-radius:50%;margin-top:9px;flex:none}.gt-c{font-size:20px;font-weight:600;line-height:1.25}
 .gt-tags{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 6px}.gt-tags span{font-size:12px;padding:2px 9px;border-radius:999px;border:1px solid var(--line);color:var(--text-2);font-variant-numeric:tabular-nums}
 .gt-tags .ok{color:var(--ok);border-color:color-mix(in oklab,var(--ok) 40%,transparent)}
@@ -2602,6 +2603,11 @@ const ASANA_COL = {'dark-red': '#e8384f', 'light-red': '#fc91ad', 'dark-orange':
 const taskCol = t => { const p = t.projects[0]; return ASANA_COL[p?.color] || `hsl(${[...(p?.gid || t.gid)].reduce((h, c) => h * 31 + c.charCodeAt(0) >>> 0, 7) % 360} 60% 62%)`; };
 // the report app picks the period itself: it ends the day before the due date (never after today), length = "(N วัน)" in the name
 const genEndOf = t => { const d = dayBefore(t.dueOn); return d < TODAY ? d : TODAY; };
+// "ทำแล้ว" switch: ticks a task on THIS browser right away, without waiting for Asana to be ticked
+const DONE_KEY = 'ads-daily-rep-done';
+const doneSet = () => { try { return new Set(JSON.parse(localStorage.getItem(DONE_KEY) || '[]')); } catch { return new Set(); } };
+const isDone = t => t.completed || doneSet().has(t.gid);
+function setDone(gid, on){ const d = doneSet(); on ? d.add(gid) : d.delete(gid); try { localStorage.setItem(DONE_KEY, JSON.stringify([...d].slice(-500))); } catch {} }
 const jobOfTask = gid => REP?.jobs.find(j => j.params?.task?.gid === gid);
 // "Report Ads Facebook – ทูเกเตอร์ คลินิก M21/P2 (30 วัน)" -> {clinic: 'ทูเกเตอร์ คลินิก', cycle: 'M21/P2', days: 30}
 function taskParts(name){
@@ -2625,21 +2631,21 @@ function manualRepHTML(active, online){
   const all = (Array.isArray(REPT) ? REPT : []).filter(t => !calClinic || projOf(t).gid === calClinic), by = new Map(); for (const t of all) by.set(t.dueOn, [...(by.get(t.dueOn) || []), t]);
   const ST = {queued: ['รอคิว', 'warn'], running: ['กำลังสร้าง', 'warn'], done: ['PDF', 'ok'], failed: ['ล้ม', 'bad']};
   // summary for the month on screen
-  const inMonth = all.filter(t => t.dueOn.slice(0, 7) === calMonth), open = inMonth.filter(t => !t.completed);
+  const inMonth = all.filter(t => t.dueOn.slice(0, 7) === calMonth), open = inMonth.filter(t => !isDone(t));
   const wkEnd = new Date(Date.parse(TODAY) + 6 * 864e5).toISOString().slice(0, 10);
-  const soon = all.filter(t => !t.completed && t.dueOn >= TODAY && t.dueOn <= wkEnd).length, made = (REP?.jobs || []).filter(j => j.params?.task && j.pdf_path).length;
+  const soon = all.filter(t => !isDone(t) && t.dueOn >= TODAY && t.dueOn <= wkEnd).length, made = (REP?.jobs || []).filter(j => j.params?.task && j.pdf_path).length;
   const stat = (n, l, cls = '') => `<div class="cs ${cls}"><b>${n}</b><span>${l}</span></div>`;
   const cells = [];
   for (let i = 0; i < weeks * 7; i++) {
     const d = new Date(+start + i * 864e5).toISOString().slice(0, 10), out = d.slice(0, 7) !== calMonth, dow = i % 7;
     // one page = one month: days of the neighbouring months stay blank
     if (out) { cells.push('<div class="cal-d out" role="gridcell" aria-hidden="true"></div>'); continue; }
-    const ts = (by.get(d) || []).sort((a, b) => a.completed - b.completed || a.name.localeCompare(b.name));
+    const ts = (by.get(d) || []).sort((a, b) => isDone(a) - isDone(b) || a.name.localeCompare(b.name));
     cells.push(`<div class="cal-d${out ? ' out' : ''}${d === TODAY ? ' today' : ''}${dow === 0 || dow === 6 ? ' we' : ''}" role="gridcell" aria-label="${thShort(d, 1)}${ts.length ? ' · ' + ts.length + ' งาน' : ''}">
       <span class="cal-n">${+d.slice(8)}${d.slice(8) === '01' && out ? ' <small>' + thShort(d).split(' ')[1] + '</small>' : ''}</span>
-      ${ts.map(t => { const j = jobOfTask(t.gid), st = j && ST[j.status], q = taskParts(t.name), late = !t.completed && t.dueOn < TODAY;
-        return `<button class="cal-t${t.completed ? ' done' : ''}${late ? ' late' : ''}" style="--c:${taskCol(t)}" data-gen="${t.gid}" title="${esc(t.name)}${t.projects[0] ? '\n' + esc(t.projects[0].name) : ''}">
-          <span class="ct-c">${t.completed ? '<i class="ct-ok" aria-label="เสร็จแล้วใน Asana">✓</i>' : late ? '<i class="ct-late" aria-label="เลยกำหนด"></i>' : ''}${esc(q.clinic)}</span>
+      ${ts.map(t => { const j = jobOfTask(t.gid), st = j && ST[j.status], q = taskParts(t.name), dn = isDone(t), late = !dn && t.dueOn < TODAY;
+        return `<button class="cal-t${dn ? ' done' : ''}${late ? ' late' : ''}" style="--c:${taskCol(t)}" data-gen="${t.gid}" title="${esc(t.name)}${t.projects[0] ? '\n' + esc(t.projects[0].name) : ''}">
+          <span class="ct-c">${dn ? '<i class="ct-ok" aria-label="ทำแล้ว">✓</i>' : late ? '<i class="ct-late" aria-label="เลยกำหนด"></i>' : ''}${esc(q.clinic)}</span>
           <span class="ct-m">${esc(q.cycle)}${q.cycle && q.days ? ' · ' : ''}${q.days ? q.days + ' วัน' : ''}${st ? `<em class="${st[1]}">${st[0]}</em>` : ''}</span></button>`; }).join('')}</div>`);
   }
   const [mName, yName] = new Date(Date.UTC(y, m, 1)).toLocaleDateString('th-TH', {month: 'long', year: 'numeric', timeZone: 'UTC'}).split(' ');
@@ -2651,9 +2657,9 @@ function manualRepHTML(active, online){
       ${online ? '' : '<span class="cal-mac"><span class="dot d-bad"></span>เครื่อง Mac ออฟไลน์</span>'}
       <label class="cal-cl"><span class="sr-only">เลือกคลินิก</span><select id="calClinic">${['<option value="">ทุกคลินิก</option>', ...clinics.map(([g, n]) => `<option value="${esc(g)}" ${g === calClinic ? 'selected' : ''}>${esc(n)}</option>`)].join('')}</select></label>
       <button class="ghost icon" id="repLoad" aria-label="รีเฟรชจาก Asana" title="รีเฟรชจาก Asana">${REPT === 'loading' ? '…' : '↻'}</button></div>
-    <div class="cal-stats">${stat(inMonth.length, 'งานรีพอร์ตเดือนนี้')}${stat(open.length, 'ยังไม่ติ๊กเสร็จใน Asana', open.length ? 'warnv' : '')}${stat(soon, 'ถึงกำหนดใน 7 วัน')}${stat(made, 'PDF ที่สร้างจากเว็บ')}</div>
+    <div class="cal-stats">${stat(inMonth.length, 'งานรีพอร์ตเดือนนี้')}${stat(open.length, 'ยังไม่ได้ทำ', open.length ? 'warnv' : '')}${stat(soon, 'ถึงกำหนดใน 7 วัน')}${stat(made, 'PDF ที่สร้างจากเว็บ')}</div>
     <div class="cal" role="grid" aria-label="ปฏิทินงานรีพอร์ต ${mName} ${yName}">${['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัส', 'ศุกร์', 'เสาร์'].map((x, i) => `<div class="cal-h${i === 0 || i === 6 ? ' we' : ''}" role="columnheader">${x}</div>`).join('')}${cells.join('')}</div>
-    <p class="cal-foot"><span><i class="ct-ok">✓</i> ติ๊กเสร็จใน Asana แล้ว (สร้างซ้ำได้)</span><span><i class="ct-late"></i> เลยกำหนด ยังไม่ติ๊ก</span><span>PDF โหลดลง Downloads ของเครื่องนี้ · ไม่ลง Drive · ไม่ส่ง Telegram</span></p>
+    <p class="cal-foot"><span><i class="ct-ok">✓</i> ทำแล้ว (สร้างซ้ำได้)</span><span><i class="ct-late"></i> เลยกำหนด ยังไม่ได้ทำ</span><span>PDF โหลดลง Downloads ของเครื่องนี้ · ไม่ลง Drive · ไม่ส่ง Telegram</span></p>
   </div>`;
 }
 function genRangeText(){
@@ -2670,7 +2676,8 @@ function openGen(gid){
   const busy = REP?.jobs.some(x => x.status === 'queued' || x.status === 'running');
   const q = taskParts(genTask.name);
   $('#genTask').innerHTML = `<span class="gen-dot" style="background:${taskCol(genTask)}"></span><div><b class="gt-c">${esc(q.clinic)}</b>
-    <span class="gt-tags">${q.cycle ? `<span>${esc(q.cycle)}</span>` : ''}<span>กำหนด ${thShort(genTask.dueOn, 1)}</span>${genTask.completed ? '<span class="ok">✓ เสร็จแล้วใน Asana</span>' : ''}</span>
+    <span class="gt-tags">${q.cycle ? `<span>${esc(q.cycle)}</span>` : ''}<span>กำหนด ${thShort(genTask.dueOn, 1)}</span></span>
+    <label class="sw gen-sw"><input type="checkbox" role="switch" id="genDone" ${isDone(genTask) ? 'checked' : ''} ${genTask.completed ? 'disabled' : ''}><span>${genTask.completed ? 'ทำแล้ว (ติ๊กใน Asana แล้ว)' : isDone(genTask) ? 'ทำแล้ว' : 'ยังไม่ได้ทำ'}</span></label>
     <small>ข้อความใต้ภาพบนปก</small><span class="gt-n">${esc(genTask.name)}</span>
     <small>${genTask.projects.map(p => esc(p.name)).join(' · ')}</small>
     ${j?.pdf_path ? `<button type="button" class="link" data-rep-pdf="${esc(j.pdf_path)}" data-rep-name="${esc(j.note || 'report.pdf')}">ดาวน์โหลด PDF ล่าสุดของงานนี้</button>` : ''}</div>`;
@@ -2679,6 +2686,9 @@ function openGen(gid){
   genRangeText(); $('#genDlg').showModal();
 }
 $('#genCancel').onclick = () => $('#genDlg').close();
+document.addEventListener('change', e => { if (e.target.id !== 'genDone' || !genTask) return;
+  setDone(genTask.gid, e.target.checked); e.target.nextElementSibling.textContent = e.target.checked ? 'ทำแล้ว' : 'ยังไม่ได้ทำ';
+  if (view === 'reports') { fxKey = ''; render(); } });
 document.addEventListener('change', e => { if (e.target.id === 'calClinic') { calClinic = e.target.value; fxKey = ''; render(); } });
 $('#genForm').onsubmit = async e => {
   e.preventDefault(); const t = genTask; $('#genGo').disabled = true;
