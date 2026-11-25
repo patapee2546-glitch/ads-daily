@@ -2310,7 +2310,7 @@ function renderLog(){
       <span class="muted" style="font-size:12px">กรอกแล้วบันทึกเอง · ทีมเห็นทันที</span></div>
       <div class="scroll"><table class="logt"><thead><tr><th>คลินิก</th>${LOG_TOPICS.map(([,l]) => `<th>${l}</th>`).join('')}</tr></thead>
       <tbody>${visible().map(c => { const r = rec(d, c.name);
-        return `<tr><td class="cn"><button class="link" data-open="${esc(c.name)}" style="font-size:13px;font-weight:500">${esc(c.name)}</button>
+        return `<tr><td class="cn"><button class="link" data-open="${esc(c.name)}" data-day="${d}" style="font-size:13px;font-weight:500">${esc(c.name)}</button>
           <small>${r.budget?.spend != null && r.budget.spend !== '' ? `ใช้ ${baht(r.budget.spend)} · ผลลัพธ์ ${int(r.ads?.results)}` : 'ยังไม่มียอด'}</small></td>
           ${LOG_TOPICS.map(([t, l]) => `<td class="tp"><span class="lst" role="group" aria-label="สถานะ${l} ${esc(c.name)}">${Object.entries(ST).map(([v, lab]) =>
             `<button data-logst="${esc(c.name)}|${t}|${v}" aria-pressed="${r[t]?.status === v}" title="${lab}" aria-label="${lab}"><span class="dot d-${v}"></span></button>`).join('')}</span>
@@ -3108,7 +3108,7 @@ $('#main').addEventListener('click', e => {
   const pc = e.target.closest('[data-pc]'); if (pc) { postClinic = pc.dataset.pc; render(); return; }
   if (e.target.closest('[data-posts-reload]')) { const b = e.target.closest('button'); b.disabled = true; b.textContent = 'กำลังดึง…';
     sb.functions.invoke('page-posts', {body: {days: 2}}).then(({error}) => { if (error) alert('ดึงโพสต์ไม่ได้: ' + error.message); loadPosts(day, true); }); return; }
-  const ld = e.target.closest('[data-logday]'); if (ld) { logDay = ld.dataset.logday === TODAY ? null : ld.dataset.logday; render(); return; }
+  const ld = e.target.closest('[data-logday]'); if (ld) { logDay = ld.dataset.logday === TODAY ? null : ld.dataset.logday; if (cur) { day = ld.dataset.logday; dayFrom = null; } render(); return; }
   const ls = e.target.closest('[data-logst]'); if (ls) {
     const [c, t, v] = ls.dataset.logst.split('|'), d = logDay || TODAY, o = (((db.days[d] ??= {})[c] ??= {})[t] ??= {});
     const was = (db.days[d][c]._auto ??= {});
