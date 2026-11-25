@@ -192,7 +192,7 @@ tbody tr[aria-selected=true]{background:var(--accent-tint);box-shadow:inset 2px 
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .cal-cl select{appearance:none;height:34px;padding:0 32px 0 14px;border:1px solid var(--line);border-radius:999px;background:var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23999' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat right 12px center;color:var(--text);font:500 13px var(--sans);cursor:pointer;max-width:240px}
 .cal-cl select:focus-visible{outline:2px solid var(--accent);outline-offset:1px}.cal-cl option{background:var(--pop);color:var(--text)}
-.cal-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.cal-stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
 .cs{padding:10px 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface);display:grid;gap:2px}
 .cs b{font-size:24px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.15}.cs span{font-size:12px;color:var(--text-3)}.cs.warnv b{color:var(--warn)}
 .cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--surface)}
@@ -204,11 +204,14 @@ tbody tr[aria-selected=true]{background:var(--accent-tint);box-shadow:inset 2px 
 .cal-n small{font-size:11px;font-weight:400}
 .cal-d.today{background:var(--accent-tint)}.cal-d.today .cal-n{background:var(--accent);color:#fff;font-weight:600}
 .cal-t{all:unset;box-sizing:border-box;cursor:pointer;display:grid;gap:1px;padding:6px 8px 6px 9px;border-radius:9px;color:var(--text);
-  background:color-mix(in oklab,var(--c) 30%,transparent);box-shadow:inset 3px 0 0 var(--c);transition:background .12s,transform .12s}
-.cal-t:hover{background:color-mix(in oklab,var(--c) 44%,transparent);transform:translateY(-1px)}.cal-t:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+  background:color-mix(in oklab,var(--c) 62%,oklch(24% 0.01 260));box-shadow:inset 3px 0 0 color-mix(in oklab,var(--c) 70%,white);color:#fff;transition:filter .12s,transform .12s}
+.cal-t:hover{filter:brightness(1.12);transform:translateY(-1px)}.cal-t:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .ct-c{font-size:12.5px;font-weight:500;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center;gap:5px}
-.ct-m{font-size:11px;color:color-mix(in oklab,var(--text) 82%,transparent);font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden}
-.cal-t.done .ct-ok{color:var(--ok)}
+.ct-m{font-size:11px;color:oklch(100% 0 0 / .82);font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden}
+.cal-t .ct-ok{color:oklch(90% 0.16 150);font-weight:700}
+.cal-t.topup{background:oklch(50% 0.2 25);box-shadow:inset 3px 0 0 oklch(80% 0.14 40);text-decoration:none}.cal-t.topup.done{background:oklch(42% 0.12 25)}
+.ct-baht{font-style:normal;font-weight:700;width:16px;height:16px;border-radius:50%;display:inline-grid;place-items:center;background:oklch(100% 0 0 / .22);font-size:10px;flex:none}
+.cs.topv b{color:oklch(72% 0.17 25)}.cs b small{font-size:13px;font-weight:500;color:var(--text-3)}
 .ct-ok{font-style:normal;color:var(--ok);font-size:11px}.ct-late{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--warn);flex:none}
 .cal-t em{font-style:normal;font-size:10px;font-weight:500;padding:0 6px;border-radius:999px;line-height:16px;margin-left:auto}
 .cal-t em.ok{background:color-mix(in oklab,var(--ok) 25%,transparent);color:var(--ok)}.cal-t em.warn{background:color-mix(in oklab,var(--warn) 25%,transparent);color:var(--warn)}.cal-t em.bad{background:color-mix(in oklab,var(--bad) 25%,transparent);color:var(--bad)}
@@ -2573,6 +2576,10 @@ async function asanaGet(path){
   if (!r.ok) throw new Error(r.status === 401 ? 'Asana token ใช้ไม่ได้ หรือหมดอายุ · ตั้งใหม่ที่เมนู ⋯ มุมขวาบน' : (j.errors?.[0]?.message || 'Asana ' + r.status));
   return j;
 }
+// budget top-up tasks ("แจ้งเติมงบโฆษณา - Mediren", "เติมงบ Lalida", "ตั้งเบิกงบ GG") ride on the same calendar
+const TOPUP_RE = /เติมงบ|เบิกงบ/;
+const topupLabel = t => String(t.name).replace(/^(แจ้ง|ตั้ง)?(เติม|เบิก)งบ(โฆษณา)?\s*[-–:]?\s*/, '').trim() || (t.projects[0]?.name || '').replace(/\s*x\s*adsidea\s*$/i, '');
+console.assert(topupLabel({name: 'แจ้งเติมงบโฆษณา - Mediren', projects: []}) === 'Mediren' && topupLabel({name: 'เติมงบ', projects: [{name: 'Lalida x Adsidea'}]}) === 'Lalida', 'topupLabel');
 const monthAdd = (ym, n) => { const d = new Date(Date.UTC(+ym.slice(0, 4), +ym.slice(5, 7) - 1 + n, 1)); return d.toISOString().slice(0, 7); };
 // my tasks (open + completed since the month before the one shown) whose name is a Facebook report, across my workspaces
 async function loadAsanaTasks(){
@@ -2584,7 +2591,7 @@ async function loadAsanaTasks(){
       let off = '';
       for (let i = 0; i < 20; i++) {
         const j = await asanaGet(`tasks?assignee=me&workspace=${ws.gid}&completed_since=${since}T00:00:00Z&limit=100&opt_fields=${F}${off}`);
-        for (const t of j.data || []) if (/report\s*ads\s*facebook/i.test(t.name) && t.due_on) out.push({gid: t.gid, name: t.name, dueOn: t.due_on, completed: !!t.completed,
+        for (const t of j.data || []) if (t.due_on && (/report\s*ads\s*facebook/i.test(t.name) || TOPUP_RE.test(t.name))) out.push({gid: t.gid, name: t.name, kind: TOPUP_RE.test(t.name) && !/report/i.test(t.name) ? 'topup' : 'report', dueOn: t.due_on, completed: !!t.completed,
           modifiedAt: t.modified_at || null, projects: (t.projects || []).map(p => ({gid: p.gid, name: p.name, color: p.color || null}))});
         if (!j.next_page?.offset) break; off = '&offset=' + j.next_page.offset;
       }
@@ -2631,9 +2638,10 @@ function manualRepHTML(active, online){
   const all = (Array.isArray(REPT) ? REPT : []).filter(t => !calClinic || projOf(t).gid === calClinic), by = new Map(); for (const t of all) by.set(t.dueOn, [...(by.get(t.dueOn) || []), t]);
   const ST = {queued: ['รอคิว', 'warn'], running: ['กำลังสร้าง', 'warn'], done: ['PDF', 'ok'], failed: ['ล้ม', 'bad']};
   // summary for the month on screen
-  const inMonth = all.filter(t => t.dueOn.slice(0, 7) === calMonth), open = inMonth.filter(t => !isDone(t));
+  const reps = all.filter(t => t.kind !== 'topup'), inMonth = reps.filter(t => t.dueOn.slice(0, 7) === calMonth), open = inMonth.filter(t => !isDone(t));
+  const tops = all.filter(t => t.kind === 'topup' && t.dueOn.slice(0, 7) === calMonth), topsOpen = tops.filter(t => !t.completed).length;
   const wkEnd = new Date(Date.parse(TODAY) + 6 * 864e5).toISOString().slice(0, 10);
-  const soon = all.filter(t => !isDone(t) && t.dueOn >= TODAY && t.dueOn <= wkEnd).length, made = (REP?.jobs || []).filter(j => j.params?.task && j.pdf_path).length;
+  const soon = reps.filter(t => !isDone(t) && t.dueOn >= TODAY && t.dueOn <= wkEnd).length, made = (REP?.jobs || []).filter(j => j.params?.task && j.pdf_path).length;
   const stat = (n, l, cls = '') => `<div class="cs ${cls}"><b>${n}</b><span>${l}</span></div>`;
   const cells = [];
   for (let i = 0; i < weeks * 7; i++) {
@@ -2643,7 +2651,9 @@ function manualRepHTML(active, online){
     const ts = (by.get(d) || []).sort((a, b) => isDone(a) - isDone(b) || a.name.localeCompare(b.name));
     cells.push(`<div class="cal-d${out ? ' out' : ''}${d === TODAY ? ' today' : ''}${dow === 0 || dow === 6 ? ' we' : ''}" role="gridcell" aria-label="${thShort(d, 1)}${ts.length ? ' · ' + ts.length + ' งาน' : ''}">
       <span class="cal-n">${+d.slice(8)}${d.slice(8) === '01' && out ? ' <small>' + thShort(d).split(' ')[1] + '</small>' : ''}</span>
-      ${ts.map(t => { const j = jobOfTask(t.gid), st = j && ST[j.status], q = taskParts(t.name), dn = isDone(t), late = !dn && t.dueOn < TODAY;
+      ${ts.map(t => { if (t.kind === 'topup') return `<a class="cal-t topup${t.completed ? ' done' : ''}" href="https://app.asana.com/0/0/${t.gid}" target="_blank" rel="noopener" title="${esc(t.name)} · เปิดใน Asana">
+          <span class="ct-c">${t.completed ? '<i class="ct-ok" aria-label="ทำแล้ว">✓</i>' : '<i class="ct-baht" aria-hidden="true">฿</i>'}${esc(topupLabel(t))}</span><span class="ct-m">${t.completed ? 'เติมงบแล้ว' : 'ต้องเติมงบ'}</span></a>`;
+        const j = jobOfTask(t.gid), st = j && ST[j.status], q = taskParts(t.name), dn = isDone(t), late = !dn && t.dueOn < TODAY;
         return `<button class="cal-t${dn ? ' done' : ''}${late ? ' late' : ''}" style="--c:${taskCol(t)}" data-gen="${t.gid}" title="${esc(t.name)}${t.projects[0] ? '\n' + esc(t.projects[0].name) : ''}">
           <span class="ct-c">${dn ? '<i class="ct-ok" aria-label="ทำแล้ว">✓</i>' : late ? '<i class="ct-late" aria-label="เลยกำหนด"></i>' : ''}${esc(q.clinic)}</span>
           <span class="ct-m">${esc(q.cycle)}${q.cycle && q.days ? ' · ' : ''}${q.days ? q.days + ' วัน' : ''}${st ? `<em class="${st[1]}">${st[0]}</em>` : ''}</span></button>`; }).join('')}</div>`);
@@ -2657,9 +2667,9 @@ function manualRepHTML(active, online){
       ${online ? '' : '<span class="cal-mac"><span class="dot d-bad"></span>เครื่อง Mac ออฟไลน์</span>'}
       <label class="cal-cl"><span class="sr-only">เลือกคลินิก</span><select id="calClinic">${['<option value="">ทุกคลินิก</option>', ...clinics.map(([g, n]) => `<option value="${esc(g)}" ${g === calClinic ? 'selected' : ''}>${esc(n)}</option>`)].join('')}</select></label>
       <button class="ghost icon" id="repLoad" aria-label="รีเฟรชจาก Asana" title="รีเฟรชจาก Asana">${REPT === 'loading' ? '…' : '↻'}</button></div>
-    <div class="cal-stats">${stat(inMonth.length, 'งานรีพอร์ตเดือนนี้')}${stat(open.length, 'ยังไม่ได้ทำ', open.length ? 'warnv' : '')}${stat(soon, 'ถึงกำหนดใน 7 วัน')}${stat(made, 'PDF ที่สร้างจากเว็บ')}</div>
+    <div class="cal-stats">${stat(inMonth.length, 'งานรีพอร์ตเดือนนี้')}${stat(open.length, 'ยังไม่ได้ทำ', open.length ? 'warnv' : '')}${stat(soon, 'ถึงกำหนดใน 7 วัน')}${stat(made, 'PDF ที่สร้างจากเว็บ')}${stat(`${tops.length}${topsOpen ? ` <small>· ค้าง ${topsOpen}</small>` : ''}`, 'เติมงบเดือนนี้', topsOpen ? 'topv' : '')}</div>
     <div class="cal" role="grid" aria-label="ปฏิทินงานรีพอร์ต ${mName} ${yName}">${['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัส', 'ศุกร์', 'เสาร์'].map((x, i) => `<div class="cal-h${i === 0 || i === 6 ? ' we' : ''}" role="columnheader">${x}</div>`).join('')}${cells.join('')}</div>
-    <p class="cal-foot"><span><i class="ct-ok">✓</i> ทำแล้ว (สร้างซ้ำได้)</span><span><i class="ct-late"></i> เลยกำหนด ยังไม่ได้ทำ</span><span>PDF โหลดลง Downloads ของเครื่องนี้ · ไม่ลง Drive · ไม่ส่ง Telegram</span></p>
+    <p class="cal-foot"><span><i class="ct-ok">✓</i> ทำแล้ว (สร้างซ้ำได้)</span><span><i class="ct-late"></i> เลยกำหนด ยังไม่ได้ทำ</span><span><i class="ct-baht" style="background:oklch(50% 0.2 25);color:#fff">฿</i> เติมงบ (กดเปิดใน Asana)</span><span>PDF โหลดลง Downloads ของเครื่องนี้ · ไม่ลง Drive · ไม่ส่ง Telegram</span></p>
   </div>`;
 }
 function genRangeText(){
