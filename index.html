@@ -2948,7 +2948,7 @@ function renderPanel(){
   p.innerHTML = `
     <div class="ph"><div class="row"><h2>${adsLink(c, esc(c.name))}</h2>
       <label class="sw" title="ติ๊กเมื่อเช็คแอดของวันนี้แล้ว"><input type="checkbox" role="switch" id="monChk" ${r.ads?.monitored ? 'checked' : ''}>${r.ads?.monitored ? 'มอนิเตอร์แอดแล้ว' : 'ยังไม่มอนิเตอร์'}</label>
-      ${(c.pages || []).map((pg, i, a) => `<a class="ghost icon inbox-btn" href="https://business.facebook.com/latest/inbox/all/?asset_id=${encodeURIComponent(pg)}" target="_blank" rel="noopener"
+      ${(c.pages || []).slice(0, 1).map((pg, i, a) => `<a class="ghost icon inbox-btn" href="https://business.facebook.com/latest/inbox/all/?asset_id=${encodeURIComponent(pg)}" target="_blank" rel="noopener"
         aria-label="กล่องข้อความของเพจ${a.length > 1 ? ' ' + (i + 1) : ''}" title="กล่องข้อความ (Business Suite)${a.length > 1 ? ' · เพจ ' + (i + 1) : ''} · ต้องใช้โปรไฟล์ Chrome อื่น: คลิกขวา → เปิดลิงก์ในชื่อ…"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-6.4A8 8 0 1 1 21 12Z"/></svg>${a.length > 1 ? `<b>${i + 1}</b>` : ''}</a>`).join('')}
       <button class="ghost icon" data-step="-1" aria-label="คลินิกก่อนหน้า" title="ก่อนหน้า (K)">↑</button>
       <button class="ghost icon" data-step="1" aria-label="คลินิกถัดไป" title="ถัดไป (J)">↓</button>
