@@ -2772,7 +2772,7 @@ function renderReports(){
   return `<div class="card"><div class="card-h"><b>รีพอร์ตลูกค้า</b><span>ใช้ได้ทุกเครื่อง Windows · Mac · มือถือ · PDF สร้างที่เครื่องกลางของออฟฟิศ</span></div>
     <div class="rep-mode"><span class="seg" role="group" aria-label="โหมด"><button data-repmode="manual" aria-selected="${repMode === 'manual'}">สร้างเอง (ปฏิทิน Asana)</button><button data-repmode="auto" aria-selected="${repMode === 'auto'}">อัตโนมัติ (ส่งลูกค้า)</button></span></div>
     ${top}
-    ${REP.jobs.filter(j => repMode === 'manual' ? j.params?.task && j.requested_by === me : !j.params?.task)  // สร้างเอง: only my own jobs
+    ${REP.jobs.filter(j => j.requested_by === me && (repMode === 'manual' ? !!j.params?.task : !j.params?.task))  // each person sees only their own jobs
       .map(j => { const [l, t] = ST_LABEL[j.status] || [j.status, ''], rs = j.results || [], live = j.status === 'queued' || j.status === 'running';
       return `<div class="job"><div class="job-h"><span class="pill ${t}">${l}</span><b>${bkkDateTime(j.created_at)}</b>
         <span class="muted">${esc(REP.names[j.requested_by] || (j.requested_by ? 'สมาชิก' : 'ระบบ'))}${j.finished_at ? ' · จบ ' + bkkDateTime(j.finished_at) : j.started_at ? ' · เริ่ม ' + bkkDateTime(j.started_at) : ''}</span>
