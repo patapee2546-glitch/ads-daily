@@ -82,8 +82,8 @@ header .menu .pop{background:var(--pop);min-width:290px}
 #pwDlg,#balDlg{border:1px solid var(--line);border-radius:14px;background:var(--pop);color:var(--text);padding:20px;width:min(380px,calc(100vw - 32px))}
 #pwDlg::backdrop,#balDlg::backdrop{background:oklch(0% 0 0 / .4)}
 #pwDlg h2,#balDlg h2{font-size:16px;margin:0 0 12px}
-#pwDlg label,#balDlg label{display:grid;gap:4px;font-size:12px;color:var(--text-3);margin-bottom:10px}
-#pwDlg input,#balDlg input{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 10px;color:var(--text);font:inherit}
+#pwDlg label,#balDlg label,#asanaDlg label{display:grid;gap:4px;font-size:12px;color:var(--text-3);margin-bottom:10px}
+#pwDlg input,#balDlg input,#asanaDlg input{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 10px;color:var(--text);font:inherit}
 .pw-actions{display:flex;gap:8px;justify-content:flex-end}
 .acct-row{display:flex!important;gap:12px;align-items:center}
 .av-pick{position:relative;cursor:pointer;flex:none}.av{width:48px;height:48px;border-radius:50%;object-fit:cover;display:block}
@@ -178,7 +178,26 @@ tbody tr[aria-selected=true]{background:var(--accent-tint);box-shadow:inset 2px 
 #radar{display:block;width:100%;height:calc(100vh - 120px);border:0;background:transparent;color-scheme:light dark}
 .rep-top{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:14px}
 .rep-top .grow{flex:1;min-width:220px;font-size:13px;color:var(--text-2)}
-.rep-mode{padding:12px 14px 0}.mrep{display:grid;gap:14px;padding:14px}.mrow{display:grid;gap:6px}.mrow .link{font-size:12px}
+.rep-mode{padding:12px 14px 0}
+.cal-bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.cal-m{font-size:16px;margin:0 8px}.cal-info{font-size:12px;flex:1}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border:1px solid var(--line);border-radius:14px;overflow:hidden;background:color-mix(in oklab,var(--card) 70%,transparent)}
+.cal-h{padding:8px 10px;font-size:12px;color:var(--text-3);border-bottom:1px solid var(--line)}
+.cal-d{min-height:112px;padding:6px;display:flex;flex-direction:column;gap:4px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);min-width:0}
+.cal-d:nth-child(7n+7){border-right:0}.cal-d.out{background:color-mix(in oklab,var(--text) 3%,transparent)}.cal-d.out .cal-n{opacity:.45}
+.cal-n{font-size:13px;color:var(--text-2);padding:2px 4px;align-self:flex-start;border-radius:8px;font-variant-numeric:tabular-nums}
+.cal-d.today .cal-n{background:var(--accent);color:#fff;font-weight:600}
+.cal-t{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:flex-start;gap:5px;padding:5px 7px;border-radius:8px;font-size:12px;line-height:1.3;color:var(--text);
+  background:color-mix(in oklab,var(--c) 26%,transparent);border-left:3px solid var(--c);transition:transform .12s,background .12s}
+.cal-t span{overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;flex:1;min-width:0}
+.cal-t:hover{background:color-mix(in oklab,var(--c) 40%,transparent);transform:translateY(-1px)}.cal-t:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.cal-t.done{opacity:.6}.cal-t i{font-style:normal;color:var(--c)}
+.cal-t em{font-style:normal;font-size:10px;padding:1px 5px;border-radius:6px;white-space:nowrap;align-self:center}
+.cal-t em.ok{background:color-mix(in oklab,var(--ok) 30%,transparent)}.cal-t em.warn{background:color-mix(in oklab,var(--warn) 30%,transparent)}.cal-t em.bad{background:color-mix(in oklab,var(--bad) 30%,transparent)}
+.cal-empty{display:grid;gap:8px;justify-items:start;padding:18px;border:1px dashed var(--line-2);border-radius:14px}.cal-empty span{color:var(--text-2);font-size:13px}
+#genDlg,#asanaDlg{width:min(520px,calc(100vw - 32px))}.gen-task{display:flex;gap:10px;align-items:flex-start;margin:6px 0 12px}
+.gen-task div{display:grid;gap:3px}.gen-task small{color:var(--text-3);font-size:12px}.gen-task b{font-size:15px}.gen-dot{width:10px;height:10px;border-radius:50%;margin-top:22px;flex:none}
+.gen-task .link{all:unset;cursor:pointer;color:var(--accent);font-size:12px;text-decoration:underline}
+@media (max-width:760px){.cal-d{min-height:80px;padding:3px}.cal-t{font-size:10.5px;padding:3px 4px}.cal-t em{display:none}}.mrep{display:grid;gap:14px;padding:14px}.mrow{display:grid;gap:6px}.mrow .link{font-size:12px}
 .mtitle{font-size:13px;color:var(--text-2);padding:8px 12px;border:1px dashed var(--line-2);border-radius:10px}.mtitle b{color:var(--text)}
 .rep-run.sm{padding:6px 12px;font-size:12px;margin-left:auto}
 .rep-run{background:var(--accent);color:var(--pop);border:0;border-radius:10px;padding:10px 18px;font-weight:600;cursor:pointer}
@@ -727,6 +746,7 @@ tbody tr:active{background:var(--accent-tint-2)}
         <span class="av-cam" aria-hidden="true">📷</span><input type="file" id="avFile" accept="image/*" hidden></label>
         <div><small>เข้าสู่ระบบเป็น</small><b id="acctName">–</b><label class="av-link">เปลี่ยนรูปโปรไฟล์<input type="file" id="avFile2" accept="image/*" hidden></label></div></div>
       <button id="changePw">เปลี่ยนรหัสผ่าน</button>
+      <button id="asanaSet">Asana token (เครื่องนี้)</button>
       <hr>
       <button id="addClinic">เพิ่มคลินิก</button>
       <button id="toggleClinics">เปิด/ปิดบัญชี</button>
@@ -761,6 +781,24 @@ tbody tr:active{background:var(--accent-tint-2)}
     <label>พิมพ์อีกครั้ง<input type="password" id="pwNew2" autocomplete="new-password" minlength="8" required></label>
     <p class="gate-err" id="pwErr" role="alert"></p>
     <div class="pw-actions"><button type="button" class="ghost" id="pwCancel">ยกเลิก</button><button class="btn-primary" id="pwSave">บันทึกรหัสผ่าน</button></div>
+  </form>
+</dialog>
+<dialog id="asanaDlg" aria-labelledby="asanaTitle">
+  <form id="asanaForm">
+    <h2 id="asanaTitle">Asana token ของคุณ</h2>
+    <p class="acc-hint">เก็บในเบราว์เซอร์เครื่องนี้เท่านั้น ไม่ส่งขึ้นเซิร์ฟเวอร์ แต่ละคนแต่ละเครื่องใช้ Asana ของตัวเอง ใช้ดึงงานรีพอร์ตมาขึ้นปฏิทินในแท็บรีพอร์ต</p>
+    <label><span id="asanaState"></span><input type="password" id="asanaIn" autocomplete="off" placeholder="วาง Personal Access Token"></label>
+    <p class="acc-hint"><a class="link" href="https://app.asana.com/0/my-apps" target="_blank" rel="noopener">ไปหน้าสร้าง token ที่ Asana ↗</a> เลื่อนลงที่ Personal access tokens → Create new token → ตั้งชื่ออะไรก็ได้ → คัดลอกมาวาง</p>
+    <div class="pw-actions"><button type="button" class="ghost" id="asanaDel">ลบออกจากเครื่องนี้</button><button type="button" class="ghost" id="asanaCancel">ปิด</button><button class="btn-primary">บันทึก</button></div>
+  </form>
+</dialog>
+<dialog id="genDlg" aria-labelledby="genTitle">
+  <form id="genForm">
+    <h2 id="genTitle">Generate report</h2>
+    <div class="gen-task" id="genTask"></div>
+    <p class="acc-hint" id="genRange"></p>
+    <p class="gate-err" id="genErr" role="alert"></p>
+    <div class="pw-actions"><button type="button" class="ghost" id="genCancel">Cancel</button><button class="btn-primary" id="genGo">Generate report</button></div>
   </form>
 </dialog>
 <div class="body" id="body">
@@ -2484,74 +2522,118 @@ function pipeHTML(j){
     ${j.status === 'running' && pr.current ? `<div class="flow-now">ล่าสุด: ${esc(pr.current)}${pr.at ? ' · อัปเดต ' + bkkTime(pr.at) : ''}</div>` : ''}`;
 }
 const bkkDateTime = t => t ? new Date(t).toLocaleString('th-TH', {day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok'}) : '–';
-// ---- "สร้างเอง": one report for one Asana task + a chosen end date, built on the Mac (PDF only, no Drive / Telegram).
-// The viewer's Asana token stays in THIS browser (localStorage): each person's own Asana, never sent to our server.
-let repMode = 'auto', REPT = null, repTaskGid = '', repEnd = null;
+// ---- "สร้างเอง": an Asana-style month calendar of MY "Report Ads Facebook" tasks. Click one -> Generate report / Cancel.
+// The Mac builds the PDF (no Drive / Telegram) and this browser downloads it into its own Downloads folder.
+// The viewer's Asana token stays in THIS browser (localStorage, set from the ⋯ menu): each person's own Asana.
+let repMode = 'auto', REPT = null, REPT_SINCE = null, calMonth = TODAY.slice(0, 7), genTask = null;
 const ASANA_KEY = 'ads-daily-asana-token';
 const asanaTok = () => { try { return localStorage.getItem(ASANA_KEY) || ''; } catch { return ''; } };
 async function asanaGet(path){
   const r = await fetch('https://app.asana.com/api/1.0/' + path, {headers: {Authorization: 'Bearer ' + asanaTok(), Accept: 'application/json'}});
   const j = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(r.status === 401 ? 'token ใช้ไม่ได้ หรือหมดอายุ' : (j.errors?.[0]?.message || 'Asana ' + r.status));
+  if (!r.ok) throw new Error(r.status === 401 ? 'Asana token ใช้ไม่ได้ หรือหมดอายุ · ตั้งใหม่ที่เมนู ⋯ มุมขวาบน' : (j.errors?.[0]?.message || 'Asana ' + r.status));
   return j;
 }
-// my open tasks whose name looks like a report ("Report Ads Facebook - <clinic> <cycle> (N วัน)"), across my workspaces
+const monthAdd = (ym, n) => { const d = new Date(Date.UTC(+ym.slice(0, 4), +ym.slice(5, 7) - 1 + n, 1)); return d.toISOString().slice(0, 7); };
+// my tasks (open + completed since the month before the one shown) whose name is a Facebook report, across my workspaces
 async function loadAsanaTasks(){
-  REPT = 'loading'; render();
+  const since = monthAdd(calMonth < TODAY.slice(0, 7) ? calMonth : TODAY.slice(0, 7), -1) + '-01';
+  REPT = 'loading'; if (view === 'reports') { fxKey = ''; render(); }
   try {
-    const out = [];
+    const out = [], F = 'name,due_on,completed,modified_at,projects.name,projects.color';
     for (const ws of (await asanaGet('workspaces?limit=50')).data || []) {
-      let next = `tasks?assignee=me&workspace=${ws.gid}&completed_since=now&limit=100&opt_fields=name,due_on,completed,modified_at,projects.name`;
-      for (let i = 0; i < 10 && next; i++) {
-        const j = await asanaGet(next);
-        for (const t of j.data || []) if (/report\s*ads/i.test(t.name)) out.push({gid: t.gid, name: t.name, dueOn: t.due_on || null, completed: !!t.completed,
-          modifiedAt: t.modified_at || null, projects: (t.projects || []).map(p => ({gid: p.gid, name: p.name}))});
-        next = j.next_page?.offset ? `tasks?assignee=me&workspace=${ws.gid}&completed_since=now&limit=100&offset=${j.next_page.offset}&opt_fields=name,due_on,completed,modified_at,projects.name` : null;
+      let off = '';
+      for (let i = 0; i < 20; i++) {
+        const j = await asanaGet(`tasks?assignee=me&workspace=${ws.gid}&completed_since=${since}T00:00:00Z&limit=100&opt_fields=${F}${off}`);
+        for (const t of j.data || []) if (/report\s*ads\s*facebook/i.test(t.name) && t.due_on) out.push({gid: t.gid, name: t.name, dueOn: t.due_on, completed: !!t.completed,
+          modifiedAt: t.modified_at || null, projects: (t.projects || []).map(p => ({gid: p.gid, name: p.name, color: p.color || null}))});
+        if (!j.next_page?.offset) break; off = '&offset=' + j.next_page.offset;
       }
     }
-    REPT = out.sort((a, b) => (a.dueOn || '9') < (b.dueOn || '9') ? -1 : 1);
-    if (!REPT.some(t => t.gid === repTaskGid)) repTaskGid = REPT[0]?.gid || '';
+    REPT = out; REPT_SINCE = since;
   } catch (e) { REPT = {error: e.message}; }
   if (view === 'reports') { fxKey = ''; render(); }
 }
 const daysOfTask = n => +((String(n).match(/\((\d+)\s*วัน\)/) || [])[1] || 0);
 console.assert(daysOfTask('Report Ads Facebook - Mabella Skin M21/P2 (30 วัน)') === 30 && daysOfTask('x') === 0, 'task days');
+console.assert(monthAdd('2026-01', -1) === '2025-12' && monthAdd('2026-11', 1) === '2026-12', 'monthAdd');
+// Asana project colours -> chip colour (unknown / none -> a stable hue from the project id)
+const ASANA_COL = {'dark-red': '#e8384f', 'light-red': '#fc91ad', 'dark-orange': '#fd612c', 'light-orange': '#fd9a00', 'dark-brown': '#c8a03c', 'light-brown': '#eec300',
+  'light-green': '#a4cf30', 'dark-green': '#62d26f', 'light-teal': '#37c5ab', 'dark-teal': '#20aaea', 'light-blue': '#4186e0', 'dark-blue': '#5a7bf0',
+  'dark-purple': '#7a6ff0', 'light-purple': '#aa62e3', 'light-pink': '#e362e3', 'dark-pink': '#ea4e9d', 'light-warm-gray': '#8da3a6', 'dark-warm-gray': '#8da3a6'};
+const taskCol = t => { const p = t.projects[0]; return ASANA_COL[p?.color] || `hsl(${[...(p?.gid || t.gid)].reduce((h, c) => h * 31 + c.charCodeAt(0) >>> 0, 7) % 360} 60% 62%)`; };
+// the report app picks the period itself: it ends the day before the due date (never after today), length = "(N วัน)" in the name
+const genEndOf = t => { const d = dayBefore(t.dueOn); return d < TODAY ? d : TODAY; };
+const jobOfTask = gid => REP?.jobs.find(j => j.params?.task?.gid === gid);
 function manualRepHTML(active, online){
-  const has = !!asanaTok(), end = repEnd || dayBefore(TODAY), t = Array.isArray(REPT) ? REPT.find(x => x.gid === repTaskGid) : null, n = t ? daysOfTask(t.name) : 0;
-  const from = n ? new Date(Date.parse(end) - (n - 1) * 864e5).toISOString().slice(0, 10) : null;
+  if (!asanaTok()) return `<div class="mrep"><div class="cal-empty"><b>ยังไม่ได้ตั้ง Asana token ในเครื่องนี้</b><span>ตั้งที่เมนู ⋯ มุมขวาบน → Asana token แล้วงานรีพอร์ตของคุณจะขึ้นเป็นปฏิทินตรงนี้</span>
+    <button class="rep-run sm" id="asanaOpen">ตั้ง Asana token</button></div></div>`;
+  if (REPT == null || (Array.isArray(REPT) && REPT_SINCE > calMonth + '-01' && REPT_SINCE > monthAdd(calMonth, -1) + '-01')) { if (REPT !== 'loading') setTimeout(loadAsanaTasks); }
+  const y = +calMonth.slice(0, 4), m = +calMonth.slice(5, 7) - 1, first = new Date(Date.UTC(y, m, 1)), start = new Date(first - first.getUTCDay() * 864e5);
+  const last = new Date(Date.UTC(y, m + 1, 0)), weeks = Math.ceil((first.getUTCDay() + last.getUTCDate()) / 7);
+  const by = new Map(); for (const t of Array.isArray(REPT) ? REPT : []) by.set(t.dueOn, [...(by.get(t.dueOn) || []), t]);
+  const ST = {queued: ['รอคิว', 'warn'], running: ['กำลังสร้าง', 'warn'], done: ['PDF พร้อม', 'ok'], failed: ['ไม่สำเร็จ', 'bad']};
+  const cells = [];
+  for (let i = 0; i < weeks * 7; i++) {
+    const d = new Date(+start + i * 864e5).toISOString().slice(0, 10), out = d.slice(0, 7) !== calMonth;
+    const ts = (by.get(d) || []).sort((a, b) => a.completed - b.completed || a.name.localeCompare(b.name));
+    cells.push(`<div class="cal-d${out ? ' out' : ''}${d === TODAY ? ' today' : ''}" role="gridcell" aria-label="${thDate(d)}"><span class="cal-n">${+d.slice(8)}${d.slice(8) === '01' ? ' ' + new Date(d).toLocaleDateString('th-TH', {month: 'short', timeZone: 'UTC'}) : ''}</span>
+      ${ts.map(t => { const j = jobOfTask(t.gid), st = j && ST[j.status];
+        return `<button class="cal-t${t.completed ? ' done' : ''}" style="--c:${taskCol(t)}" data-gen="${t.gid}" title="${esc(t.name)}${t.projects[0] ? ' · ' + esc(t.projects[0].name) : ''}">
+          ${t.completed ? '<i aria-label="เสร็จแล้ว">✓</i>' : ''}<span>${esc(t.name.replace(/^report\s*ads\s*facebook\s*[-–]\s*/i, ''))}</span>${st ? `<em class="${st[1]}">${st[0]}</em>` : ''}</button>`; }).join('')}</div>`);
+  }
+  const mName = new Date(Date.UTC(y, m, 1)).toLocaleDateString('th-TH', {month: 'long', year: 'numeric', timeZone: 'UTC'});
   return `<div class="mrep">
-    <div class="mrow"><label class="pl" for="repTok">Asana token ของคุณ <small class="muted">(เก็บในเครื่องนี้เท่านั้น แต่ละเครื่องใช้ของตัวเอง)</small></label>
-      <div class="prow"><input id="repTok" class="pinput" type="password" autocomplete="off" placeholder="${has ? '•••••••• บันทึกในเครื่องนี้แล้ว · วางใหม่เพื่อเปลี่ยน' : 'วาง Personal Access Token ของ Asana'}">
-        <button class="ghost" id="repTokSave">บันทึก</button>${has ? '<button class="ghost" id="repTokDel">ลบ</button>' : ''}</div>
-      <a class="link" href="https://app.asana.com/0/my-apps" target="_blank" rel="noopener">ไปหน้าสร้าง token ที่ Asana ↗</a>
-      <small class="muted"> · กด "Create new token" ตั้งชื่ออะไรก็ได้ แล้วคัดลอกมาวาง</small></div>
-    ${has ? `<div class="mrow"><div class="prow"><button class="ghost" id="repLoad">${REPT === 'loading' ? 'กำลังดึง…' : 'ดึงงานรีพอร์ตจาก Asana'}</button>
-        ${REPT?.error ? `<span class="t-bad" style="font-size:12px">${esc(REPT.error)}</span>` : Array.isArray(REPT) ? `<span class="muted" style="font-size:12px">เจอ ${REPT.length} งาน (งานที่ยังไม่เสร็จและมอบให้คุณ)</span>` : ''}</div></div>` : ''}
-    ${Array.isArray(REPT) && REPT.length ? `<div class="mrow"><label class="pl" for="repTask">งานรีพอร์ต</label>
-        <select id="repTask" class="pinput">${REPT.map(x => `<option value="${x.gid}" ${x.gid === repTaskGid ? 'selected' : ''}>${esc(x.name)}${x.dueOn ? ' · กำหนด ' + thDate(x.dueOn) : ''}</option>`).join('')}</select>
-        ${t ? `<div class="mtitle">ข้อความใต้ภาพบนปก: <b>${esc(t.name)}</b></div>` : ''}</div>
-      <div class="mrow"><label class="pl" for="repEnd">ถึงวันที่</label>
-        <div class="prow"><input id="repEnd" class="pinput" type="date" value="${end}" max="${TODAY}" style="max-width:200px">
-          <span class="muted" style="font-size:12px">${n ? `ช่วง ${n} วันตามชื่องาน: ${thDate(from)} – ${thDate(end)} · พร้อมเทียบ 5 ช่วงก่อนหน้า` : 'ชื่องานไม่มี (N วัน) ระบบจะไม่รู้ความยาวช่วง'}</span></div></div>
-      <div class="mrow"><button class="rep-run" id="repMake" ${active || !online || !t || !n ? 'disabled' : ''}>สร้างรีพอร์ต PDF</button>
-        <span class="muted" style="font-size:12px"> ${active ? 'มีงานรออยู่แล้ว รอให้เสร็จก่อน' : !online ? 'เครื่อง Mac ออฟไลน์' : 'เสร็จแล้ว PDF จะโหลดลงโฟลเดอร์ Downloads ของเครื่องนี้เอง ไม่ลง Drive ไม่ส่ง Telegram ใช้เวลาประมาณ 1 นาที'}</span></div>` : ''}
+    <div class="cal-bar"><button class="ghost icon" data-cal="-1" aria-label="เดือนก่อน">‹</button><button class="ghost" data-cal="0">วันนี้</button><button class="ghost icon" data-cal="1" aria-label="เดือนถัดไป">›</button>
+      <b class="cal-m">${mName}</b>
+      <span class="muted cal-info">${REPT === 'loading' ? 'กำลังดึงจาก Asana…' : REPT?.error ? `<span class="t-bad">${esc(REPT.error)}</span>` : Array.isArray(REPT) ? `งานรีพอร์ตของคุณ ${REPT.length} งาน · กดงานเพื่อสร้าง PDF` : ''}</span>
+      <button class="ghost" id="repLoad">รีเฟรช</button>
+      <span class="wk"><span class="dot ${online ? 'd-ok' : 'd-bad'}"></span>${online ? 'เครื่อง Mac ออนไลน์' : 'เครื่อง Mac ออฟไลน์'}</span></div>
+    <div class="cal" role="grid" aria-label="ปฏิทินงานรีพอร์ต ${mName}">${['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'].map(x => `<div class="cal-h" role="columnheader">${x}</div>`).join('')}${cells.join('')}</div>
+    <p class="muted" style="font-size:12px;margin:0">สร้างแค่ PDF โหลดลง Downloads ของเครื่องนี้ ไม่ลง Drive ไม่ส่ง Telegram · ✓ = ติ๊กเสร็จใน Asana แล้ว (สร้างซ้ำได้)</p>
   </div>`;
 }
-document.addEventListener('click', async e => {
+function genRangeText(){
+  const t = genTask, end = genEndOf(t), n = daysOfTask(t.name);
+  $('#genRange').textContent = n ? `ช่วง ${n} วันตามชื่องาน: ${thDate(new Date(Date.parse(end) - (n - 1) * 864e5).toISOString().slice(0, 10))} – ${thDate(end)} · พร้อมเทียบช่วงก่อนหน้า` : 'ชื่องานไม่มี (N วัน) ระบบจะไม่รู้ความยาวช่วง';
+  if (n) $('#genRange').textContent = 'ระบบนับวันให้เอง · ' + $('#genRange').textContent;
+}
+function openGen(gid){
+  genTask = REPT.find(t => t.gid === gid); if (!genTask) return;
+  const j = jobOfTask(gid), online = REP?.worker?.last_seen && Date.now() - Date.parse(REP.worker.last_seen) < 90e3;
+  const busy = REP?.jobs.some(x => x.status === 'queued' || x.status === 'running');
+  $('#genTask').innerHTML = `<span class="gen-dot" style="background:${taskCol(genTask)}"></span><div><small>ข้อความใต้ภาพบนปก</small><b>${esc(genTask.name)}</b>
+    <small>${genTask.projects.map(p => esc(p.name)).join(' · ')}${' · กำหนด ' + thDate(genTask.dueOn)}${genTask.completed ? ' · เสร็จแล้วใน Asana' : ''}</small>
+    ${j?.pdf_path ? `<button type="button" class="link" data-rep-pdf="${esc(j.pdf_path)}" data-rep-name="${esc(j.note || 'report.pdf')}">ดาวน์โหลด PDF ล่าสุดของงานนี้</button>` : ''}</div>`;
+  $('#genErr').textContent = !online ? 'เครื่อง Mac ออฟไลน์ เปิดเครื่องก่อนแล้วค่อยสร้าง' : busy ? 'มีงานรีพอร์ตรันอยู่ รอให้เสร็จก่อน' : !daysOfTask(genTask.name) ? 'ชื่องานต้องมี (N วัน) เช่น (30 วัน)' : '';
+  $('#genGo').disabled = !online || busy || !daysOfTask(genTask.name);
+  genRangeText(); $('#genDlg').showModal();
+}
+$('#genCancel').onclick = () => $('#genDlg').close();
+$('#genForm').onsubmit = async e => {
+  e.preventDefault(); const t = genTask; $('#genGo').disabled = true;
+  const {error} = await sb.from('report_jobs').insert({requested_by: me, params: {task: t, endOn: TODAY}, note: 'สร้างเอง: ' + t.name});
+  if (error) { $('#genErr').textContent = 'สั่งสร้างไม่ได้: ' + error.message; $('#genGo').disabled = false; return; }
+  $('#genDlg').close(); loadReports();
+};
+function openAsana(){
+  const has = !!asanaTok(); $('#asanaIn').value = '';
+  $('#asanaState').textContent = has ? 'มี token ในเครื่องนี้แล้ว · วางใหม่เพื่อเปลี่ยน' : 'ยังไม่มี token ในเครื่องนี้';
+  $('#asanaDel').hidden = !has; document.querySelector('details.menu')?.removeAttribute('open'); $('#asanaDlg').showModal(); $('#asanaIn').focus();
+}
+$('#asanaSet').onclick = openAsana;
+$('#asanaCancel').onclick = () => $('#asanaDlg').close();
+$('#asanaDel').onclick = () => { try { localStorage.removeItem(ASANA_KEY); } catch {} REPT = null; $('#asanaDlg').close(); if (view === 'reports') { fxKey = ''; render(); } };
+$('#asanaForm').onsubmit = e => { e.preventDefault(); const v = $('#asanaIn').value.trim(); if (!v) return;
+  try { localStorage.setItem(ASANA_KEY, v); } catch {} REPT = null; $('#asanaDlg').close(); if (view === 'reports') { repMode = 'manual'; fxKey = ''; render(); } };
+document.addEventListener('click', e => {
   const m = e.target.closest('[data-repmode]'); if (m) { repMode = m.dataset.repmode; fxKey = ''; render(); return; }
-  const id = e.target.id;
-  if (id === 'repTokSave') { const v = $('#repTok').value.trim(); if (!v) return; try { localStorage.setItem(ASANA_KEY, v); } catch {} REPT = null; loadAsanaTasks(); }
-  if (id === 'repTokDel') { try { localStorage.removeItem(ASANA_KEY); } catch {} REPT = null; fxKey = ''; render(); }
-  if (id === 'repLoad') loadAsanaTasks();
-  if (id === 'repMake') {
-    const t = REPT.find(x => x.gid === repTaskGid); if (!t) return; e.target.disabled = true;
-    const {error} = await sb.from('report_jobs').insert({requested_by: me, params: {task: t, endOn: repEnd || dayBefore(TODAY)}, note: 'สร้างเอง: ' + t.name});
-    if (error) alert('สั่งสร้างไม่ได้: ' + error.message); loadReports();
-  }
-  const pdf = e.target.closest('[data-rep-pdf]');
-  if (pdf) dlPdf(pdf.dataset.repPdf, pdf.dataset.repName);
+  const c = e.target.closest('[data-cal]'); if (c) { calMonth = +c.dataset.cal ? monthAdd(calMonth, +c.dataset.cal) : TODAY.slice(0, 7); fxKey = ''; render(); return; }
+  const g = e.target.closest('[data-gen]'); if (g) { openGen(g.dataset.gen); return; }
+  if (e.target.id === 'asanaOpen') openAsana();
+  if (e.target.id === 'repLoad') loadAsanaTasks();
+  const pdf = e.target.closest('[data-rep-pdf]'); if (pdf) dlPdf(pdf.dataset.repPdf, pdf.dataset.repName);
 });
-document.addEventListener('change', e => { if (e.target.id === 'repTask') { repTaskGid = e.target.value; fxKey = ''; render(); } if (e.target.id === 'repEnd') { repEnd = e.target.value; fxKey = ''; render(); } });
 
 function renderReports(){
   if (!REP) { loadReports(); return '<div class="card"><div class="card-h"><b>รีพอร์ต</b><span>กำลังโหลด…</span></div></div>'; }
@@ -2566,7 +2648,7 @@ function renderReports(){
         ${active ? '<br><b>มีงานรออยู่แล้ว รอให้เสร็จก่อน</b>' : ''}</div>
       <span class="wk"><span class="dot ${online ? 'd-ok' : 'd-bad'}"></span>${online ? 'เครื่อง Mac ออนไลน์' : 'เครื่อง Mac ออฟไลน์' + (REP.worker?.last_seen ? ' · เห็นล่าสุด ' + bkkDateTime(REP.worker.last_seen) : '') + ' · เปิดเครื่องแล้วงานจะรันต่อเอง'}</span></div>`;
   return `<div class="card"><div class="card-h"><b>รีพอร์ตลูกค้า</b><span>ADSIDEA Reports บนเครื่อง Mac</span></div>
-    <div class="rep-mode"><span class="seg" role="group" aria-label="โหมด"><button data-repmode="auto" aria-selected="${repMode === 'auto'}">อัตโนมัติ</button><button data-repmode="manual" aria-selected="${repMode === 'manual'}">สร้างเอง (เลือกวันที่)</button></span></div>
+    <div class="rep-mode"><span class="seg" role="group" aria-label="โหมด"><button data-repmode="auto" aria-selected="${repMode === 'auto'}">อัตโนมัติ</button><button data-repmode="manual" aria-selected="${repMode === 'manual'}">สร้างเอง (ปฏิทิน Asana)</button></span></div>
     ${top}
     ${REP.jobs.map(j => { const [l, t] = ST_LABEL[j.status] || [j.status, ''], rs = j.results || [];
       return `<div class="job"><div class="job-h"><span class="pill ${t}">${l}</span><b>${bkkDateTime(j.created_at)}</b>
