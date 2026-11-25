@@ -2587,7 +2587,7 @@ const HOLIDAYS = {'2026-01-01': 'วันขึ้นปีใหม่', '2026
   '2026-04-15': 'วันสงกรานต์', '2026-05-01': 'วันแรงงานแห่งชาติ', '2026-06-01': 'ชดเชยวันวิสาขบูชา', '2026-07-30': 'วันเข้าพรรษา', '2026-08-12': 'วันแม่แห่งชาติ',
   '2026-10-23': 'วันปิยมหาราช', '2026-12-10': 'ชดเชยวันพ่อแห่งชาติ', '2026-12-31': 'วันสิ้นปี'};
 const TOPUP_RE = /เติมงบ|เบิกงบ/;
-const topupLabel = t => String(t.name).replace(/^(แจ้ง|ตั้ง)?(เติม|เบิก)งบ(โฆษณา)?\s*[-–:]?\s*/, '').trim() || (t.projects[0]?.name || '').replace(/\s*x\s*adsidea\s*$/i, '');
+const topupLabel = t => String(t.name).replace(/^(แจ้ง|ตั้ง)?(เติม|เบิก)งบ(โฆษณา)?\s*[-–:]?\s*/, '').trim() || (clinicProj(t)?.name || '').replace(/\s*x\s*adsidea\s*$/i, '');
 console.assert(topupLabel({name: 'แจ้งเติมงบโฆษณา - Mediren', projects: []}) === 'Mediren' && topupLabel({name: 'เติมงบ', projects: [{name: 'Lalida x Adsidea'}]}) === 'Lalida', 'topupLabel');
 const monthAdd = (ym, n) => { const d = new Date(Date.UTC(+ym.slice(0, 4), +ym.slice(5, 7) - 1 + n, 1)); return d.toISOString().slice(0, 7); };
 // my tasks (open + completed since the month before the one shown) whose name is a Facebook report, across my workspaces
@@ -2617,7 +2617,9 @@ console.assert(monthAdd('2026-01', -1) === '2025-12' && monthAdd('2026-11', 1) =
 const ASANA_COL = {'dark-red': '#f06a6a', 'dark-orange': '#ec8d71', 'light-orange': '#f1bd6c', 'dark-brown': '#f8df72', 'light-green': '#aecf55',
   'dark-green': '#5da283', 'light-teal': '#4ecbc4', 'dark-teal': '#9ee7e3', 'light-blue': '#4573d2', 'dark-purple': '#8d84e8', 'light-purple': '#b36bd4',
   'light-pink': '#f9aaef', 'dark-pink': '#f26fb2', 'light-red': '#fc979a', 'light-warm-gray': '#6d6e6f', 'dark-warm-gray': '#6d6e6f'};
-const taskCol = t => ASANA_COL[t.projects[0]?.color] || '#6d6e6f';
+// a task can sit in its clinic project AND a team project (แผนก ...): the clinic is the first non-แผนก project
+const clinicProj = t => t.projects.find(p => !/แผนก|department|team/i.test(p.name)) || null;
+const taskCol = t => ASANA_COL[clinicProj(t)?.color] || '#6d6e6f';
 // dark text on light colours, white on dark ones (WCAG relative luminance)
 const inkOn = hex => { const L = [1, 3, 5].map(i => { const c = parseInt(hex.slice(i, i + 2), 16) / 255; return c <= .03928 ? c / 12.92 : ((c + .055) / 1.055) ** 2.4; });
   return .2126 * L[0] + .7152 * L[1] + .0722 * L[2] > .3 ? '#1e1f21' : '#fff'; };
@@ -2646,8 +2648,8 @@ function manualRepHTML(active, online){
   const y = +calMonth.slice(0, 4), m = +calMonth.slice(5, 7) - 1, first = new Date(Date.UTC(y, m, 1)), start = new Date(first - first.getUTCDay() * 864e5);
   const last = new Date(Date.UTC(y, m + 1, 0)), weeks = Math.ceil((first.getUTCDay() + last.getUTCDate()) / 7);
   // clinic = the task's Asana project ("Mabella Clinic (Skin) x Adsidea" -> "Mabella Clinic (Skin)")
-  const projOf = t => t.projects[0] || {gid: '', name: 'ไม่มีโปรเจกต์'}, pname = n => n.replace(/\s*x\s*adsidea\s*$/i, '');
-  const clinics = [...new Map((Array.isArray(REPT) ? REPT : []).map(t => [projOf(t).gid, pname(projOf(t).name)])).entries()].sort((a, b) => a[1].localeCompare(b[1], 'th'));
+  const projOf = t => clinicProj(t) || {gid: ''}, pname = n => n.replace(/\s*x\s*adsidea\s*$/i, '');
+  const clinics = [...new Map((Array.isArray(REPT) ? REPT : []).filter(clinicProj).map(t => [projOf(t).gid, pname(projOf(t).name)])).entries()].sort((a, b) => a[1].localeCompare(b[1], 'th'));
   if (calClinic && !clinics.some(([g]) => g === calClinic)) calClinic = '';
   const all = (Array.isArray(REPT) ? REPT : []).filter(t => !calClinic || projOf(t).gid === calClinic), by = new Map(); for (const t of all) by.set(t.dueOn, [...(by.get(t.dueOn) || []), t]);
   const ST = {queued: ['รอคิว', 'warn'], running: ['กำลังสร้าง', 'warn'], done: ['PDF', 'ok'], failed: ['ล้ม', 'bad']};
@@ -2669,7 +2671,7 @@ function manualRepHTML(active, online){
       ${(calOpen.has(d) ? ts : ts.slice(0, 3)).map(t => { if (t.kind === 'topup') return `<a class="cal-t topup${t.completed ? ' done' : ''}" style="--c:${taskCol(t)};--t:${inkOn(taskCol(t))}" href="https://app.asana.com/0/0/${t.gid}" target="_blank" rel="noopener" title="${esc(t.name)} · เปิดใน Asana">
           <span class="ct-c">${t.completed ? '<i class="ct-ok" aria-label="ทำแล้ว">✓</i>' : '<i class="ct-baht" aria-hidden="true">฿</i>'}${esc(topupLabel(t))}</span><span class="ct-m">${t.completed ? 'เติมงบแล้ว' : 'ต้องเติมงบ'}</span></a>`;
         const j = jobOfTask(t.gid), st = j && ST[j.status], q = taskParts(t.name), dn = isDone(t), late = !dn && t.dueOn < TODAY;
-        return `<button class="cal-t${dn ? ' done' : ''}${late ? ' late' : ''}" style="--c:${taskCol(t)};--t:${inkOn(taskCol(t))}" data-gen="${t.gid}" title="${esc(t.name)}${t.projects[0] ? '\n' + esc(t.projects[0].name) : ''}">
+        return `<button class="cal-t${dn ? ' done' : ''}${late ? ' late' : ''}" style="--c:${taskCol(t)};--t:${inkOn(taskCol(t))}" data-gen="${t.gid}" title="${esc(t.name)}${clinicProj(t) ? '\n' + esc(clinicProj(t).name) : ''}">
           <span class="ct-c">${dn ? '<i class="ct-ok" aria-label="ทำแล้ว">✓</i>' : late ? '<i class="ct-late" aria-label="เลยกำหนด"></i>' : ''}${esc(q.clinic)}</span>
           <span class="ct-m">${esc(q.cycle)}${q.cycle && q.days ? ' · ' : ''}${q.days ? q.days + ' วัน' : ''}${st ? `<em class="${st[1]}">${st[0]}</em>` : ''}</span></button>`; }).join('')}
       ${ts.length > 3 ? `<button class="cal-more" data-more="${d}">${calOpen.has(d) ? 'ย่อ' : `อีก ${ts.length - 3} งาน`}</button>` : ''}</div>`);
