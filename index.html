@@ -79,8 +79,10 @@ header .seg[role=tablist] button{white-space:nowrap;flex:none}
 header .menu .pop{background:var(--pop);min-width:290px}
 .menu .acct{padding:8px 12px 4px;display:grid}.menu .acct small{font-size:11px;color:var(--text-3)}.menu .acct b{font-size:13px;font-weight:600;overflow-wrap:anywhere}
 .menu hr{border:0;border-top:1px solid var(--line);margin:4px 0}
-#pwDlg,#balDlg{border:1px solid var(--line);border-radius:14px;background:var(--pop);color:var(--text);padding:20px;width:min(380px,calc(100vw - 32px))}
-#pwDlg::backdrop,#balDlg::backdrop{background:oklch(0% 0 0 / .4)}
+#pwDlg,#balDlg,#genDlg,#asanaDlg{border:1px solid var(--line);border-radius:14px;background:var(--pop);color:var(--text);padding:20px;width:min(380px,calc(100vw - 32px))}
+#genDlg,#asanaDlg{border-radius:18px;padding:24px;box-shadow:0 24px 60px rgba(40,20,90,.35);outline:none}
+#genDlg h2,#asanaDlg h2{margin:0 0 4px;font-size:18px}
+#pwDlg::backdrop,#balDlg::backdrop,#genDlg::backdrop,#asanaDlg::backdrop{backdrop-filter:blur(3px);background:oklch(0% 0 0 / .4)}
 #pwDlg h2,#balDlg h2{font-size:16px;margin:0 0 12px}
 #pwDlg label,#balDlg label,#asanaDlg label{display:grid;gap:4px;font-size:12px;color:var(--text-3);margin-bottom:10px}
 #pwDlg input,#balDlg input,#asanaDlg input{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 10px;color:var(--text);font:inherit}
@@ -179,25 +181,51 @@ tbody tr[aria-selected=true]{background:var(--accent-tint);box-shadow:inset 2px 
 .rep-top{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:14px}
 .rep-top .grow{flex:1;min-width:220px;font-size:13px;color:var(--text-2)}
 .rep-mode{padding:12px 14px 0}
-.cal-bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.cal-m{font-size:16px;margin:0 8px}.cal-info{font-size:12px;flex:1}
-.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border:1px solid var(--line);border-radius:14px;overflow:hidden;background:color-mix(in oklab,var(--card) 70%,transparent)}
-.cal-h{padding:8px 10px;font-size:12px;color:var(--text-3);border-bottom:1px solid var(--line)}
-.cal-d{min-height:112px;padding:6px;display:flex;flex-direction:column;gap:4px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);min-width:0}
-.cal-d:nth-child(7n+7){border-right:0}.cal-d.out{background:color-mix(in oklab,var(--text) 3%,transparent)}.cal-d.out .cal-n{opacity:.45}
-.cal-n{font-size:13px;color:var(--text-2);padding:2px 4px;align-self:flex-start;border-radius:8px;font-variant-numeric:tabular-nums}
-.cal-d.today .cal-n{background:var(--accent);color:#fff;font-weight:600}
-.cal-t{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:flex-start;gap:5px;padding:5px 7px;border-radius:8px;font-size:12px;line-height:1.3;color:var(--text);
-  background:color-mix(in oklab,var(--c) 26%,transparent);border-left:3px solid var(--c);transition:transform .12s,background .12s}
-.cal-t span{overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;flex:1;min-width:0}
-.cal-t:hover{background:color-mix(in oklab,var(--c) 40%,transparent);transform:translateY(-1px)}.cal-t:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
-.cal-t.done{opacity:.6}.cal-t i{font-style:normal;color:var(--c)}
-.cal-t em{font-style:normal;font-size:10px;padding:1px 5px;border-radius:6px;white-space:nowrap;align-self:center}
-.cal-t em.ok{background:color-mix(in oklab,var(--ok) 30%,transparent)}.cal-t em.warn{background:color-mix(in oklab,var(--warn) 30%,transparent)}.cal-t em.bad{background:color-mix(in oklab,var(--bad) 30%,transparent)}
+.cal-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.cal-m{margin:0;font-size:24px;font-weight:600;letter-spacing:-.01em;line-height:1.2}.cal-m span{color:var(--text-3);font-weight:500;font-variant-numeric:tabular-nums}
+.cal-nav{display:inline-flex;border:1px solid var(--line);border-radius:999px;background:var(--surface);overflow:hidden}
+.cal-nav button{all:unset;cursor:pointer;height:32px;padding:0 12px;font-size:13px;color:var(--text-2);display:grid;place-items:center}
+.cal-nav button:hover{background:var(--hover);color:var(--text)}.cal-nav button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.cal-nav button+button{border-left:1px solid var(--line)}.cal-nav [data-cal="0"]{font-weight:500;color:var(--text)}
+.cal-info{flex:1;font-size:13px;color:var(--text-3);min-width:160px}
+.cal-mac{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--text-2);padding:5px 10px;border:1px solid var(--line);border-radius:999px;background:var(--surface)}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.cal-cl select{appearance:none;height:34px;padding:0 32px 0 14px;border:1px solid var(--line);border-radius:999px;background:var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23999' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat right 12px center;color:var(--text);font:500 13px var(--sans);cursor:pointer;max-width:240px}
+.cal-cl select:focus-visible{outline:2px solid var(--accent);outline-offset:1px}.cal-cl option{background:var(--pop);color:var(--text)}
+.cal-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.cs{padding:10px 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface);display:grid;gap:2px}
+.cs b{font-size:24px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.15}.cs span{font-size:12px;color:var(--text-3)}.cs.warnv b{color:var(--warn)}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--surface)}
+.cal-h{padding:10px 12px;font-size:12px;font-weight:500;color:var(--text-2);border-bottom:1px solid var(--line)}.cal-h.we{color:var(--text-3)}
+.cal-d{min-height:118px;padding:8px;display:flex;flex-direction:column;gap:5px;border-right:1px solid var(--edge);border-bottom:1px solid var(--edge);min-width:0}
+.cal-d:nth-child(7n+7){border-right:0}.cal-d.we{background:color-mix(in oklab,var(--text) 2%,transparent)}
+.cal-d.out{background:color-mix(in oklab,var(--text) 4%,transparent)}.cal-d.out .cal-n{color:var(--text-3);opacity:.6}
+.cal-n{font-size:13px;font-weight:500;color:var(--text-2);min-width:26px;height:26px;padding:0 6px;display:inline-grid;place-items:center;align-self:flex-start;border-radius:999px;font-variant-numeric:tabular-nums}
+.cal-n small{font-size:11px;font-weight:400}
+.cal-d.today{background:var(--accent-tint)}.cal-d.today .cal-n{background:var(--accent);color:#fff;font-weight:600}
+.cal-t{all:unset;box-sizing:border-box;cursor:pointer;display:grid;gap:1px;padding:6px 8px 6px 9px;border-radius:9px;color:var(--text);
+  background:color-mix(in oklab,var(--c) 18%,transparent);box-shadow:inset 3px 0 0 var(--c);transition:background .12s,transform .12s}
+.cal-t:hover{background:color-mix(in oklab,var(--c) 30%,transparent);transform:translateY(-1px)}.cal-t:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.ct-c{font-size:12.5px;font-weight:500;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center;gap:5px}
+.ct-m{font-size:11px;color:var(--text-2);font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden}
+.cal-t.done{background:color-mix(in oklab,var(--c) 8%,transparent);box-shadow:inset 3px 0 0 color-mix(in oklab,var(--c) 55%,transparent)}.cal-t.done .ct-c{color:var(--text-2)}
+.ct-ok{font-style:normal;color:var(--ok);font-size:11px}.ct-late{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--warn);flex:none}
+.cal-t em{font-style:normal;font-size:10px;font-weight:500;padding:0 6px;border-radius:999px;line-height:16px;margin-left:auto}
+.cal-t em.ok{background:color-mix(in oklab,var(--ok) 25%,transparent);color:var(--ok)}.cal-t em.warn{background:color-mix(in oklab,var(--warn) 25%,transparent);color:var(--warn)}.cal-t em.bad{background:color-mix(in oklab,var(--bad) 25%,transparent);color:var(--bad)}
+.cal-foot{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:12px;color:var(--text-3);margin:0}.cal-foot span{display:inline-flex;align-items:center;gap:6px}
 .cal-empty{display:grid;gap:8px;justify-items:start;padding:18px;border:1px dashed var(--line-2);border-radius:14px}.cal-empty span{color:var(--text-2);font-size:13px}
-#genDlg,#asanaDlg{width:min(520px,calc(100vw - 32px))}.gen-task{display:flex;gap:10px;align-items:flex-start;margin:6px 0 12px}
-.gen-task div{display:grid;gap:3px}.gen-task small{color:var(--text-3);font-size:12px}.gen-task b{font-size:15px}.gen-dot{width:10px;height:10px;border-radius:50%;margin-top:22px;flex:none}
-.gen-task .link{all:unset;cursor:pointer;color:var(--accent);font-size:12px;text-decoration:underline}
-@media (max-width:760px){.cal-d{min-height:80px;padding:3px}.cal-t{font-size:10.5px;padding:3px 4px}.cal-t em{display:none}}.mrep{display:grid;gap:14px;padding:14px}.mrow{display:grid;gap:6px}.mrow .link{font-size:12px}
+.gen-task{display:flex;gap:12px;align-items:flex-start;margin:10px 0 14px}.gen-task>div{display:grid;gap:4px;min-width:0}
+.gen-dot{width:10px;height:10px;border-radius:50%;margin-top:9px;flex:none}.gt-c{font-size:20px;font-weight:600;line-height:1.25}
+.gt-tags{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 6px}.gt-tags span{font-size:12px;padding:2px 9px;border-radius:999px;border:1px solid var(--line);color:var(--text-2);font-variant-numeric:tabular-nums}
+.gt-tags .ok{color:var(--ok);border-color:color-mix(in oklab,var(--ok) 40%,transparent)}
+.gen-task small{font-size:11.5px;color:var(--text-3)}.gt-n{font-size:13px;color:var(--text-2)}
+.gen-task .link{all:unset;cursor:pointer;color:var(--accent);font-size:12.5px;margin-top:4px}.gen-task .link:hover{text-decoration:underline}
+.gen-range{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;padding:14px;border:1px solid var(--line);border-radius:14px;background:var(--surface);margin-bottom:12px}
+.gr-d{display:grid;gap:2px}.gr-d:last-of-type{text-align:right}.gr-d small{font-size:11.5px;color:var(--text-3)}.gr-d b{font-size:16px;font-weight:600;font-variant-numeric:tabular-nums}
+.gr-n{display:grid;place-items:center;width:64px;height:64px;border-radius:50%;background:var(--accent-tint-2);color:var(--text)}.gr-n b{font-size:22px;line-height:1;font-variant-numeric:tabular-nums}.gr-n small{font-size:11px;color:var(--text-2)}
+.gr-note{grid-column:1/-1;margin:2px 0 0;font-size:12px;color:var(--text-3)}.gen-range .t-bad{grid-column:1/-1;margin:0}
+#genDlg,#asanaDlg{width:min(520px,calc(100vw - 32px))}
+@media (max-width:760px){.cal-stats{grid-template-columns:repeat(2,1fr)}.cal-d{min-height:84px;padding:4px}.cal-t{padding:4px 5px}.ct-c{font-size:11px}.ct-m{display:none}.cal-h{padding:8px 4px;font-size:11px}.cal-info{order:9;flex-basis:100%}}.mrep{display:grid;gap:14px;padding:14px}.mrow{display:grid;gap:6px}.mrow .link{font-size:12px}
 .mtitle{font-size:13px;color:var(--text-2);padding:8px 12px;border:1px dashed var(--line-2);border-radius:10px}.mtitle b{color:var(--text)}
 .rep-cancel{margin-left:auto;height:28px;padding:0 12px;font-size:12px}
 .rep-run.sm{padding:6px 12px;font-size:12px;margin-left:auto}
@@ -797,7 +825,7 @@ tbody tr:active{background:var(--accent-tint-2)}
   <form id="genForm">
     <h2 id="genTitle">Generate report</h2>
     <div class="gen-task" id="genTask"></div>
-    <p class="acc-hint" id="genRange"></p>
+    <div class="gen-range" id="genRange"></div>
     <p class="gate-err" id="genErr" role="alert"></p>
     <div class="pw-actions"><button type="button" class="ghost" id="genCancel">Cancel</button><button class="btn-primary" id="genGo">Generate report</button></div>
   </form>
@@ -2535,7 +2563,7 @@ const bkkDateTime = t => t ? new Date(t).toLocaleString('th-TH', {day: 'numeric'
 // ---- "สร้างเอง": an Asana-style month calendar of MY "Report Ads Facebook" tasks. Click one -> Generate report / Cancel.
 // The Mac builds the PDF (no Drive / Telegram) and this browser downloads it into its own Downloads folder.
 // The viewer's Asana token stays in THIS browser (localStorage, set from the ⋯ menu): each person's own Asana.
-let repMode = 'auto', REPT = null, REPT_SINCE = null, calMonth = TODAY.slice(0, 7), genTask = null;
+let calClinic = '', repMode = 'manual', REPT = null, REPT_SINCE = null, calMonth = TODAY.slice(0, 7), genTask = null;
 const ASANA_KEY = 'ads-daily-asana-token';
 const asanaTok = () => { try { return localStorage.getItem(ASANA_KEY) || ''; } catch { return ''; } };
 async function asanaGet(path){
@@ -2575,51 +2603,81 @@ const taskCol = t => { const p = t.projects[0]; return ASANA_COL[p?.color] || `h
 // the report app picks the period itself: it ends the day before the due date (never after today), length = "(N วัน)" in the name
 const genEndOf = t => { const d = dayBefore(t.dueOn); return d < TODAY ? d : TODAY; };
 const jobOfTask = gid => REP?.jobs.find(j => j.params?.task?.gid === gid);
+// "Report Ads Facebook – ทูเกเตอร์ คลินิก M21/P2 (30 วัน)" -> {clinic: 'ทูเกเตอร์ คลินิก', cycle: 'M21/P2', days: 30}
+function taskParts(name){
+  const r = String(name).replace(/^report\s*ads\s*facebook\s*[-–—:]?\s*/i, '');
+  const cycle = (r.match(/\bM\s*\d+\s*\/\s*P\s*\d+/i) || [''])[0].replace(/\s+/g, '');
+  const clinic = r.replace(/\bM\s*\d+\s*\/\s*P\s*\d+/i, '').replace(/\(\s*\d+\s*วัน\s*\)/, '').replace(/\s*[-–]\s*$/, '').trim();
+  return {clinic: clinic || r, cycle, days: daysOfTask(name)};
+}
+console.assert(JSON.stringify(taskParts('Report Ads Facebook – ทูเกเตอร์ คลินิก M21/P2 (30 วัน)')) === JSON.stringify({clinic: 'ทูเกเตอร์ คลินิก', cycle: 'M21/P2', days: 30}), 'taskParts');
+const thShort = (d, y) => new Date(d + 'T00:00:00Z').toLocaleDateString('th-TH', {day: 'numeric', month: 'short', ...(y ? {year: 'numeric'} : {}), timeZone: 'UTC'});
 function manualRepHTML(active, online){
   if (!asanaTok()) return `<div class="mrep"><div class="cal-empty"><b>ยังไม่ได้ตั้ง Asana token ในเครื่องนี้</b><span>ตั้งที่เมนู ⋯ มุมขวาบน → Asana token แล้วงานรีพอร์ตของคุณจะขึ้นเป็นปฏิทินตรงนี้</span>
     <button class="rep-run sm" id="asanaOpen">ตั้ง Asana token</button></div></div>`;
   if (REPT == null || (Array.isArray(REPT) && REPT_SINCE > calMonth + '-01' && REPT_SINCE > monthAdd(calMonth, -1) + '-01')) { if (REPT !== 'loading') setTimeout(loadAsanaTasks); }
   const y = +calMonth.slice(0, 4), m = +calMonth.slice(5, 7) - 1, first = new Date(Date.UTC(y, m, 1)), start = new Date(first - first.getUTCDay() * 864e5);
   const last = new Date(Date.UTC(y, m + 1, 0)), weeks = Math.ceil((first.getUTCDay() + last.getUTCDate()) / 7);
-  const by = new Map(); for (const t of Array.isArray(REPT) ? REPT : []) by.set(t.dueOn, [...(by.get(t.dueOn) || []), t]);
-  const ST = {queued: ['รอคิว', 'warn'], running: ['กำลังสร้าง', 'warn'], done: ['PDF พร้อม', 'ok'], failed: ['ไม่สำเร็จ', 'bad']};
+  // clinic = the task's Asana project ("Mabella Clinic (Skin) x Adsidea" -> "Mabella Clinic (Skin)")
+  const projOf = t => t.projects[0] || {gid: '', name: 'ไม่มีโปรเจกต์'}, pname = n => n.replace(/\s*x\s*adsidea\s*$/i, '');
+  const clinics = [...new Map((Array.isArray(REPT) ? REPT : []).map(t => [projOf(t).gid, pname(projOf(t).name)])).entries()].sort((a, b) => a[1].localeCompare(b[1], 'th'));
+  if (calClinic && !clinics.some(([g]) => g === calClinic)) calClinic = '';
+  const all = (Array.isArray(REPT) ? REPT : []).filter(t => !calClinic || projOf(t).gid === calClinic), by = new Map(); for (const t of all) by.set(t.dueOn, [...(by.get(t.dueOn) || []), t]);
+  const ST = {queued: ['รอคิว', 'warn'], running: ['กำลังสร้าง', 'warn'], done: ['PDF', 'ok'], failed: ['ล้ม', 'bad']};
+  // summary for the month on screen
+  const inMonth = all.filter(t => t.dueOn.slice(0, 7) === calMonth), open = inMonth.filter(t => !t.completed);
+  const wkEnd = new Date(Date.parse(TODAY) + 6 * 864e5).toISOString().slice(0, 10);
+  const soon = all.filter(t => !t.completed && t.dueOn >= TODAY && t.dueOn <= wkEnd).length, made = (REP?.jobs || []).filter(j => j.params?.task && j.pdf_path).length;
+  const stat = (n, l, cls = '') => `<div class="cs ${cls}"><b>${n}</b><span>${l}</span></div>`;
   const cells = [];
   for (let i = 0; i < weeks * 7; i++) {
-    const d = new Date(+start + i * 864e5).toISOString().slice(0, 10), out = d.slice(0, 7) !== calMonth;
+    const d = new Date(+start + i * 864e5).toISOString().slice(0, 10), out = d.slice(0, 7) !== calMonth, dow = i % 7;
     const ts = (by.get(d) || []).sort((a, b) => a.completed - b.completed || a.name.localeCompare(b.name));
-    cells.push(`<div class="cal-d${out ? ' out' : ''}${d === TODAY ? ' today' : ''}" role="gridcell" aria-label="${thDate(d)}"><span class="cal-n">${+d.slice(8)}${d.slice(8) === '01' ? ' ' + new Date(d).toLocaleDateString('th-TH', {month: 'short', timeZone: 'UTC'}) : ''}</span>
-      ${ts.map(t => { const j = jobOfTask(t.gid), st = j && ST[j.status];
-        return `<button class="cal-t${t.completed ? ' done' : ''}" style="--c:${taskCol(t)}" data-gen="${t.gid}" title="${esc(t.name)}${t.projects[0] ? ' · ' + esc(t.projects[0].name) : ''}">
-          ${t.completed ? '<i aria-label="เสร็จแล้ว">✓</i>' : ''}<span>${esc(t.name.replace(/^report\s*ads\s*facebook\s*[-–]\s*/i, ''))}</span>${st ? `<em class="${st[1]}">${st[0]}</em>` : ''}</button>`; }).join('')}</div>`);
+    cells.push(`<div class="cal-d${out ? ' out' : ''}${d === TODAY ? ' today' : ''}${dow === 0 || dow === 6 ? ' we' : ''}" role="gridcell" aria-label="${thShort(d, 1)}${ts.length ? ' · ' + ts.length + ' งาน' : ''}">
+      <span class="cal-n">${+d.slice(8)}${d.slice(8) === '01' && out ? ' <small>' + thShort(d).split(' ')[1] + '</small>' : ''}</span>
+      ${ts.map(t => { const j = jobOfTask(t.gid), st = j && ST[j.status], q = taskParts(t.name), late = !t.completed && t.dueOn < TODAY;
+        return `<button class="cal-t${t.completed ? ' done' : ''}${late ? ' late' : ''}" style="--c:${taskCol(t)}" data-gen="${t.gid}" title="${esc(t.name)}${t.projects[0] ? '\n' + esc(t.projects[0].name) : ''}">
+          <span class="ct-c">${t.completed ? '<i class="ct-ok" aria-label="เสร็จแล้วใน Asana">✓</i>' : late ? '<i class="ct-late" aria-label="เลยกำหนด"></i>' : ''}${esc(q.clinic)}</span>
+          <span class="ct-m">${esc(q.cycle)}${q.cycle && q.days ? ' · ' : ''}${q.days ? q.days + ' วัน' : ''}${st ? `<em class="${st[1]}">${st[0]}</em>` : ''}</span></button>`; }).join('')}</div>`);
   }
-  const mName = new Date(Date.UTC(y, m, 1)).toLocaleDateString('th-TH', {month: 'long', year: 'numeric', timeZone: 'UTC'});
+  const [mName, yName] = new Date(Date.UTC(y, m, 1)).toLocaleDateString('th-TH', {month: 'long', year: 'numeric', timeZone: 'UTC'}).split(' ');
   return `<div class="mrep">
-    <div class="cal-bar"><button class="ghost icon" data-cal="-1" aria-label="เดือนก่อน">‹</button><button class="ghost" data-cal="0">วันนี้</button><button class="ghost icon" data-cal="1" aria-label="เดือนถัดไป">›</button>
-      <b class="cal-m">${mName}</b>
-      <span class="muted cal-info">${REPT === 'loading' ? 'กำลังดึงจาก Asana…' : REPT?.error ? `<span class="t-bad">${esc(REPT.error)}</span>` : Array.isArray(REPT) ? `งานรีพอร์ตของคุณ ${REPT.length} งาน · กดงานเพื่อสร้าง PDF` : ''}</span>
-      <button class="ghost" id="repLoad">รีเฟรช</button>
-      <span class="wk"><span class="dot ${online ? 'd-ok' : 'd-bad'}"></span>${online ? 'เครื่อง Mac ออนไลน์' : 'เครื่อง Mac ออฟไลน์'}</span></div>
-    <div class="cal" role="grid" aria-label="ปฏิทินงานรีพอร์ต ${mName}">${['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'].map(x => `<div class="cal-h" role="columnheader">${x}</div>`).join('')}${cells.join('')}</div>
-    <p class="muted" style="font-size:12px;margin:0">สร้างแค่ PDF โหลดลง Downloads ของเครื่องนี้ ไม่ลง Drive ไม่ส่ง Telegram · ✓ = ติ๊กเสร็จใน Asana แล้ว (สร้างซ้ำได้)</p>
+    <div class="cal-bar">
+      <h3 class="cal-m">${mName} <span>${yName}</span></h3>
+      <div class="cal-nav" role="group" aria-label="เลือกเดือน"><button data-cal="-1" aria-label="เดือนก่อน">‹</button><button data-cal="0">วันนี้</button><button data-cal="1" aria-label="เดือนถัดไป">›</button></div>
+      <span class="cal-info">${REPT === 'loading' ? 'กำลังดึงจาก Asana…' : REPT?.error ? `<span class="t-bad">${esc(REPT.error)}</span>` : 'กดงานในปฏิทินเพื่อสร้าง PDF'}</span>
+      ${online ? '' : '<span class="cal-mac"><span class="dot d-bad"></span>เครื่อง Mac ออฟไลน์</span>'}
+      <label class="cal-cl"><span class="sr-only">เลือกคลินิก</span><select id="calClinic">${['<option value="">ทุกคลินิก</option>', ...clinics.map(([g, n]) => `<option value="${esc(g)}" ${g === calClinic ? 'selected' : ''}>${esc(n)}</option>`)].join('')}</select></label>
+      <button class="ghost icon" id="repLoad" aria-label="รีเฟรชจาก Asana" title="รีเฟรชจาก Asana">${REPT === 'loading' ? '…' : '↻'}</button></div>
+    <div class="cal-stats">${stat(inMonth.length, 'งานรีพอร์ตเดือนนี้')}${stat(open.length, 'ยังไม่ติ๊กเสร็จใน Asana', open.length ? 'warnv' : '')}${stat(soon, 'ถึงกำหนดใน 7 วัน')}${stat(made, 'PDF ที่สร้างจากเว็บ')}</div>
+    <div class="cal" role="grid" aria-label="ปฏิทินงานรีพอร์ต ${mName} ${yName}">${['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัส', 'ศุกร์', 'เสาร์'].map((x, i) => `<div class="cal-h${i === 0 || i === 6 ? ' we' : ''}" role="columnheader">${x}</div>`).join('')}${cells.join('')}</div>
+    <p class="cal-foot"><span><i class="ct-ok">✓</i> ติ๊กเสร็จใน Asana แล้ว (สร้างซ้ำได้)</span><span><i class="ct-late"></i> เลยกำหนด ยังไม่ติ๊ก</span><span>PDF โหลดลง Downloads ของเครื่องนี้ · ไม่ลง Drive · ไม่ส่ง Telegram</span></p>
   </div>`;
 }
 function genRangeText(){
   const t = genTask, end = genEndOf(t), n = daysOfTask(t.name);
-  $('#genRange').textContent = n ? `ช่วง ${n} วันตามชื่องาน: ${thDate(new Date(Date.parse(end) - (n - 1) * 864e5).toISOString().slice(0, 10))} – ${thDate(end)} · พร้อมเทียบช่วงก่อนหน้า` : 'ชื่องานไม่มี (N วัน) ระบบจะไม่รู้ความยาวช่วง';
-  if (n) $('#genRange').textContent = 'ระบบนับวันให้เอง · ' + $('#genRange').textContent;
+  $('#genRange').innerHTML = !n ? '<p class="t-bad">ชื่องานไม่มี (N วัน) ระบบจะไม่รู้ความยาวช่วง</p>'
+    : `<div class="gr-d"><small>ตั้งแต่</small><b>${thShort(new Date(Date.parse(end) - (n - 1) * 864e5).toISOString().slice(0, 10), 1)}</b></div>
+       <div class="gr-n"><b>${n}</b><small>วัน</small></div>
+       <div class="gr-d"><small>ถึง</small><b>${thShort(end, 1)}</b></div>
+       <p class="gr-note">ระบบนับวันให้เองจากชื่องานและวันกำหนดส่ง · ในรีพอร์ตเทียบกับช่วงก่อนหน้าให้ด้วย</p>`;
 }
 function openGen(gid){
   genTask = REPT.find(t => t.gid === gid); if (!genTask) return;
   const j = jobOfTask(gid), online = REP?.worker?.last_seen && Date.now() - Date.parse(REP.worker.last_seen) < 90e3;
   const busy = REP?.jobs.some(x => x.status === 'queued' || x.status === 'running');
-  $('#genTask').innerHTML = `<span class="gen-dot" style="background:${taskCol(genTask)}"></span><div><small>ข้อความใต้ภาพบนปก</small><b>${esc(genTask.name)}</b>
-    <small>${genTask.projects.map(p => esc(p.name)).join(' · ')}${' · กำหนด ' + thDate(genTask.dueOn)}${genTask.completed ? ' · เสร็จแล้วใน Asana' : ''}</small>
+  const q = taskParts(genTask.name);
+  $('#genTask').innerHTML = `<span class="gen-dot" style="background:${taskCol(genTask)}"></span><div><b class="gt-c">${esc(q.clinic)}</b>
+    <span class="gt-tags">${q.cycle ? `<span>${esc(q.cycle)}</span>` : ''}<span>กำหนด ${thShort(genTask.dueOn, 1)}</span>${genTask.completed ? '<span class="ok">✓ เสร็จแล้วใน Asana</span>' : ''}</span>
+    <small>ข้อความใต้ภาพบนปก</small><span class="gt-n">${esc(genTask.name)}</span>
+    <small>${genTask.projects.map(p => esc(p.name)).join(' · ')}</small>
     ${j?.pdf_path ? `<button type="button" class="link" data-rep-pdf="${esc(j.pdf_path)}" data-rep-name="${esc(j.note || 'report.pdf')}">ดาวน์โหลด PDF ล่าสุดของงานนี้</button>` : ''}</div>`;
   $('#genErr').textContent = !online ? 'เครื่อง Mac ออฟไลน์ เปิดเครื่องก่อนแล้วค่อยสร้าง' : busy ? 'มีงานรีพอร์ตรันอยู่ รอให้เสร็จก่อน' : !daysOfTask(genTask.name) ? 'ชื่องานต้องมี (N วัน) เช่น (30 วัน)' : '';
   $('#genGo').disabled = !online || busy || !daysOfTask(genTask.name);
   genRangeText(); $('#genDlg').showModal();
 }
 $('#genCancel').onclick = () => $('#genDlg').close();
+document.addEventListener('change', e => { if (e.target.id === 'calClinic') { calClinic = e.target.value; fxKey = ''; render(); } });
 $('#genForm').onsubmit = async e => {
   e.preventDefault(); const t = genTask; $('#genGo').disabled = true;
   const {error} = await sb.from('report_jobs').insert({requested_by: me, params: {task: t, endOn: TODAY}, note: 'สร้างเอง: ' + t.name});
@@ -2663,7 +2721,7 @@ function renderReports(){
         ${active ? '<br><b>มีงานรออยู่แล้ว รอให้เสร็จก่อน</b>' : ''}</div>
       <span class="wk"><span class="dot ${online ? 'd-ok' : 'd-bad'}"></span>${online ? 'เครื่อง Mac ออนไลน์' : 'เครื่อง Mac ออฟไลน์' + (REP.worker?.last_seen ? ' · เห็นล่าสุด ' + bkkDateTime(REP.worker.last_seen) : '') + ' · เปิดเครื่องแล้วงานจะรันต่อเอง'}</span></div>`;
   return `<div class="card"><div class="card-h"><b>รีพอร์ตลูกค้า</b><span>ADSIDEA Reports บนเครื่อง Mac</span></div>
-    <div class="rep-mode"><span class="seg" role="group" aria-label="โหมด"><button data-repmode="auto" aria-selected="${repMode === 'auto'}">อัตโนมัติ</button><button data-repmode="manual" aria-selected="${repMode === 'manual'}">สร้างเอง (ปฏิทิน Asana)</button></span></div>
+    <div class="rep-mode"><span class="seg" role="group" aria-label="โหมด"><button data-repmode="manual" aria-selected="${repMode === 'manual'}">สร้างเอง (ปฏิทิน Asana)</button><button data-repmode="auto" aria-selected="${repMode === 'auto'}">อัตโนมัติ (ส่งลูกค้า)</button></span></div>
     ${top}
     ${REP.jobs.map(j => { const [l, t] = ST_LABEL[j.status] || [j.status, ''], rs = j.results || [];
       return `<div class="job"><div class="job-h"><span class="pill ${t}">${l}</span><b>${bkkDateTime(j.created_at)}</b>
@@ -2672,7 +2730,7 @@ function renderReports(){
         ${j.status === 'queued' && j.requested_by === me ? `<button class="ghost rep-cancel" data-rep-cancel="${j.id}">ยกเลิก</button>` : ''}
         ${j.pdf_path ? `<button class="rep-run sm" data-rep-pdf="${esc(j.pdf_path)}" data-rep-name="${esc(j.note || 'report.pdf')}">ดาวน์โหลด PDF</button>` : ''}</div>
         ${j === REP.jobs[0] ? pipeHTML(j) : flowHTML(j)}
-        ${rs.length ? `<div class="scroll"><table><thead><tr><th>คลินิก</th><th>สร้าง PDF</th><th>Drive</th><th>Telegram</th><th>ข้อผิดพลาด</th></tr></thead><tbody>${rs.map(r => `<tr>
+        ${rs.length && !j.params?.task ? `<div class="scroll"><table><thead><tr><th>คลินิก</th><th>สร้าง PDF</th><th>Drive</th><th>Telegram</th><th>ข้อผิดพลาด</th></tr></thead><tbody>${rs.map(r => `<tr>
           <td>${esc(r.client || r.taskGid)}</td><td>${step(r.status, 'success', {success: 'สำเร็จ', failed: 'ไม่สำเร็จ', running: 'กำลังทำ'})}</td>
           <td>${step(r.drive, 'uploaded', DRV)}${r.driveLink ? ` <a href="${esc(r.driveLink)}" target="_blank" rel="noopener">เปิด PDF</a>` : ''}</td>
           <td>${step(r.telegram, 'sent', TG)}</td><td class="mono">${esc(r.error || '')}</td></tr>`).join('')}</tbody></table></div>`
