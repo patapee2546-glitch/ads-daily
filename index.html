@@ -199,6 +199,7 @@ tbody tr[aria-selected=true]{background:var(--accent-tint);box-shadow:inset 2px 
 .gen-task .link{all:unset;cursor:pointer;color:var(--accent);font-size:12px;text-decoration:underline}
 @media (max-width:760px){.cal-d{min-height:80px;padding:3px}.cal-t{font-size:10.5px;padding:3px 4px}.cal-t em{display:none}}.mrep{display:grid;gap:14px;padding:14px}.mrow{display:grid;gap:6px}.mrow .link{font-size:12px}
 .mtitle{font-size:13px;color:var(--text-2);padding:8px 12px;border:1px dashed var(--line-2);border-radius:10px}.mtitle b{color:var(--text)}
+.rep-cancel{margin-left:auto;height:28px;padding:0 12px;font-size:12px}
 .rep-run.sm{padding:6px 12px;font-size:12px;margin-left:auto}
 .rep-run{background:var(--accent);color:var(--pop);border:0;border-radius:10px;padding:10px 18px;font-weight:600;cursor:pointer}
 .rep-run[disabled]{opacity:.45;cursor:not-allowed}
@@ -2485,12 +2486,13 @@ async function loadReports(){
 // run flow: รอคิว → ตรวจ Asana → สร้าง PDF → อัปโหลด Drive → ส่ง Telegram → เสร็จ, from job.status + job.progress
 const FLOW = [['queued', 'รอคิว'], ['asana', 'ตรวจงาน Asana'], ['pdf', 'สร้าง PDF'], ['drive', 'อัปโหลด Drive'], ['telegram', 'ส่ง Telegram'], ['done', 'เสร็จ']];
 function flowHTML(j){
-  const pr = j.progress || {}, idx = k => FLOW.findIndex(([x]) => x === k);
-  const at = j.status === 'queued' ? 0 : j.status === 'done' ? FLOW.length : j.status === 'failed' ? Math.max(1, idx(pr.stage === 'failed' || !pr.stage ? 'asana' : pr.stage)) : Math.max(1, idx(pr.stage || 'asana'));
+  const F = j.params?.task ? FLOW.filter(([k]) => k !== 'telegram').map(([k, l]) => [k, k === 'drive' ? 'ลง Downloads' : l]) : FLOW;
+  const pr = j.progress || {}, idx = k => F.findIndex(([x]) => x === k);
+  const at = j.status === 'queued' ? 0 : j.status === 'done' ? F.length : j.status === 'failed' ? Math.max(1, idx(pr.stage === 'failed' || !pr.stage ? 'asana' : pr.stage)) : Math.max(1, idx(pr.stage || 'asana'));
   const n = (o, label) => o && (o.ok || o.fail || o.running) ? `<small>${o.ok || 0} ${label}${o.fail ? ` · ล้ม ${o.fail}` : ''}${o.running ? ` · กำลังทำ ${o.running}` : ''}</small>` : '';
   const sub = {pdf: n(pr.pdf, 'สำเร็จ'), drive: n(pr.drive, 'อัปแล้ว'), telegram: n(pr.telegram, 'ส่งแล้ว')};
-  const failedAt = j.status === 'failed' ? (pr.stage === 'failed' ? FLOW.length - 1 : at) : -1;
-  return `<div class="flow" role="list" aria-label="ขั้นตอนการรัน">${FLOW.map(([k, l], i) => {
+  const failedAt = j.status === 'failed' ? (pr.stage === 'failed' ? F.length - 1 : at) : -1;
+  return `<div class="flow" role="list" aria-label="ขั้นตอนการรัน">${F.map(([k, l], i) => {
     const cls = i === failedAt ? 'bad' : i < at || j.status === 'done' ? 'done' : i === at ? 'now' : '';
     const mark = cls === 'done' ? '✓' : cls === 'bad' ? '!' : '';
     return `<div class="st ${cls}" role="listitem"${cls === 'now' ? ' aria-current="step"' : ''}><i>${mark}</i>${l}${sub[k] || ''}</div>`; }).join('')}</div>
@@ -2504,6 +2506,14 @@ const PIPE = [
   ['04 / ส่งลูกค้า', [['drive', 'อัปโหลด Google Drive', 'โฟลเดอร์คลินิก/เดือน'], ['telegram', 'ส่ง Telegram', 'กลุ่มของแต่ละคลินิก · กันส่งซ้ำ']]],
   ['ผล', [['done', 'เสร็จ', 'ดูผลรายคลินิกด้านล่าง']]],
 ];
+// "สร้างเอง" jobs never touch Drive / Telegram: their last leg is the PDF landing in the clicker's Downloads folder
+const PIPE_M = [
+  ['01 / สั่งงาน', [['queued', 'กดจากปฏิทิน', 'เข้าคิวบนเว็บ'], ['claim', 'เครื่อง Mac รับงาน', 'เช็กคิวทุก 20 วินาที']]],
+  ['02 / เตรียมข้อมูล', [['asana', 'งาน Asana ที่เลือก', 'ชื่องาน = ข้อความบนปก · ดึงยอด Meta']]],
+  ['03 / สร้างรีพอร์ต', [['pdf', 'สร้าง PDF', 'รีพอร์ต 10 หน้า · สรุปภาษาไทย']]],
+  ['04 / ลงเครื่องคุณ', [['drive', 'ดาวน์โหลด PDF', 'โฟลเดอร์ Downloads ของเครื่องที่กด · ไม่ลง Drive ไม่ส่ง Telegram']]],
+  ['ผล', [['done', 'เสร็จ', 'กดดาวน์โหลดซ้ำได้ที่ปุ่มด้านบน']]],
+];
 const ORDER = ['queued', 'claim', 'asana', 'pdf', 'drive', 'telegram', 'done'];
 function pipeHTML(j){
   const pr = j.progress || {};
@@ -2513,7 +2523,7 @@ function pipeHTML(j){
                drive: pr.drive && `${pr.drive.ok || 0} อัปแล้ว${pr.drive.fail ? ` · ล้ม ${pr.drive.fail}` : ''}`,
                telegram: pr.telegram && `${pr.telegram.ok || 0} ส่งแล้ว${pr.telegram.fail ? ` · ล้ม ${pr.telegram.fail}` : ''}`};
   const failed = j.status === 'failed';
-  return `<div class="pipe" role="list" aria-label="ขั้นตอนการรันรีพอร์ต">${PIPE.map(([h, nodes]) => `<div class="ph"><h4>${h}</h4>${nodes.map(([k, t, d]) => {
+  return `<div class="pipe" role="list" aria-label="ขั้นตอนการรันรีพอร์ต">${(j.params?.task ? PIPE_M : PIPE).map(([h, nodes]) => `<div class="ph"><h4>${h}</h4>${nodes.map(([k, t, d]) => {
     const i = ORDER.indexOf(k);
     let cls = i < at ? 'done' : i === at ? (failed ? 'bad' : 'now') : '';
     if (k === 'done' && failed) { cls = 'bad'; t = 'ไม่สำเร็จ'; d = j.note || 'ดู log ด้านล่าง'; }
@@ -2633,6 +2643,11 @@ document.addEventListener('click', e => {
   if (e.target.id === 'asanaOpen') openAsana();
   if (e.target.id === 'repLoad') loadAsanaTasks();
   const pdf = e.target.closest('[data-rep-pdf]'); if (pdf) dlPdf(pdf.dataset.repPdf, pdf.dataset.repName);
+  const cx = e.target.closest('[data-rep-cancel]');
+  if (cx && confirm('ยกเลิกงานรีพอร์ตที่รอคิวอยู่นี้?')) { cx.disabled = true;
+    // RLS deletes only my own job while it is still queued; 0 rows back = the Mac already picked it up
+    sb.from('report_jobs').delete().eq('id', +cx.dataset.repCancel).eq('status', 'queued').select('id').then(({data, error}) => {
+      if (error || !data?.length) alert(error ? 'ยกเลิกไม่ได้: ' + error.message : 'ยกเลิกไม่ทันแล้ว เครื่อง Mac เริ่มสร้างไปแล้ว'); loadReports(); }); }
 });
 
 function renderReports(){
@@ -2654,6 +2669,7 @@ function renderReports(){
       return `<div class="job"><div class="job-h"><span class="pill ${t}">${l}</span><b>${bkkDateTime(j.created_at)}</b>
         <span class="muted">${esc(REP.names[j.requested_by] || (j.requested_by ? 'สมาชิก' : 'ระบบ'))}${j.finished_at ? ' · จบ ' + bkkDateTime(j.finished_at) : j.started_at ? ' · เริ่ม ' + bkkDateTime(j.started_at) : ''}</span>
         ${j.params?.task ? '<span class="pill">สร้างเอง</span>' : ''}${j.note ? `<span class="muted">${esc(j.note)}</span>` : ''}
+        ${j.status === 'queued' && j.requested_by === me ? `<button class="ghost rep-cancel" data-rep-cancel="${j.id}">ยกเลิก</button>` : ''}
         ${j.pdf_path ? `<button class="rep-run sm" data-rep-pdf="${esc(j.pdf_path)}" data-rep-name="${esc(j.note || 'report.pdf')}">ดาวน์โหลด PDF</button>` : ''}</div>
         ${j === REP.jobs[0] ? pipeHTML(j) : flowHTML(j)}
         ${rs.length ? `<div class="scroll"><table><thead><tr><th>คลินิก</th><th>สร้าง PDF</th><th>Drive</th><th>Telegram</th><th>ข้อผิดพลาด</th></tr></thead><tbody>${rs.map(r => `<tr>
