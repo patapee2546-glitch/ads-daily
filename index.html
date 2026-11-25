@@ -2618,8 +2618,13 @@ console.assert(monthAdd('2026-01', -1) === '2025-12' && monthAdd('2026-11', 1) =
 // Asana's current project palette (API colour name -> the hex Asana paints it), so chips look exactly like Asana
 const ASANA_COL = {'dark-red': '#f06a6a', 'dark-orange': '#ec8d71', 'light-orange': '#f1bd6c', 'dark-brown': '#f8df72', 'light-green': '#aecf55',
   'dark-green': '#5da283', 'light-teal': '#4ecbc4', 'dark-teal': '#9ee7e3', 'light-blue': '#4573d2', 'dark-purple': '#8d84e8', 'light-purple': '#b36bd4',
-  'light-pink': '#f9aaef', 'dark-pink': '#f26fb2', 'light-red': '#fc979a', 'light-warm-gray': '#6d6e6f', 'dark-warm-gray': '#6d6e6f'};
-const taskCol = t => ASANA_COL[clinicProj(t)?.color] || '#6d6e6f';
+  'light-pink': '#f9aaef', 'dark-pink': '#f26fb2', 'light-red': '#fc979a', 'light-warm-gray': '#6d6e6f', 'dark-warm-gray': '#6d6e6f',
+  // the names Asana's API uses since the 2023 palette refresh
+  red: '#f06a6a', orange: '#ec8d71', 'yellow-orange': '#f1bd6c', yellow: '#f8df72', 'yellow-green': '#aecf55', green: '#5da283', 'blue-green': '#4ecbc4',
+  aqua: '#9ee7e3', blue: '#4573d2', indigo: '#8d84e8', purple: '#b36bd4', magenta: '#f9aaef', 'hot-pink': '#f26fb2', pink: '#fc979a', 'cool-gray': '#6d6e6f'};
+// unknown / "none" colour -> a stable palette pick from the clinic id, so clinics still differ
+const taskCol = t => { const p = clinicProj(t), pal = Object.values(ASANA_COL).slice(0, 15);
+  return ASANA_COL[p?.color] || pal[[...(p?.gid || t.gid)].reduce((h, c) => h * 31 + c.charCodeAt(0) >>> 0, 7) % pal.length]; };
 // dark text on light colours, white on dark ones (WCAG relative luminance)
 const inkOn = hex => { const L = [1, 3, 5].map(i => { const c = parseInt(hex.slice(i, i + 2), 16) / 255; return c <= .03928 ? c / 12.92 : ((c + .055) / 1.055) ** 2.4; });
   return .2126 * L[0] + .7152 * L[1] + .0722 * L[2] > .3 ? '#1e1f21' : '#fff'; };
@@ -2668,8 +2673,8 @@ function manualRepHTML(active, online){
     const hol = HOLIDAYS[d];
     cells.push(`<div class="cal-d${d === TODAY ? ' today' : ''}${dow === 0 || dow === 6 ? ' we' : ''}${hol ? ' hol' : ''}" role="gridcell" aria-label="${thShort(d, 1)}${hol ? ' · วันหยุด ' + hol : ''}${ts.length ? ' · ' + ts.length + ' งาน' : ''}">
       <span class="cal-top"><span class="cal-n">${+d.slice(8)}</span>${hol ? `<span class="cal-hol">${hol}</span>` : ''}</span>
-      ${(calOpen.has(d) ? ts : ts.slice(0, 3)).map(t => { if (t.kind === 'topup') return `<a class="cal-t topup${t.completed ? ' done' : ''}" style="--c:${taskCol(t)};--t:${inkOn(taskCol(t))}" href="https://app.asana.com/0/0/${t.gid}" target="_blank" rel="noopener" title="${esc(t.name)} · เปิดใน Asana">
-          <span class="ct-c">${t.completed ? '<i class="ct-ok" aria-label="ทำแล้ว">✓</i>' : '<i class="ct-baht" aria-hidden="true">฿</i>'}${esc(topupLabel(t))}</span><span class="ct-m">${t.completed ? 'เติมงบแล้ว' : 'ต้องเติมงบ'}</span></a>`;
+      ${(calOpen.has(d) ? ts : ts.slice(0, 3)).map(t => { if (t.kind === 'topup') return `<button class="cal-t topup${isDone(t) ? ' done' : ''}" style="--c:${taskCol(t)};--t:${inkOn(taskCol(t))}" data-gen="${t.gid}" title="${esc(t.name)}">
+          <span class="ct-c">${isDone(t) ? '<i class="ct-ok" aria-label="ทำแล้ว">✓</i>' : '<i class="ct-baht" aria-hidden="true">฿</i>'}${esc(topupLabel(t))}</span><span class="ct-m">${isDone(t) ? 'เติมงบแล้ว' : 'ต้องเติมงบ'}</span></button>`;
         const j = jobOfTask(t.gid), st = j && ST[j.status], q = taskParts(t.name), dn = isDone(t), late = !dn && t.dueOn < TODAY;
         return `<button class="cal-t${dn ? ' done' : ''}${late ? ' late' : ''}" style="--c:${taskCol(t)};--t:${inkOn(taskCol(t))}" data-gen="${t.gid}" title="${esc(t.name)}${clinicProj(t) ? '\n' + esc(clinicProj(t).name) : ''}">
           <span class="ct-c">${dn ? '<i class="ct-ok" aria-label="ทำแล้ว">✓</i>' : late ? '<i class="ct-late" aria-label="เลยกำหนด"></i>' : ''}${esc(q.clinic)}</span>
@@ -2687,7 +2692,7 @@ function manualRepHTML(active, online){
       <button class="ghost icon" id="repLoad" aria-label="รีเฟรชจาก Asana" title="รีเฟรชจาก Asana">${REPT === 'loading' ? '…' : '↻'}</button></div>
     <div class="cal-stats">${stat(inMonth.length, 'งานรีพอร์ตเดือนนี้')}${stat(open.length, 'ยังไม่ได้ทำ', open.length ? 'warnv' : '')}${stat(soon, 'ถึงกำหนดใน 7 วัน')}${stat(made, 'PDF ที่สร้างจากเว็บ')}${stat(`${tops.length}${topsOpen ? ` <small>· ค้าง ${topsOpen}</small>` : ''}`, 'เติมงบเดือนนี้', topsOpen ? 'topv' : '')}</div>
     <div class="cal" role="grid" aria-label="ปฏิทินงานรีพอร์ต ${mName} ${yName}">${['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัส', 'ศุกร์', 'เสาร์'].map((x, i) => `<div class="cal-h${i === 0 || i === 6 ? ' we' : ''}" role="columnheader">${x}</div>`).join('')}${cells.join('')}</div>
-    <p class="cal-foot"><span><i class="ct-ok">✓</i> ทำแล้ว (สร้างซ้ำได้)</span><span><i class="ct-late"></i> เลยกำหนด ยังไม่ได้ทำ</span><span><i class="cal-hol" style="font-style:normal;padding:0 6px">หยุด</i> วันหยุดบริษัท</span><span><i class="ct-baht" style="background:var(--text-3);color:var(--bg)">฿</i> เติมงบ (กดเปิดใน Asana)</span><span>PDF โหลดลง Downloads ของเครื่องนี้ · ไม่ลง Drive · ไม่ส่ง Telegram</span></p>
+    <p class="cal-foot"><span><i class="ct-ok">✓</i> ทำแล้ว (สร้างซ้ำได้)</span><span><i class="ct-late"></i> เลยกำหนด ยังไม่ได้ทำ</span><span><i class="cal-hol" style="font-style:normal;padding:0 6px">หยุด</i> วันหยุดบริษัท</span><span><i class="ct-baht" style="background:var(--text-3);color:var(--bg)">฿</i> เติมงบ</span><span>PDF โหลดลง Downloads ของเครื่องนี้ · ไม่ลง Drive · ไม่ส่ง Telegram</span></p>
   </div>`;
 }
 function genRangeText(){
@@ -2702,13 +2707,18 @@ function openGen(gid){
   genTask = REPT.find(t => t.gid === gid); if (!genTask) return;
   const j = jobOfTask(gid), online = REP?.worker?.last_seen && Date.now() - Date.parse(REP.worker.last_seen) < 90e3;
   const busy = REP?.jobs.some(x => x.status === 'queued' || x.status === 'running');
-  const q = taskParts(genTask.name);
+  const q = taskParts(genTask.name), top = genTask.kind === 'topup';
+  if (top) q.clinic = topupLabel(genTask), q.cycle = '';
+  $('#genTitle').textContent = top ? 'งานเติมงบ' : 'Generate report';
+  $('#genGo').hidden = top; $('#genRange').style.display = top ? 'none' : ''; $('#genCancel').textContent = top ? 'ปิด' : 'Cancel';
   $('#genTask').innerHTML = `<span class="gen-dot" style="background:${taskCol(genTask)}"></span><div><b class="gt-c">${esc(q.clinic)}</b>
     <span class="gt-tags">${q.cycle ? `<span>${esc(q.cycle)}</span>` : ''}<span>กำหนด ${thShort(genTask.dueOn, 1)}</span></span>
     <label class="sw gen-sw"><input type="checkbox" role="switch" id="genDone" ${isDone(genTask) ? 'checked' : ''} ${genTask.completed ? 'disabled' : ''}><span>${genTask.completed ? 'ทำแล้ว (ติ๊กใน Asana แล้ว)' : isDone(genTask) ? 'ทำแล้ว' : 'ยังไม่ได้ทำ'}</span></label>
-    <small>ข้อความใต้ภาพบนปก</small><span class="gt-n">${esc(genTask.name)}</span>
+    <small>${top ? 'ชื่องานใน Asana' : 'ข้อความใต้ภาพบนปก'}</small><span class="gt-n">${esc(genTask.name)}</span>
     <small>${genTask.projects.map(p => esc(p.name)).join(' · ')}</small>
+    <a class="link" href="https://app.asana.com/0/0/${genTask.gid}" target="_blank" rel="noopener">เปิดงานนี้ใน Asana ↗</a>
     ${j?.pdf_path ? `<button type="button" class="link" data-rep-pdf="${esc(j.pdf_path)}" data-rep-name="${esc(j.note || 'report.pdf')}">ดาวน์โหลด PDF ล่าสุดของงานนี้</button>` : ''}</div>`;
+  if (top) { $('#genErr').textContent = ''; $('#genDlg').showModal(); return; }
   $('#genErr').textContent = !online ? 'เครื่องสร้างรีพอร์ตที่ออฟฟิศปิดอยู่ ให้คนเปิดเครื่องก่อนแล้วค่อยสร้าง' : busy ? 'มีงานรีพอร์ตรันอยู่ รอให้เสร็จก่อน' : !daysOfTask(genTask.name) ? 'ชื่องานต้องมี (N วัน) เช่น (30 วัน)' : '';
   $('#genGo').disabled = !online || busy || !daysOfTask(genTask.name);
   genRangeText(); $('#genDlg').showModal();
