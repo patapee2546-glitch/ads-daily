@@ -1311,10 +1311,11 @@ function renderDash(){
   const Sp = sum(prev,'spend'), Rp = sum(prev,'results'), Pp = sum(prev,'purchases'), Vp = sum(prev,'purchase_value');
   const cpr = R ? S / R : null, cprP = Rp ? Sp / Rp : null, ci0 = cpr && cprP ? cpr / cprP : null;
   const bRows = daily(shiftDay(rng.from, -28), shiftDay(rng.from, -1)), bR = sum(bRows,'results'), cprB = bR ? sum(bRows,'spend') / bR : null;
-  const today = db.clinics.map(c => ({c, w: worst(rec(rng.to, c.name))}));
+  // statuses are the latest finished day (yesterday), like the 'checked' ring; a name click opens the panel on that same day
+  const stDay = dayBefore(TODAY), today = db.clinics.map(c => ({c, w: worst(rec(stDay, c.name))}));
   const by = k => today.filter(t => t.w === k);
   // "checked" always means yesterday's monitoring (today −1), whatever range the dashboard shows; db.clinics = this owner's clinics only
-  const chkDay = dayBefore(TODAY), checked = db.clinics.filter(c => rec(chkDay, c.name).ads?.monitored).length;
+  const chkDay = stDay, checked = db.clinics.filter(c => rec(chkDay, c.name).ads?.monitored).length;
   const rank = clinicRank(), ads = adRank();
   const runs = db.clinics.map(c => ({c, w: runway(c.name)})).filter(x => x.w && !x.w.card).sort((a,b) => (a.w.days ?? 1e9) - (b.w.days ?? 1e9));
   const low = runs.filter(x => x.w.days != null && x.w.days < 3);
@@ -1334,7 +1335,7 @@ function renderDash(){
         ${best ? `<li><span class="hl ok">ดาวเด่น</span><button class="link" data-open="${esc(best.name)}">${esc(best.name)}</button> ${vsNormal(best.i)}</li>` : ''}
         ${bad ? `<li><span class="hl bad">ต้องดู</span><button class="link" data-open="${esc(bad.name)}">${esc(bad.name)}</button> ${bad.i === 9 ? 'ใช้เงินแต่ยังไม่มีแชท' : vsNormal(bad.i)}</li>` : ''}
         ${low.length ? `<li><span class="hl warn">เงินใกล้หมด</span>${low.map(x => `<button class="link" data-open="${esc(x.c.name)}">${esc(x.c.name)}</button> ${x.w.days.toFixed(1)} วัน`).join(' · ')}</li>` : ''}
-        ${by('bad').length ? `<li><span class="hl bad">มีปัญหา</span>${by('bad').map(t => `<button class="link" data-open="${esc(t.c.name)}">${esc(t.c.name)}</button>`).join(', ')}</li>` : ''}
+        ${by('bad').length ? `<li><span class="hl bad">มีปัญหา</span>${by('bad').map(t => `<button class="link" data-open="${esc(t.c.name)}" data-day="${stDay}">${esc(t.c.name)}</button>`).join(', ')}</li>` : ''}
       </ul>${best || bad ? `<div class="hero-k">"ปกติ" ของแต่ละคลินิก = ฿/แชทเฉลี่ย 28 วันก่อนหน้า (${thLong(shiftDay(rng.from, -28))} – ${thLong(shiftDay(rng.from, -1), true)})</div>` : ''}</div>
     <div class="card gauge span-4" ${cardI()}><div class="card-h"><b>เช็คแอดแล้ว</b><span>เมื่อวาน ${thDate(chkDay)}</span></div>
       ${ring(checked / Math.max(1, db.clinics.length), `${checked}/${db.clinics.length}`, 'คลินิก', `เมื่อวานเช็คแอดแล้ว ${checked} จาก ${db.clinics.length} คลินิก`)}</div>
@@ -1359,9 +1360,9 @@ function renderDash(){
       <div class="rank">${!ads ? '<div class="muted pad">กำลังโหลดแอด…</div>' : ads.slice(0, 8).map((a, k) => `<div class="rk ad"><span class="no">${k + 1}</span><span class="nm"><b title="${esc(a.name)}">${esc(a.name)}</b><small>${esc(a.clinic)}</small></span>${starHTML(a.st)}
         <span class="cp">${baht(a.cpr)}<small class="${a.i < 1 ? 't-ok' : 't-bad'}">${vsNormal(a.i)}</small></span><span class="sp">${baht(a.sp)}<small>${int(a.r)} แชท${a.pu ? ` · ${int(a.pu)} ซื้อ` : ''}</small></span></div>`).join('') || '<div class="muted pad">2 สัปดาห์นี้ยังไม่มีแอดที่ใช้เงินพอจะจัดอันดับ</div>'}</div>
       <div class="legend-note">นับแอดที่ใช้ ≥฿800 และได้ ≥4 แชท · ข้อมูลแอดอัปเดตทุกคืนตี 2 · ดูมุมขายที่ได้ผลในแท็บสมองมุมขาย</div></div>
-    <div class="card span-5" ${cardI()}><div class="card-h"><b>สถานะ ณ วันสุดท้าย</b><span>${thDate(rng.to)}</span></div>
+    <div class="card span-5" ${cardI()}><div class="card-h"><b>สถานะแอด</b><span>เมื่อวาน ${thDate(stDay)}</span></div>
       <div class="slist">${[['bad','มีปัญหา'],['warn','เฝ้าดู'],['ok','ปกติ'],['','ยังไม่เช็ค']].map(([k,l]) => { const xs = by(k);
-        return `<div class="r"><span class="dot d-${k}"></span>${l}<span class="c">${xs.length}</span></div>${xs.length && k ? `<div class="names">${xs.map(t => `<button class="link" data-open="${esc(t.c.name)}">${esc(t.c.name)}</button>`).join(', ')}</div>` : ''}`; }).join('')}</div></div>
+        return `<div class="r"><span class="dot d-${k}"></span>${l}<span class="c">${xs.length}</span></div>${xs.length && k ? `<div class="names">${xs.map(t => `<button class="link" data-open="${esc(t.c.name)}" data-day="${stDay}">${esc(t.c.name)}</button>`).join(', ')}</div>` : ''}`; }).join('')}</div></div>
   </div>`;
 }
 
@@ -2729,7 +2730,7 @@ $('#main').addEventListener('click', e => {
     save(d, c); $('#main').innerHTML = mainHTML(); return;
   }
   const g = e.target.closest('[data-go]'); if (g) { day = g.dataset.go; cur = g.dataset.c; view = 'today'; render(); return; }
-  const o = e.target.closest('[data-open]'); if (o) return open(o.dataset.open);
+  const o = e.target.closest('[data-open]'); if (o) { if (o.dataset.day) { day = o.dataset.day; dayFrom = null; } return open(o.dataset.open); }
   if (e.target.closest('a.acct-link')) return;   // the name link opens Ads Manager, not the panel
   const tr = e.target.closest('tr[data-c]'); if (tr) open(tr.dataset.c);
 });
