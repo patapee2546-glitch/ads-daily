@@ -159,6 +159,9 @@ tbody tr[aria-selected=true]{background:var(--accent-tint);box-shadow:inset 2px 
 .runlist .tr b{display:block;height:100%;border-radius:3px;background:var(--accent)}
 .runlist .t-bad .tr b,.runlist .rr.t-bad .tr b{background:var(--bad)}.runlist .rr.t-warn .tr b{background:var(--warn)}
 .issue{max-width:280px;overflow:hidden;text-overflow:ellipsis;color:var(--text-2)}
+.iss{display:flex;align-items:center;gap:6px;min-width:0}.iss-t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}.iss small{white-space:nowrap;flex:none}
+.iss-x{all:unset;cursor:pointer;flex:none;font-size:11px;padding:1px 7px;border-radius:6px;border:1px solid var(--line-2);color:var(--text-3)}
+.iss-x:hover{color:var(--bad);border-color:var(--bad)}.iss-x:focus-visible{outline:2px solid var(--accent)}
 .muted{color:var(--text-3)}
 .ang-ctl{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px}
 .ang-ctl select{background:var(--surface-2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font:inherit;font-size:13px}
@@ -1071,6 +1074,27 @@ const filled = r => TOPICS.filter(t => r[t.id]?.status).length;
 const shiftDay = (d, n) => { const x = new Date(d); x.setDate(x.getDate()+n); return iso(x); };
 const visible = () => db.clinics.filter(c => c.name.toLowerCase().includes(q.toLowerCase()));
 // the one line an operator needs per clinic: the worst topic's reason
+// typed issues stay on the timeline: a note keeps showing on later days until someone presses ลบ.
+// ลบ stores "topic|note" in that day's issue_cleared, so a NEW note (different text) still shows.
+function openIssues(c){
+  const seen = new Set(), cleared = new Set(), out = [];
+  for (let i = 0; i < 90; i++) { const d = shiftDay(day, -i), r = rec(d, c);
+    for (const k of r.issue_cleared || []) cleared.add(k);
+    for (const t of TOPICS) { const x = r[t.id], n = x?.note?.trim();
+      if (seen.has(t.id) || !n || !x.status || x.status === 'ok') continue;
+      seen.add(t.id); if (!cleared.has(t.id + '|' + n)) out.push({id: t.id, name: t.name, note: n, d}); }
+  }
+  return out;
+}
+function issueCell(c, r){
+  const xs = openIssues(c.name), h = headline(r);
+  if (!xs.length) return `<td class="issue" title="${esc(h)}">${esc(h) || '<span class="muted">–</span>'}</td>`;
+  const txt = xs.map(o => `${o.name}: ${o.note}`).join(' · ') + (h && !xs.some(o => h.endsWith(o.note)) ? ' · ' + h : '');
+  const since = xs.reduce((a, o) => o.d < a ? o.d : a, day);
+  return `<td class="issue"><div class="iss"><span class="iss-t" title="${esc(txt)}">${esc(txt)}</span>
+    ${since < day ? `<small class="muted">ตั้งแต่ ${+since.slice(8)}/${+since.slice(5, 7)}</small>` : ''}
+    <button class="iss-x" data-iss-x="${esc(c.name)}" title="ได้สื่อ / แก้แล้ว ลบประเด็นนี้ออกจาก timeline">ลบ</button></div></td>`;
+}
 function headline(r){
   const w = worst(r); if (!w || w === 'ok') return '';
   const t = TOPICS.filter(t => r[t.id]?.status === w)[0];
@@ -1207,7 +1231,7 @@ function renderToday(){
           <td class="num">${m.frequency ? `<span class="${m.frequency >= 4 ? 't-warn' : ''}" title="${m.frequency >= 4 ? 'ความถี่สูง คนเดิมเห็นซ้ำบ่อย ระวังแอดล้า' : ''}">${(+m.frequency).toFixed(2)}</span>` : '<span class="muted">–</span>'}</td>
           <td class="num">${m.video_3s ? int(m.video_3s) : '<span class="muted">–</span>'}</td>
           <td class="num">${runwayCell(c.name)}</td>
-          <td class="issue" title="${esc(headline(r))}">${esc(headline(r)) || '<span class="muted">–</span>'}</td></tr>`;
+          ${issueCell(c, r)}</tr>`;
       }).join('') : `<tr><td colspan="11" class="muted">ไม่พบคลินิกที่ชื่อมี "${esc(q)}"</td></tr>`}</tbody>
     </table></div></div>`;
 }
@@ -2738,6 +2762,9 @@ document.addEventListener('click', e => {
   const g = e.target.closest('[data-gen]'); if (g) { openGen(g.dataset.gen); return; }
   if (e.target.id === 'asanaOpen') openAsana();
   if (e.target.id === 'repLoad') loadAsanaTasks();
+  const ix = e.target.closest('[data-iss-x]');
+  if (ix) { e.stopImmediatePropagation(); const c = ix.dataset.issX, r = ((db.days[day] ??= {})[c] ??= {});
+    r.issue_cleared = [...new Set([...(r.issue_cleared || []), ...openIssues(c).map(o => o.id + '|' + o.note)])]; save(day, c); fxKey = ''; render(); return; }
   const pdf = e.target.closest('[data-rep-pdf]'); if (pdf) dlPdf(pdf.dataset.repPdf, pdf.dataset.repName);
   const cx = e.target.closest('[data-rep-cancel]');
   if (cx && confirm(cx.dataset.q ? 'ยกเลิกงานรีพอร์ตที่รอคิวอยู่นี้?' : 'ลบงานนี้ออกจากประวัติ? (PDF ของงานนี้บนเว็บจะถูกลบด้วย)')) { cx.disabled = true;
@@ -3003,6 +3030,7 @@ $('#main').addEventListener('click', e => {
   const g = e.target.closest('[data-go]'); if (g) { day = g.dataset.go; cur = g.dataset.c; view = 'today'; render(); return; }
   const o = e.target.closest('[data-open]'); if (o) { if (o.dataset.day) { day = o.dataset.day; dayFrom = null; } return open(o.dataset.open); }
   if (e.target.closest('a.acct-link')) return;   // the name link opens Ads Manager, not the panel
+  if (e.target.closest('[data-iss-x]')) return;   // ลบ on an issue must not open the clinic
   const tr = e.target.closest('tr[data-c]'); if (tr) open(tr.dataset.c);
 });
 function step(n){
