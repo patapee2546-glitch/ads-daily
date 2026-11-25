@@ -1929,6 +1929,8 @@ async function drawBrain(){
     .each(function(d){ const dur = (2.2 + 2.5 * Math.min(1.6, d.l.i || 1.6)).toFixed(2);
       d3.select(this).append('animateMotion').attr('dur', dur + 's').attr('begin', (d.j * dur / 3).toFixed(2) + 's').attr('repeatCount', 'indefinite')
         .append('mpath').attr('href', '#dend' + d.k); });
+  // a redraw reuses this <svg>, whose SMIL clock is already past every begin= -> rewind it or the dots freeze
+  el.setCurrentTime?.(0);
   const node = zg.append('g').selectAll('g').data(N).join('g').attr('class', n => 'cell ' + n.kind).attr('tabindex', 0).attr('role', 'button')
     .attr('aria-label', n => `${n.id.slice(2)} ${vsNormal(n.i)}`)
     .on('click', (e, n) => { e.stopPropagation(); focus(n); }).on('keydown', (e, n) => e.key === 'Enter' && focus(n))
