@@ -207,13 +207,15 @@ tbody tr[aria-selected=true]{background:var(--accent-tint);box-shadow:inset 2px 
 .cal-d.hol{background:color-mix(in oklab,oklch(60% 0.19 15) 12%,transparent)}.cal-d.hol .cal-n{color:oklch(75% 0.15 15)}
 .cal-d.today{background:var(--accent-tint)}.cal-d.today .cal-n{background:var(--accent);color:#fff;font-weight:600}
 .cal-t{all:unset;box-sizing:border-box;cursor:pointer;display:grid;gap:1px;padding:6px 8px 6px 9px;border-radius:9px;color:var(--text);
-  background:color-mix(in oklab,var(--c) 62%,oklch(24% 0.01 260));box-shadow:inset 3px 0 0 color-mix(in oklab,var(--c) 70%,white);color:#fff;transition:filter .12s,transform .12s}
+  background:var(--c);color:var(--t,#fff);transition:filter .12s,transform .12s}
 .cal-t:hover{filter:brightness(1.12);transform:translateY(-1px)}.cal-t:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .ct-c{font-size:12.5px;font-weight:500;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center;gap:5px}
-.ct-m{font-size:11px;color:oklch(100% 0 0 / .82);font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden}
-.cal-t .ct-ok{color:oklch(90% 0.16 150);font-weight:700}
+.ct-m{font-size:11px;color:inherit;opacity:.78;font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden}
+.cal-t .ct-ok{color:inherit;font-weight:700}
+.cal-t.done{background:color-mix(in oklab,var(--c) 55%,#2a2b2d);color:color-mix(in oklab,var(--t,#fff) 25%,#f0f0f0)}
+.cal-more{all:unset;cursor:pointer;font-size:12px;font-weight:500;color:var(--text-2);padding:2px 6px;border-radius:6px;align-self:flex-start}.cal-more:hover{background:var(--hover);color:var(--text)}
 .cal-t.topup{text-decoration:none}
-.ct-baht{font-style:normal;font-weight:700;width:16px;height:16px;border-radius:50%;display:inline-grid;place-items:center;background:oklch(100% 0 0 / .22);font-size:10px;flex:none}
+.ct-baht{font-style:normal;font-weight:700;width:16px;height:16px;border-radius:50%;display:inline-grid;place-items:center;background:color-mix(in oklab,currentColor 22%,transparent);font-size:10px;flex:none}
 .cs.topv b{color:var(--warn)}.cs b small{font-size:13px;font-weight:500;color:var(--text-3)}
 .ct-ok{font-style:normal;color:var(--ok);font-size:11px}.ct-late{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--warn);flex:none}
 .cal-t em{font-style:normal;font-size:10px;font-weight:500;padding:0 6px;border-radius:999px;line-height:16px;margin-left:auto}
@@ -2570,7 +2572,7 @@ const bkkDateTime = t => t ? new Date(t).toLocaleString('th-TH', {day: 'numeric'
 // ---- "สร้างเอง": an Asana-style month calendar of MY "Report Ads Facebook" tasks. Click one -> Generate report / Cancel.
 // The Mac builds the PDF (no Drive / Telegram) and this browser downloads it into its own Downloads folder.
 // The viewer's Asana token stays in THIS browser (localStorage, set from the ⋯ menu): each person's own Asana.
-let calClinic = '', repMode = 'manual', REPT = null, REPT_SINCE = null, calMonth = TODAY.slice(0, 7), genTask = null;
+let calOpen = new Set(), calClinic = '', repMode = 'manual', REPT = null, REPT_SINCE = null, calMonth = TODAY.slice(0, 7), genTask = null;
 const ASANA_KEY = 'ads-daily-asana-token';
 const asanaTok = () => { try { return localStorage.getItem(ASANA_KEY) || ''; } catch { return ''; } };
 async function asanaGet(path){
@@ -2611,10 +2613,15 @@ const daysOfTask = n => +((String(n).match(/\((\d+)\s*วัน\)/) || [])[1] ||
 console.assert(daysOfTask('Report Ads Facebook - Mabella Skin M21/P2 (30 วัน)') === 30 && daysOfTask('x') === 0, 'task days');
 console.assert(monthAdd('2026-01', -1) === '2025-12' && monthAdd('2026-11', 1) === '2026-12', 'monthAdd');
 // Asana project colours -> chip colour (unknown / none -> a stable hue from the project id)
-const ASANA_COL = {'dark-red': '#e8384f', 'light-red': '#fc91ad', 'dark-orange': '#fd612c', 'light-orange': '#fd9a00', 'dark-brown': '#c8a03c', 'light-brown': '#eec300',
-  'light-green': '#a4cf30', 'dark-green': '#62d26f', 'light-teal': '#37c5ab', 'dark-teal': '#20aaea', 'light-blue': '#4186e0', 'dark-blue': '#5a7bf0',
-  'dark-purple': '#7a6ff0', 'light-purple': '#aa62e3', 'light-pink': '#e362e3', 'dark-pink': '#ea4e9d', 'light-warm-gray': '#8da3a6', 'dark-warm-gray': '#8da3a6'};
-const taskCol = t => { const p = t.projects[0]; return ASANA_COL[p?.color] || `hsl(${[...(p?.gid || t.gid)].reduce((h, c) => h * 31 + c.charCodeAt(0) >>> 0, 7) % 360} 60% 62%)`; };
+// Asana's current project palette (API colour name -> the hex Asana paints it), so chips look exactly like Asana
+const ASANA_COL = {'dark-red': '#f06a6a', 'dark-orange': '#ec8d71', 'light-orange': '#f1bd6c', 'dark-brown': '#f8df72', 'light-green': '#aecf55',
+  'dark-green': '#5da283', 'light-teal': '#4ecbc4', 'dark-teal': '#9ee7e3', 'light-blue': '#4573d2', 'dark-purple': '#8d84e8', 'light-purple': '#b36bd4',
+  'light-pink': '#f9aaef', 'dark-pink': '#f26fb2', 'light-red': '#fc979a', 'light-warm-gray': '#6d6e6f', 'dark-warm-gray': '#6d6e6f'};
+const taskCol = t => ASANA_COL[t.projects[0]?.color] || '#6d6e6f';
+// dark text on light colours, white on dark ones (WCAG relative luminance)
+const inkOn = hex => { const L = [1, 3, 5].map(i => { const c = parseInt(hex.slice(i, i + 2), 16) / 255; return c <= .03928 ? c / 12.92 : ((c + .055) / 1.055) ** 2.4; });
+  return .2126 * L[0] + .7152 * L[1] + .0722 * L[2] > .3 ? '#1e1f21' : '#fff'; };
+console.assert(inkOn('#f8df72') === '#1e1f21' && inkOn('#4573d2') === '#fff', 'inkOn');
 // the report app picks the period itself: it ends the day before the due date (never after today), length = "(N วัน)" in the name
 const genEndOf = t => { const d = dayBefore(t.dueOn); return d < TODAY ? d : TODAY; };
 // "ทำแล้ว" switch: ticks a task on THIS browser right away, without waiting for Asana to be ticked
@@ -2659,12 +2666,13 @@ function manualRepHTML(active, online){
     const hol = HOLIDAYS[d];
     cells.push(`<div class="cal-d${d === TODAY ? ' today' : ''}${dow === 0 || dow === 6 ? ' we' : ''}${hol ? ' hol' : ''}" role="gridcell" aria-label="${thShort(d, 1)}${hol ? ' · วันหยุด ' + hol : ''}${ts.length ? ' · ' + ts.length + ' งาน' : ''}">
       <span class="cal-top"><span class="cal-n">${+d.slice(8)}</span>${hol ? `<span class="cal-hol">${hol}</span>` : ''}</span>
-      ${ts.map(t => { if (t.kind === 'topup') return `<a class="cal-t topup${t.completed ? ' done' : ''}" style="--c:${taskCol(t)}" href="https://app.asana.com/0/0/${t.gid}" target="_blank" rel="noopener" title="${esc(t.name)} · เปิดใน Asana">
+      ${(calOpen.has(d) ? ts : ts.slice(0, 3)).map(t => { if (t.kind === 'topup') return `<a class="cal-t topup${t.completed ? ' done' : ''}" style="--c:${taskCol(t)};--t:${inkOn(taskCol(t))}" href="https://app.asana.com/0/0/${t.gid}" target="_blank" rel="noopener" title="${esc(t.name)} · เปิดใน Asana">
           <span class="ct-c">${t.completed ? '<i class="ct-ok" aria-label="ทำแล้ว">✓</i>' : '<i class="ct-baht" aria-hidden="true">฿</i>'}${esc(topupLabel(t))}</span><span class="ct-m">${t.completed ? 'เติมงบแล้ว' : 'ต้องเติมงบ'}</span></a>`;
         const j = jobOfTask(t.gid), st = j && ST[j.status], q = taskParts(t.name), dn = isDone(t), late = !dn && t.dueOn < TODAY;
-        return `<button class="cal-t${dn ? ' done' : ''}${late ? ' late' : ''}" style="--c:${taskCol(t)}" data-gen="${t.gid}" title="${esc(t.name)}${t.projects[0] ? '\n' + esc(t.projects[0].name) : ''}">
+        return `<button class="cal-t${dn ? ' done' : ''}${late ? ' late' : ''}" style="--c:${taskCol(t)};--t:${inkOn(taskCol(t))}" data-gen="${t.gid}" title="${esc(t.name)}${t.projects[0] ? '\n' + esc(t.projects[0].name) : ''}">
           <span class="ct-c">${dn ? '<i class="ct-ok" aria-label="ทำแล้ว">✓</i>' : late ? '<i class="ct-late" aria-label="เลยกำหนด"></i>' : ''}${esc(q.clinic)}</span>
-          <span class="ct-m">${esc(q.cycle)}${q.cycle && q.days ? ' · ' : ''}${q.days ? q.days + ' วัน' : ''}${st ? `<em class="${st[1]}">${st[0]}</em>` : ''}</span></button>`; }).join('')}</div>`);
+          <span class="ct-m">${esc(q.cycle)}${q.cycle && q.days ? ' · ' : ''}${q.days ? q.days + ' วัน' : ''}${st ? `<em class="${st[1]}">${st[0]}</em>` : ''}</span></button>`; }).join('')}
+      ${ts.length > 3 ? `<button class="cal-more" data-more="${d}">${calOpen.has(d) ? 'ย่อ' : `อีก ${ts.length - 3} งาน`}</button>` : ''}</div>`);
   }
   const [mName, yName] = new Date(Date.UTC(y, m, 1)).toLocaleDateString('th-TH', {month: 'long', year: 'numeric', timeZone: 'UTC'}).split(' ');
   return `<div class="mrep">
@@ -2727,6 +2735,7 @@ $('#asanaForm').onsubmit = e => { e.preventDefault(); const v = $('#asanaIn').va
 document.addEventListener('click', e => {
   const m = e.target.closest('[data-repmode]'); if (m) { repMode = m.dataset.repmode; fxKey = ''; render(); return; }
   const c = e.target.closest('[data-cal]'); if (c) { calMonth = +c.dataset.cal ? monthAdd(calMonth, +c.dataset.cal) : TODAY.slice(0, 7); fxKey = ''; render(); return; }
+  const mo = e.target.closest('[data-more]'); if (mo) { const d = mo.dataset.more; calOpen.has(d) ? calOpen.delete(d) : calOpen.add(d); fxKey = ''; render(); return; }
   const g = e.target.closest('[data-gen]'); if (g) { openGen(g.dataset.gen); return; }
   if (e.target.id === 'asanaOpen') openAsana();
   if (e.target.id === 'repLoad') loadAsanaTasks();
