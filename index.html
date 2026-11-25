@@ -1313,7 +1313,8 @@ function renderDash(){
   const bRows = daily(shiftDay(rng.from, -28), shiftDay(rng.from, -1)), bR = sum(bRows,'results'), cprB = bR ? sum(bRows,'spend') / bR : null;
   const today = db.clinics.map(c => ({c, w: worst(rec(rng.to, c.name))}));
   const by = k => today.filter(t => t.w === k);
-  const checked = db.clinics.filter(c => rec(rng.to, c.name).ads?.monitored).length;
+  // "checked" always means yesterday's monitoring (today −1), whatever range the dashboard shows; db.clinics = this owner's clinics only
+  const chkDay = dayBefore(TODAY), checked = db.clinics.filter(c => rec(chkDay, c.name).ads?.monitored).length;
   const rank = clinicRank(), ads = adRank();
   const runs = db.clinics.map(c => ({c, w: runway(c.name)})).filter(x => x.w && !x.w.card).sort((a,b) => (a.w.days ?? 1e9) - (b.w.days ?? 1e9));
   const low = runs.filter(x => x.w.days != null && x.w.days < 3);
@@ -1335,8 +1336,8 @@ function renderDash(){
         ${low.length ? `<li><span class="hl warn">เงินใกล้หมด</span>${low.map(x => `<button class="link" data-open="${esc(x.c.name)}">${esc(x.c.name)}</button> ${x.w.days.toFixed(1)} วัน`).join(' · ')}</li>` : ''}
         ${by('bad').length ? `<li><span class="hl bad">มีปัญหา</span>${by('bad').map(t => `<button class="link" data-open="${esc(t.c.name)}">${esc(t.c.name)}</button>`).join(', ')}</li>` : ''}
       </ul>${best || bad ? `<div class="hero-k">"ปกติ" ของแต่ละคลินิก = ฿/แชทเฉลี่ย 28 วันก่อนหน้า (${thLong(shiftDay(rng.from, -28))} – ${thLong(shiftDay(rng.from, -1), true)})</div>` : ''}</div>
-    <div class="card gauge span-4" ${cardI()}><div class="card-h"><b>เช็คแอดแล้ว</b><span>${thDate(rng.to)}</span></div>
-      ${ring(checked / Math.max(1, db.clinics.length), `${checked}/${db.clinics.length}`, 'คลินิก', `เช็คแอดแล้ว ${checked} จาก ${db.clinics.length} คลินิก`)}</div>
+    <div class="card gauge span-4" ${cardI()}><div class="card-h"><b>เช็คแอดแล้ว</b><span>เมื่อวาน ${thDate(chkDay)}</span></div>
+      ${ring(checked / Math.max(1, db.clinics.length), `${checked}/${db.clinics.length}`, 'คลินิก', `เมื่อวานเช็คแอดแล้ว ${checked} จาก ${db.clinics.length} คลินิก`)}</div>
 
     <div class="card chart-card span-12" ${cardI()}><div class="card-h"><b>ต้นทุนต่อแชทรายวัน</b><span>ทุกคลินิกรวม · ต่ำ = ดี · เส้นประ = ค่าเฉลี่ย 28 วันก่อนหน้า${cprB ? ` ${baht(cprB)}` : ''}</span></div>
       ${areaChart('cpr', rows, 'cpr', baht, true, {W: 1200, H: 230, ref: cprB, refLabel: cprB ? 'ปกติ ' + baht(cprB) : ''})}</div>
