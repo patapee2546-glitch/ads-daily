@@ -199,7 +199,7 @@ tbody tr[aria-selected=true]{background:var(--accent-tint);box-shadow:inset 2px 
 .cal-h{padding:10px 12px;font-size:12px;font-weight:500;color:var(--text-2);border-bottom:1px solid var(--line)}.cal-h.we{color:var(--text-3)}
 .cal-d{min-height:118px;padding:8px;display:flex;flex-direction:column;gap:5px;border-right:1px solid var(--edge);border-bottom:1px solid var(--edge);min-width:0}
 .cal-d:nth-child(7n+7){border-right:0}.cal-d.we{background:color-mix(in oklab,var(--text) 2%,transparent)}
-.cal-d.out{background:color-mix(in oklab,var(--text) 4%,transparent)}.cal-d.out .cal-n{color:var(--text-3);opacity:.6}
+.cal-d.out{background:color-mix(in oklab,var(--text) 2.5%,transparent)}.cal-d.out .cal-n{color:var(--text-3);opacity:.6}
 .cal-n{font-size:13px;font-weight:500;color:var(--text-2);min-width:26px;height:26px;padding:0 6px;display:inline-grid;place-items:center;align-self:flex-start;border-radius:999px;font-variant-numeric:tabular-nums}
 .cal-n small{font-size:11px;font-weight:400}
 .cal-d.today{background:var(--accent-tint)}.cal-d.today .cal-n{background:var(--accent);color:#fff;font-weight:600}
@@ -2632,6 +2632,8 @@ function manualRepHTML(active, online){
   const cells = [];
   for (let i = 0; i < weeks * 7; i++) {
     const d = new Date(+start + i * 864e5).toISOString().slice(0, 10), out = d.slice(0, 7) !== calMonth, dow = i % 7;
+    // one page = one month: days of the neighbouring months stay blank
+    if (out) { cells.push('<div class="cal-d out" role="gridcell" aria-hidden="true"></div>'); continue; }
     const ts = (by.get(d) || []).sort((a, b) => a.completed - b.completed || a.name.localeCompare(b.name));
     cells.push(`<div class="cal-d${out ? ' out' : ''}${d === TODAY ? ' today' : ''}${dow === 0 || dow === 6 ? ' we' : ''}" role="gridcell" aria-label="${thShort(d, 1)}${ts.length ? ' · ' + ts.length + ' งาน' : ''}">
       <span class="cal-n">${+d.slice(8)}${d.slice(8) === '01' && out ? ' <small>' + thShort(d).split(' ')[1] + '</small>' : ''}</span>
