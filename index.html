@@ -3279,6 +3279,14 @@ async function boot(){
   setInterval(() => { const t = todayISO(); if (t !== TODAY) { TODAY = t; if (!typingInMain()) render(); showPulled(); } }, 60e3);
 }
 boot();
+// GitHub Pages lets browsers keep this page for 10 min: when a newer deploy is live, reload so nobody runs an old copy
+async function newerDeploy(){
+  try { const r = await fetch(location.pathname, {method: 'HEAD', cache: 'no-store'}), lm = Date.parse(r.headers.get('last-modified'));
+    if (lm - Date.parse(document.lastModified) > 2000 && !document.querySelector('dialog[open]') && !typingInMain()
+      && Date.now() - (+sessionStorage.getItem('ads-daily-reloaded') || 0) > 60e3) { sessionStorage.setItem('ads-daily-reloaded', Date.now()); location.reload(); } } catch {}
+}
+newerDeploy(); setInterval(newerDeploy, 5 * 60e3);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) newerDeploy(); });
 </script>
 </body>
 </html>
