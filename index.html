@@ -2521,21 +2521,6 @@ async function loadReports(){
   autoDl();
   if (view === 'reports' && !typingInMain()) render();
 }
-// run flow: รอคิว → ตรวจ Asana → สร้าง PDF → อัปโหลด Drive → ส่ง Telegram → เสร็จ, from job.status + job.progress
-const FLOW = [['queued', 'รอคิว'], ['asana', 'ตรวจงาน Asana'], ['pdf', 'สร้าง PDF'], ['drive', 'อัปโหลด Drive'], ['telegram', 'ส่ง Telegram'], ['done', 'เสร็จ']];
-function flowHTML(j){
-  const F = j.params?.task ? FLOW.filter(([k]) => k !== 'telegram').map(([k, l]) => [k, k === 'drive' ? 'ลง Downloads' : l]) : FLOW;
-  const pr = j.progress || {}, idx = k => F.findIndex(([x]) => x === k);
-  const at = j.status === 'queued' ? 0 : j.status === 'done' ? F.length : j.status === 'failed' ? Math.max(1, idx(pr.stage === 'failed' || !pr.stage ? 'asana' : pr.stage)) : Math.max(1, idx(pr.stage || 'asana'));
-  const n = (o, label) => o && (o.ok || o.fail || o.running) ? `<small>${o.ok || 0} ${label}${o.fail ? ` · ล้ม ${o.fail}` : ''}${o.running ? ` · กำลังทำ ${o.running}` : ''}</small>` : '';
-  const sub = {pdf: n(pr.pdf, 'สำเร็จ'), drive: n(pr.drive, 'อัปแล้ว'), telegram: n(pr.telegram, 'ส่งแล้ว')};
-  const failedAt = j.status === 'failed' ? (pr.stage === 'failed' ? F.length - 1 : at) : -1;
-  return `<div class="flow" role="list" aria-label="ขั้นตอนการรัน">${F.map(([k, l], i) => {
-    const cls = i === failedAt ? 'bad' : i < at || j.status === 'done' ? 'done' : i === at ? 'now' : '';
-    const mark = cls === 'done' ? '✓' : cls === 'bad' ? '!' : '';
-    return `<div class="st ${cls}" role="listitem"${cls === 'now' ? ' aria-current="step"' : ''}><i>${mark}</i>${l}${sub[k] || ''}</div>`; }).join('')}</div>
-    ${j.status === 'running' && pr.current ? `<div class="flow-now">ล่าสุด: ${esc(pr.current)}${pr.at ? ' · อัปเดต ' + bkkTime(pr.at) : ''}</div>` : ''}`;
-}
 // big pipeline for the newest job, laid out like the team's Archify diagrams: phase columns → node cards
 const PIPE = [
   ['01 / สั่งงาน', [['queued', 'ปุ่ม Run', 'เข้าคิวบนเว็บ'], ['claim', 'เครื่องสร้างรีพอร์ตรับงาน', 'เครื่องกลางที่ออฟฟิศ · เช็กคิวทุก 20 วินาที']]],
@@ -2787,19 +2772,21 @@ function renderReports(){
   return `<div class="card"><div class="card-h"><b>รีพอร์ตลูกค้า</b><span>ใช้ได้ทุกเครื่อง Windows · Mac · มือถือ · PDF สร้างที่เครื่องกลางของออฟฟิศ</span></div>
     <div class="rep-mode"><span class="seg" role="group" aria-label="โหมด"><button data-repmode="manual" aria-selected="${repMode === 'manual'}">สร้างเอง (ปฏิทิน Asana)</button><button data-repmode="auto" aria-selected="${repMode === 'auto'}">อัตโนมัติ (ส่งลูกค้า)</button></span></div>
     ${top}
-    ${REP.jobs.map(j => { const [l, t] = ST_LABEL[j.status] || [j.status, ''], rs = j.results || [];
+    ${REP.jobs.filter(j => repMode === 'manual' ? j.params?.task && j.requested_by === me : !j.params?.task)  // สร้างเอง: only my own jobs
+      .map(j => { const [l, t] = ST_LABEL[j.status] || [j.status, ''], rs = j.results || [], live = j.status === 'queued' || j.status === 'running';
       return `<div class="job"><div class="job-h"><span class="pill ${t}">${l}</span><b>${bkkDateTime(j.created_at)}</b>
         <span class="muted">${esc(REP.names[j.requested_by] || (j.requested_by ? 'สมาชิก' : 'ระบบ'))}${j.finished_at ? ' · จบ ' + bkkDateTime(j.finished_at) : j.started_at ? ' · เริ่ม ' + bkkDateTime(j.started_at) : ''}</span>
         ${j.params?.task ? '<span class="pill">สร้างเอง</span>' : ''}${j.note ? `<span class="muted">${esc(j.note)}</span>` : ''}
         ${j.status !== 'running' && j.requested_by === me ? `<button class="ghost rep-cancel" data-rep-cancel="${j.id}" data-q="${j.status === 'queued' ? 1 : ''}">${j.status === 'queued' ? 'ยกเลิก' : 'ลบ'}</button>` : ''}
         ${j.pdf_path ? `<button class="rep-run sm" data-rep-pdf="${esc(j.pdf_path)}" data-rep-name="${esc(j.note || 'report.pdf')}">ดาวน์โหลด PDF</button>` : ''}</div>
-        ${j === REP.jobs[0] ? pipeHTML(j) : flowHTML(j)}
+        ${live ? pipeHTML(j) : ''}
         ${rs.length && !j.params?.task ? `<div class="scroll"><table><thead><tr><th>คลินิก</th><th>สร้าง PDF</th><th>Drive</th><th>Telegram</th><th>ข้อผิดพลาด</th></tr></thead><tbody>${rs.map(r => `<tr>
           <td>${esc(r.client || r.taskGid)}</td><td>${step(r.status, 'success', {success: 'สำเร็จ', failed: 'ไม่สำเร็จ', running: 'กำลังทำ'})}</td>
           <td>${step(r.drive, 'uploaded', DRV)}${r.driveLink ? ` <a href="${esc(r.driveLink)}" target="_blank" rel="noopener">เปิด PDF</a>` : ''}</td>
           <td>${step(r.telegram, 'sent', TG)}</td><td class="mono">${esc(r.error || '')}</td></tr>`).join('')}</tbody></table></div>`
           : j.status === 'done' && !j.params?.task ? '<div class="muted" style="font-size:12px;margin-top:6px">ไม่มีรีพอร์ตที่ถึงกำหนดในรอบนี้</div>' : ''}
-        ${j.log ? `<details><summary>ดู log</summary><pre>${esc(j.log)}</pre></details>` : ''}</div>`; }).join('') || '<div class="job muted">ยังไม่เคยกด Run จากเว็บ</div>'}</div>`;
+        ${j.log && j.status === 'failed' ? `<details><summary>ดู log</summary><pre>${esc(j.log)}</pre></details>` : ''}</div>`; }).join('')
+      || `<div class="job muted">${repMode === 'manual' ? 'ยังไม่ได้สร้างรีพอร์ตจากเครื่องนี้ · กดงานในปฏิทินด้านบน' : 'ยังไม่เคยกดส่งรีพอร์ตจากเว็บ'}</div>`}</div>`;
 }
 const mainHTML = () => view === 'dash' ? renderDash() : view === 'reports' ? renderReports() : view === 'posts' ? renderPosts() : view === 'angel' ? renderAngel() : view === 'media' ? `<iframe id="radar" src="radar/index.html" title="คลังสื่อคู่แข่ง (Competitor Ad Radar)"></iframe>` : view === 'log' ? renderLog() : view === 'today' ? renderToday() : view === 'leadnote' ? renderLeadNote('lead') : view === 'adsnote' ? renderLeadNote('adsb') : view === 'history' ? renderHistory() : view === 'brain' ? renderBrain() : view === 'policy' ? renderPolicy() : view === 'running' ? renderRunning() : view === 'listen' ? renderListen()
   : `<div class="card"><div class="card-h"><b>ข้อความสรุป ${thDate(day)}</b><span>วางใน LINE หรือ Obsidian ได้</span></div><pre>${esc(summaryText(day))}</pre></div>`;
