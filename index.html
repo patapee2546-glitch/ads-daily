@@ -2422,12 +2422,26 @@ document.addEventListener('click', e => { const b = e.target.closest('[data-lsd]
 
 // ---- Run Report: queue a job for the Mac that runs ADSIDEA Reports (report-worker function + launchd worker) ----
 let REP = null;  // {jobs, worker, names}
+// "สร้างเอง" PDFs land in THIS computer's Downloads folder (browser download), never Drive.
+async function dlPdf(path, name){
+  const {data, error} = await sb.storage.from('reports').createSignedUrl(path, 3600, {download: name || 'report.pdf'});
+  if (error) return alert('ดาวน์โหลดไม่ได้: ' + error.message);
+  const a = document.createElement('a'); a.href = data.signedUrl; a.download = name || ''; document.body.append(a); a.click(); a.remove();
+}
+// my own manual job just finished -> download it once on this machine (seen ids remembered per browser)
+function autoDl(){
+  let seen = []; try { seen = JSON.parse(localStorage.getItem('ads-daily-pdf-seen') || '[]'); } catch {}
+  for (const j of REP.jobs) if (j.requested_by === me && j.pdf_path && j.status === 'done' && !seen.includes(j.id)
+    && Date.now() - Date.parse(j.finished_at) < 15 * 60e3) { seen.push(j.id); dlPdf(j.pdf_path, j.note); }
+  try { localStorage.setItem('ads-daily-pdf-seen', JSON.stringify(seen.slice(-50))); } catch {}
+}
 async function loadReports(){
   const [j, w, m] = await Promise.all([
     sb.from('report_jobs').select('id,requested_by,status,attempts,note,results,log,progress,created_at,started_at,finished_at,params,pdf_path').order('created_at', {ascending: false}).limit(15),
     sb.from('report_worker').select('last_seen,host').maybeSingle(),
     sb.from('members').select('user_id,display_name')]);
   REP = {jobs: j.data || [], worker: w.data, names: Object.fromEntries((m.data || []).map(x => [x.user_id, x.display_name])), err: j.error?.message};
+  autoDl();
   if (view === 'reports' && !typingInMain()) render();
 }
 // run flow: รอคิว → ตรวจ Asana → สร้าง PDF → อัปโหลด Drive → ส่ง Telegram → เสร็จ, from job.status + job.progress
@@ -2520,7 +2534,7 @@ function manualRepHTML(active, online){
         <div class="prow"><input id="repEnd" class="pinput" type="date" value="${end}" max="${TODAY}" style="max-width:200px">
           <span class="muted" style="font-size:12px">${n ? `ช่วง ${n} วันตามชื่องาน: ${thDate(from)} – ${thDate(end)} · พร้อมเทียบ 5 ช่วงก่อนหน้า` : 'ชื่องานไม่มี (N วัน) ระบบจะไม่รู้ความยาวช่วง'}</span></div></div>
       <div class="mrow"><button class="rep-run" id="repMake" ${active || !online || !t || !n ? 'disabled' : ''}>สร้างรีพอร์ต PDF</button>
-        <span class="muted" style="font-size:12px"> ${active ? 'มีงานรออยู่แล้ว รอให้เสร็จก่อน' : !online ? 'เครื่อง Mac ออฟไลน์' : 'สร้างแค่ PDF ให้ดาวน์โหลด ไม่อัปโหลด Drive ไม่ส่ง Telegram ใช้เวลาประมาณ 1 นาที'}</span></div>` : ''}
+        <span class="muted" style="font-size:12px"> ${active ? 'มีงานรออยู่แล้ว รอให้เสร็จก่อน' : !online ? 'เครื่อง Mac ออฟไลน์' : 'เสร็จแล้ว PDF จะโหลดลงโฟลเดอร์ Downloads ของเครื่องนี้เอง ไม่ลง Drive ไม่ส่ง Telegram ใช้เวลาประมาณ 1 นาที'}</span></div>` : ''}
   </div>`;
 }
 document.addEventListener('click', async e => {
@@ -2535,8 +2549,7 @@ document.addEventListener('click', async e => {
     if (error) alert('สั่งสร้างไม่ได้: ' + error.message); loadReports();
   }
   const pdf = e.target.closest('[data-rep-pdf]');
-  if (pdf) { const {data, error} = await sb.storage.from('reports').createSignedUrl(pdf.dataset.repPdf, 3600, {download: pdf.dataset.repName});
-    if (error) alert('ดาวน์โหลดไม่ได้: ' + error.message); else location.href = data.signedUrl; }
+  if (pdf) dlPdf(pdf.dataset.repPdf, pdf.dataset.repName);
 });
 document.addEventListener('change', e => { if (e.target.id === 'repTask') { repTaskGid = e.target.value; fxKey = ''; render(); } if (e.target.id === 'repEnd') { repEnd = e.target.value; fxKey = ''; render(); } });
 
