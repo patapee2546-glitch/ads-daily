@@ -2546,7 +2546,7 @@ function renderTired(){
     <th class="num">ใช้ 7 วันล่าสุด</th><th class="num">ผลลัพธ์ 7 วัน</th><th class="num">฿/ผลลัพธ์ 3 สัปดาห์</th><th class="num">ความถี่ 3 สัปดาห์</th><th class="num">CTR 3 สัปดาห์</th></tr></thead>
     <tbody>${body || `<tr><td colspan="8" class="muted">ไม่มี${tiredAll ? '' : 'ที่ใช้งานอยู่'}ในช่วงนี้</td></tr>`}</tbody></table></div>
     <p class="muted tr-note">ล้า = คนเห็นซ้ำ (ความถี่ 7 วัน ≥ 3 หรือ ≥ 2.5 และเพิ่ม 30%) และ ฿/ผลลัพธ์ +30% หรือ CTR −30% เทียบสัปดาห์แรก → ควรเปลี่ยนสื่อ ·
-    แพงขึ้นเรื่อยๆ = ฿/ผลลัพธ์ขึ้นทุกสัปดาห์และสัปดาห์ล่าสุดแพงกว่าสัปดาห์แรก 20%+ · ใช้ต่ำกว่า ฿300 ในสัปดาห์ล่าสุด = ข้อมูลน้อย · ${thDate(T.since)} – ${thDate(T.until)}${tiredLevel !== 'ads' ? ' · กดแถวเพื่อดูข้างใน' : ''}</p></div>`;
+    แพงขึ้นเรื่อยๆ = ฿/ผลลัพธ์ขึ้นทุกสัปดาห์และสัปดาห์ล่าสุดแพงกว่าสัปดาห์แรก 20%+ · ใช้ต่ำกว่า ฿100 ในสัปดาห์ล่าสุด = ข้อมูลน้อย · ${thDate(T.since)} – ${thDate(T.until)}${tiredLevel !== 'ads' ? ' · กดแถวเพื่อดูข้างใน' : ''}</p></div>`;
 }
 document.addEventListener('click', e => {
   if (view !== 'tired') return;
