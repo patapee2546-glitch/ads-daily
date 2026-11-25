@@ -2535,7 +2535,7 @@ function flowHTML(j){
 }
 // big pipeline for the newest job, laid out like the team's Archify diagrams: phase columns → node cards
 const PIPE = [
-  ['01 / สั่งงาน', [['queued', 'ปุ่ม Run', 'เข้าคิวบนเว็บ'], ['claim', 'เครื่อง Mac รับงาน', 'เช็กคิวทุก 20 วินาที']]],
+  ['01 / สั่งงาน', [['queued', 'ปุ่ม Run', 'เข้าคิวบนเว็บ'], ['claim', 'เครื่องสร้างรีพอร์ตรับงาน', 'เครื่องกลางที่ออฟฟิศ · เช็กคิวทุก 20 วินาที']]],
   ['02 / เตรียมข้อมูล', [['asana', 'ตรวจงาน Asana', 'งานที่ถึงกำหนด + ค้าง · ดึงยอด Meta']]],
   ['03 / สร้างรีพอร์ต', [['pdf', 'สร้าง PDF', 'รีพอร์ต 10 หน้า · สรุปภาษาไทย']]],
   ['04 / ส่งลูกค้า', [['drive', 'อัปโหลด Google Drive', 'โฟลเดอร์คลินิก/เดือน'], ['telegram', 'ส่ง Telegram', 'กลุ่มของแต่ละคลินิก · กันส่งซ้ำ']]],
@@ -2543,7 +2543,7 @@ const PIPE = [
 ];
 // "สร้างเอง" jobs never touch Drive / Telegram: their last leg is the PDF landing in the clicker's Downloads folder
 const PIPE_M = [
-  ['01 / สั่งงาน', [['queued', 'กดจากปฏิทิน', 'เข้าคิวบนเว็บ'], ['claim', 'เครื่อง Mac รับงาน', 'เช็กคิวทุก 20 วินาที']]],
+  ['01 / สั่งงาน', [['queued', 'กดจากปฏิทิน', 'เข้าคิวบนเว็บ'], ['claim', 'เครื่องสร้างรีพอร์ตรับงาน', 'เครื่องกลางที่ออฟฟิศ · เช็กคิวทุก 20 วินาที']]],
   ['02 / เตรียมข้อมูล', [['asana', 'งาน Asana ที่เลือก', 'ชื่องาน = ข้อความบนปก · ดึงยอด Meta']]],
   ['03 / สร้างรีพอร์ต', [['pdf', 'สร้าง PDF', 'รีพอร์ต 10 หน้า · สรุปภาษาไทย']]],
   ['04 / ลงเครื่องคุณ', [['drive', 'ดาวน์โหลด PDF', 'โฟลเดอร์ Downloads ของเครื่องที่กด · ไม่ลง Drive ไม่ส่ง Telegram']]],
@@ -2672,7 +2672,7 @@ function manualRepHTML(active, online){
       <h3 class="cal-m">${mName} <span>${yName}</span></h3>
       <div class="cal-nav" role="group" aria-label="เลือกเดือน"><button data-cal="-1" aria-label="เดือนก่อน">‹</button><button data-cal="0">วันนี้</button><button data-cal="1" aria-label="เดือนถัดไป">›</button></div>
       <span class="cal-info">${REPT === 'loading' ? 'กำลังดึงจาก Asana…' : REPT?.error ? `<span class="t-bad">${esc(REPT.error)}</span>` : 'กดงานในปฏิทินเพื่อสร้าง PDF'}</span>
-      ${online ? '' : '<span class="cal-mac"><span class="dot d-bad"></span>เครื่อง Mac ออฟไลน์</span>'}
+      ${online ? '' : '<span class="cal-mac"><span class="dot d-bad"></span>เครื่องสร้างรีพอร์ตปิดอยู่</span>'}
       <label class="cal-cl"><span class="sr-only">เลือกคลินิก</span><select id="calClinic">${['<option value="">ทุกคลินิก</option>', ...clinics.map(([g, n]) => `<option value="${esc(g)}" ${g === calClinic ? 'selected' : ''}>${esc(n)}</option>`)].join('')}</select></label>
       <button class="ghost icon" id="repLoad" aria-label="รีเฟรชจาก Asana" title="รีเฟรชจาก Asana">${REPT === 'loading' ? '…' : '↻'}</button></div>
     <div class="cal-stats">${stat(inMonth.length, 'งานรีพอร์ตเดือนนี้')}${stat(open.length, 'ยังไม่ได้ทำ', open.length ? 'warnv' : '')}${stat(soon, 'ถึงกำหนดใน 7 วัน')}${stat(made, 'PDF ที่สร้างจากเว็บ')}${stat(`${tops.length}${topsOpen ? ` <small>· ค้าง ${topsOpen}</small>` : ''}`, 'เติมงบเดือนนี้', topsOpen ? 'topv' : '')}</div>
@@ -2699,7 +2699,7 @@ function openGen(gid){
     <small>ข้อความใต้ภาพบนปก</small><span class="gt-n">${esc(genTask.name)}</span>
     <small>${genTask.projects.map(p => esc(p.name)).join(' · ')}</small>
     ${j?.pdf_path ? `<button type="button" class="link" data-rep-pdf="${esc(j.pdf_path)}" data-rep-name="${esc(j.note || 'report.pdf')}">ดาวน์โหลด PDF ล่าสุดของงานนี้</button>` : ''}</div>`;
-  $('#genErr').textContent = !online ? 'เครื่อง Mac ออฟไลน์ เปิดเครื่องก่อนแล้วค่อยสร้าง' : busy ? 'มีงานรีพอร์ตรันอยู่ รอให้เสร็จก่อน' : !daysOfTask(genTask.name) ? 'ชื่องานต้องมี (N วัน) เช่น (30 วัน)' : '';
+  $('#genErr').textContent = !online ? 'เครื่องสร้างรีพอร์ตที่ออฟฟิศปิดอยู่ ให้คนเปิดเครื่องก่อนแล้วค่อยสร้าง' : busy ? 'มีงานรีพอร์ตรันอยู่ รอให้เสร็จก่อน' : !daysOfTask(genTask.name) ? 'ชื่องานต้องมี (N วัน) เช่น (30 วัน)' : '';
   $('#genGo').disabled = !online || busy || !daysOfTask(genTask.name);
   genRangeText(); $('#genDlg').showModal();
 }
@@ -2735,7 +2735,7 @@ document.addEventListener('click', e => {
   if (cx && confirm('ยกเลิกงานรีพอร์ตที่รอคิวอยู่นี้?')) { cx.disabled = true;
     // RLS deletes only my own job while it is still queued; 0 rows back = the Mac already picked it up
     sb.from('report_jobs').delete().eq('id', +cx.dataset.repCancel).eq('status', 'queued').select('id').then(({data, error}) => {
-      if (error || !data?.length) alert(error ? 'ยกเลิกไม่ได้: ' + error.message : 'ยกเลิกไม่ทันแล้ว เครื่อง Mac เริ่มสร้างไปแล้ว'); loadReports(); }); }
+      if (error || !data?.length) alert(error ? 'ยกเลิกไม่ได้: ' + error.message : 'ยกเลิกไม่ทันแล้ว เครื่องสร้างรีพอร์ตเริ่มสร้างไปแล้ว'); loadReports(); }); }
 });
 
 function renderReports(){
@@ -2749,8 +2749,8 @@ function renderReports(){
   const top = repMode === 'manual' ? manualRepHTML(active, online) : `<div class="rep-top"><button class="rep-run" data-rep-run ${active || !online ? 'disabled' : ''}>Run Report</button>
       <div class="grow">ตรวจงาน Asana ที่ถึงกำหนดและค้างอยู่ → สร้าง PDF → อัปโหลด Google Drive → ส่ง Telegram ของแต่ละคลินิก (ระบบเดิม กันส่งซ้ำ)
         ${active ? '<br><b>มีงานรออยู่แล้ว รอให้เสร็จก่อน</b>' : ''}</div>
-      <span class="wk"><span class="dot ${online ? 'd-ok' : 'd-bad'}"></span>${online ? 'เครื่อง Mac ออนไลน์' : 'เครื่อง Mac ออฟไลน์' + (REP.worker?.last_seen ? ' · เห็นล่าสุด ' + bkkDateTime(REP.worker.last_seen) : '') + ' · เปิดเครื่องแล้วงานจะรันต่อเอง'}</span></div>`;
-  return `<div class="card"><div class="card-h"><b>รีพอร์ตลูกค้า</b><span>ADSIDEA Reports บนเครื่อง Mac</span></div>
+      <span class="wk"><span class="dot ${online ? 'd-ok' : 'd-bad'}"></span>${online ? 'เครื่องสร้างรีพอร์ตพร้อม' : 'เครื่องสร้างรีพอร์ตปิดอยู่' + (REP.worker?.last_seen ? ' · เห็นล่าสุด ' + bkkDateTime(REP.worker.last_seen) : '') + ' · เปิดเครื่องแล้วงานจะรันต่อเอง'}</span></div>`;
+  return `<div class="card"><div class="card-h"><b>รีพอร์ตลูกค้า</b><span>ใช้ได้ทุกเครื่อง Windows · Mac · มือถือ · PDF สร้างที่เครื่องกลางของออฟฟิศ</span></div>
     <div class="rep-mode"><span class="seg" role="group" aria-label="โหมด"><button data-repmode="manual" aria-selected="${repMode === 'manual'}">สร้างเอง (ปฏิทิน Asana)</button><button data-repmode="auto" aria-selected="${repMode === 'auto'}">อัตโนมัติ (ส่งลูกค้า)</button></span></div>
     ${top}
     ${REP.jobs.map(j => { const [l, t] = ST_LABEL[j.status] || [j.status, ''], rs = j.results || [];
@@ -2764,7 +2764,7 @@ function renderReports(){
           <td>${esc(r.client || r.taskGid)}</td><td>${step(r.status, 'success', {success: 'สำเร็จ', failed: 'ไม่สำเร็จ', running: 'กำลังทำ'})}</td>
           <td>${step(r.drive, 'uploaded', DRV)}${r.driveLink ? ` <a href="${esc(r.driveLink)}" target="_blank" rel="noopener">เปิด PDF</a>` : ''}</td>
           <td>${step(r.telegram, 'sent', TG)}</td><td class="mono">${esc(r.error || '')}</td></tr>`).join('')}</tbody></table></div>`
-          : j.status === 'done' ? '<div class="muted" style="font-size:12px;margin-top:6px">ไม่มีรีพอร์ตที่ถึงกำหนดในรอบนี้</div>' : ''}
+          : j.status === 'done' && !j.params?.task ? '<div class="muted" style="font-size:12px;margin-top:6px">ไม่มีรีพอร์ตที่ถึงกำหนดในรอบนี้</div>' : ''}
         ${j.log ? `<details><summary>ดู log</summary><pre>${esc(j.log)}</pre></details>` : ''}</div>`; }).join('') || '<div class="job muted">ยังไม่เคยกด Run จากเว็บ</div>'}</div>`;
 }
 const mainHTML = () => view === 'dash' ? renderDash() : view === 'reports' ? renderReports() : view === 'posts' ? renderPosts() : view === 'angel' ? renderAngel() : view === 'media' ? `<iframe id="radar" src="radar/index.html" title="คลังสื่อคู่แข่ง (Competitor Ad Radar)"></iframe>` : view === 'log' ? renderLog() : view === 'today' ? renderToday() : view === 'leadnote' ? renderLeadNote('lead') : view === 'adsnote' ? renderLeadNote('adsb') : view === 'history' ? renderHistory() : view === 'brain' ? renderBrain() : view === 'policy' ? renderPolicy() : view === 'running' ? renderRunning() : view === 'listen' ? renderListen()
