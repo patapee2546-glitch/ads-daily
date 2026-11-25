@@ -2586,6 +2586,8 @@ async function asanaGet(path){
 const HOLIDAYS = {'2026-01-01': 'วันขึ้นปีใหม่', '2026-01-02': 'วันขึ้นปีใหม่', '2026-03-03': 'วันมาฆบูชา', '2026-04-13': 'วันสงกรานต์', '2026-04-14': 'วันสงกรานต์',
   '2026-04-15': 'วันสงกรานต์', '2026-05-01': 'วันแรงงานแห่งชาติ', '2026-06-01': 'ชดเชยวันวิสาขบูชา', '2026-07-30': 'วันเข้าพรรษา', '2026-08-12': 'วันแม่แห่งชาติ',
   '2026-10-23': 'วันปิยมหาราช', '2026-12-10': 'ชดเชยวันพ่อแห่งชาติ', '2026-12-31': 'วันสิ้นปี'};
+// a task can sit in its clinic project AND a team project (แผนก ...): the clinic is the first non-แผนก project
+const clinicProj = t => t.projects.find(p => !/แผนก|department|team/i.test(p.name)) || null;
 const TOPUP_RE = /เติมงบ|เบิกงบ/;
 const topupLabel = t => String(t.name).replace(/^(แจ้ง|ตั้ง)?(เติม|เบิก)งบ(โฆษณา)?\s*[-–:]?\s*/, '').trim() || (clinicProj(t)?.name || '').replace(/\s*x\s*adsidea\s*$/i, '');
 console.assert(topupLabel({name: 'แจ้งเติมงบโฆษณา - Mediren', projects: []}) === 'Mediren' && topupLabel({name: 'เติมงบ', projects: [{name: 'Lalida x Adsidea'}]}) === 'Lalida', 'topupLabel');
@@ -2617,8 +2619,6 @@ console.assert(monthAdd('2026-01', -1) === '2025-12' && monthAdd('2026-11', 1) =
 const ASANA_COL = {'dark-red': '#f06a6a', 'dark-orange': '#ec8d71', 'light-orange': '#f1bd6c', 'dark-brown': '#f8df72', 'light-green': '#aecf55',
   'dark-green': '#5da283', 'light-teal': '#4ecbc4', 'dark-teal': '#9ee7e3', 'light-blue': '#4573d2', 'dark-purple': '#8d84e8', 'light-purple': '#b36bd4',
   'light-pink': '#f9aaef', 'dark-pink': '#f26fb2', 'light-red': '#fc979a', 'light-warm-gray': '#6d6e6f', 'dark-warm-gray': '#6d6e6f'};
-// a task can sit in its clinic project AND a team project (แผนก ...): the clinic is the first non-แผนก project
-const clinicProj = t => t.projects.find(p => !/แผนก|department|team/i.test(p.name)) || null;
 const taskCol = t => ASANA_COL[clinicProj(t)?.color] || '#6d6e6f';
 // dark text on light colours, white on dark ones (WCAG relative luminance)
 const inkOn = hex => { const L = [1, 3, 5].map(i => { const c = parseInt(hex.slice(i, i + 2), 16) / 255; return c <= .03928 ? c / 12.92 : ((c + .055) / 1.055) ** 2.4; });
