@@ -2587,7 +2587,16 @@ const HOLIDAYS = {'2026-01-01': 'วันขึ้นปีใหม่', '2026
   '2026-04-15': 'วันสงกรานต์', '2026-05-01': 'วันแรงงานแห่งชาติ', '2026-06-01': 'ชดเชยวันวิสาขบูชา', '2026-07-30': 'วันเข้าพรรษา', '2026-08-12': 'วันแม่แห่งชาติ',
   '2026-10-23': 'วันปิยมหาราช', '2026-12-10': 'ชดเชยวันพ่อแห่งชาติ', '2026-12-31': 'วันสิ้นปี'};
 // a task can sit in its clinic project AND a team project (แผนก ...): the clinic is the first non-แผนก project
-const clinicProj = t => t.projects.find(p => !/แผนก|department|team/i.test(p.name)) || null;
+const clinicProj = t => t.projects.find(p => !/แผนก|department|team/i.test(p.name)) || guessProj(t);
+// no project at all (e.g. "แจ้งเติมงบโฆษณา - Mediren"): match the clinic by name against the projects my other tasks use
+const normName = n => String(n).toLowerCase().replace(/\s*x\s*adsidea\s*$/, '').replace(/clinic|คลินิก|[^a-z0-9ก-๙]/g, '');
+function guessProj(t){
+  if (!Array.isArray(REPT)) return null;
+  const key = normName(String(t.name).replace(/^(แจ้ง|ตั้ง)?(เติม|เบิก)งบ(โฆษณา)?|^report\s*ads\s*facebook/i, '').replace(/\bM\d+\/P\d+|\(\d+\s*วัน\)/gi, ''));
+  if (key.length < 3) return null;
+  for (const x of REPT) for (const p of x.projects) { if (/แผนก|department|team/i.test(p.name)) continue; const n = normName(p.name); if (n.length >= 3 && (n.includes(key) || key.includes(n))) return p; }
+  return null;
+}
 const TOPUP_RE = /เติมงบ|เบิกงบ/;
 const topupLabel = t => String(t.name).replace(/^(แจ้ง|ตั้ง)?(เติม|เบิก)งบ(โฆษณา)?\s*[-–:]?\s*/, '').trim() || (clinicProj(t)?.name || '').replace(/\s*x\s*adsidea\s*$/i, '');
 console.assert(topupLabel({name: 'แจ้งเติมงบโฆษณา - Mediren', projects: []}) === 'Mediren' && topupLabel({name: 'เติมงบ', projects: [{name: 'Lalida x Adsidea'}]}) === 'Lalida', 'topupLabel');
@@ -2597,13 +2606,13 @@ async function loadAsanaTasks(){
   const since = monthAdd(calMonth < TODAY.slice(0, 7) ? calMonth : TODAY.slice(0, 7), -1) + '-01';
   REPT = 'loading'; if (view === 'reports') { fxKey = ''; render(); }
   try {
-    const out = [], F = 'name,due_on,completed,modified_at,projects.name,projects.color';
+    const out = [], F = 'name,due_on,completed,modified_at,projects.name,projects.color,parent.projects.name,parent.projects.color';
     for (const ws of (await asanaGet('workspaces?limit=50')).data || []) {
       let off = '';
       for (let i = 0; i < 20; i++) {
         const j = await asanaGet(`tasks?assignee=me&workspace=${ws.gid}&completed_since=${since}T00:00:00Z&limit=100&opt_fields=${F}${off}`);
         for (const t of j.data || []) if (t.due_on && (/report\s*ads\s*facebook/i.test(t.name) || TOPUP_RE.test(t.name))) out.push({gid: t.gid, name: t.name, kind: TOPUP_RE.test(t.name) && !/report/i.test(t.name) ? 'topup' : 'report', dueOn: t.due_on, completed: !!t.completed,
-          modifiedAt: t.modified_at || null, projects: (t.projects || []).map(p => ({gid: p.gid, name: p.name, color: p.color || null}))});
+          modifiedAt: t.modified_at || null, projects: ((t.projects || []).length ? t.projects : t.parent?.projects || []).map(p => ({gid: p.gid, name: p.name, color: p.color || null}))});  // subtasks: the parent's projects
         if (!j.next_page?.offset) break; off = '&offset=' + j.next_page.offset;
       }
     }
@@ -2623,8 +2632,8 @@ const ASANA_COL = {'dark-red': '#f06a6a', 'dark-orange': '#ec8d71', 'light-orang
   red: '#f06a6a', orange: '#ec8d71', 'yellow-orange': '#f1bd6c', yellow: '#f8df72', 'yellow-green': '#aecf55', green: '#5da283', 'blue-green': '#4ecbc4',
   aqua: '#9ee7e3', blue: '#4573d2', indigo: '#8d84e8', purple: '#b36bd4', magenta: '#f9aaef', 'hot-pink': '#f26fb2', pink: '#fc979a', 'cool-gray': '#6d6e6f'};
 // unknown / "none" colour -> a stable palette pick from the clinic id, so clinics still differ
-const taskCol = t => { const p = clinicProj(t), pal = Object.values(ASANA_COL).slice(0, 15);
-  return ASANA_COL[p?.color] || pal[[...(p?.gid || t.gid)].reduce((h, c) => h * 31 + c.charCodeAt(0) >>> 0, 7) % pal.length]; };
+// no clinic / no colour -> Asana's own light blue for tasks without a project
+const taskCol = t => ASANA_COL[clinicProj(t)?.color] || '#9fc3f7';
 // dark text on light colours, white on dark ones (WCAG relative luminance)
 const inkOn = hex => { const L = [1, 3, 5].map(i => { const c = parseInt(hex.slice(i, i + 2), 16) / 255; return c <= .03928 ? c / 12.92 : ((c + .055) / 1.055) ** 2.4; });
   return .2126 * L[0] + .7152 * L[1] + .0722 * L[2] > .3 ? '#1e1f21' : '#fff'; };
