@@ -2762,10 +2762,13 @@ document.addEventListener('click', e => {
   if (e.target.id === 'repLoad') loadAsanaTasks();
   const pdf = e.target.closest('[data-rep-pdf]'); if (pdf) dlPdf(pdf.dataset.repPdf, pdf.dataset.repName);
   const cx = e.target.closest('[data-rep-cancel]');
-  if (cx && confirm('ยกเลิกงานรีพอร์ตที่รอคิวอยู่นี้?')) { cx.disabled = true;
-    // RLS deletes only my own job while it is still queued; 0 rows back = the Mac already picked it up
-    sb.from('report_jobs').delete().eq('id', +cx.dataset.repCancel).eq('status', 'queued').select('id').then(({data, error}) => {
-      if (error || !data?.length) alert(error ? 'ยกเลิกไม่ได้: ' + error.message : 'ยกเลิกไม่ทันแล้ว เครื่องสร้างรีพอร์ตเริ่มสร้างไปแล้ว'); loadReports(); }); }
+  if (cx && confirm(cx.dataset.q ? 'ยกเลิกงานรีพอร์ตที่รอคิวอยู่นี้?' : 'ลบงานนี้ออกจากประวัติ? (PDF ของงานนี้บนเว็บจะถูกลบด้วย)')) { cx.disabled = true;
+    // RLS: only my own job, never while the office machine runs it; 0 rows back = it started meanwhile
+    const id = +cx.dataset.repCancel, path = REP.jobs.find(j => j.id === id)?.pdf_path;
+    sb.from('report_jobs').delete().eq('id', id).neq('status', 'running').select('id').then(async ({data, error}) => {
+      if (error || !data?.length) alert(error ? 'ลบไม่ได้: ' + error.message : 'ลบไม่ได้ตอนนี้ เครื่องสร้างรีพอร์ตกำลังรันงานนี้อยู่');
+      else if (path) await sb.storage.from('reports').remove([path]);
+      loadReports(); }); }
 });
 
 function renderReports(){
@@ -2787,7 +2790,7 @@ function renderReports(){
       return `<div class="job"><div class="job-h"><span class="pill ${t}">${l}</span><b>${bkkDateTime(j.created_at)}</b>
         <span class="muted">${esc(REP.names[j.requested_by] || (j.requested_by ? 'สมาชิก' : 'ระบบ'))}${j.finished_at ? ' · จบ ' + bkkDateTime(j.finished_at) : j.started_at ? ' · เริ่ม ' + bkkDateTime(j.started_at) : ''}</span>
         ${j.params?.task ? '<span class="pill">สร้างเอง</span>' : ''}${j.note ? `<span class="muted">${esc(j.note)}</span>` : ''}
-        ${j.status === 'queued' && j.requested_by === me ? `<button class="ghost rep-cancel" data-rep-cancel="${j.id}">ยกเลิก</button>` : ''}
+        ${j.status !== 'running' && j.requested_by === me ? `<button class="ghost rep-cancel" data-rep-cancel="${j.id}" data-q="${j.status === 'queued' ? 1 : ''}">${j.status === 'queued' ? 'ยกเลิก' : 'ลบ'}</button>` : ''}
         ${j.pdf_path ? `<button class="rep-run sm" data-rep-pdf="${esc(j.pdf_path)}" data-rep-name="${esc(j.note || 'report.pdf')}">ดาวน์โหลด PDF</button>` : ''}</div>
         ${j === REP.jobs[0] ? pipeHTML(j) : flowHTML(j)}
         ${rs.length && !j.params?.task ? `<div class="scroll"><table><thead><tr><th>คลินิก</th><th>สร้าง PDF</th><th>Drive</th><th>Telegram</th><th>ข้อผิดพลาด</th></tr></thead><tbody>${rs.map(r => `<tr>
