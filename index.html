@@ -2776,7 +2776,7 @@ function renderReports(){
   const ST_LABEL = {queued: ['รอคิว', 'warn'], running: ['กำลังรัน', 'warn'], done: ['เสร็จ', 'ok'], failed: ['ไม่สำเร็จ', 'bad']};
   const step = (v, okv, label) => v == null ? '<span class="muted">–</span>' : `<span class="pill ${v === okv ? 'ok' : /fail|uncertain/.test(v) ? 'bad' : 'warn'}">${esc(label[v] || v)}</span>`;
   const DRV = {uploaded: 'อัปโหลดแล้ว', failed: 'ไม่สำเร็จ', pending: 'รอ', uploading: 'กำลังอัป'}, TG = {sent: 'ส่งแล้ว', failed: 'ไม่สำเร็จ', pending: 'รอ', sending: 'กำลังส่ง', uncertain: 'ไม่แน่ใจว่าส่งถึง'};
-  const top = repMode === 'manual' ? manualRepHTML(active, online) : `<div class="rep-top"><button class="rep-run" data-rep-run ${active || !online ? 'disabled' : ''}>Run Report</button>
+  const top = repMode === 'manual' ? manualRepHTML(active, online) : `<div class="rep-top"><button class="rep-run" data-rep-run ${active || !online ? 'disabled' : ''}>ส่งรีพอร์ตให้ลูกค้า (Drive + Telegram)</button>
       <div class="grow">ตรวจงาน Asana ที่ถึงกำหนดและค้างอยู่ → สร้าง PDF → อัปโหลด Google Drive → ส่ง Telegram ของแต่ละคลินิก (ระบบเดิม กันส่งซ้ำ)
         ${active ? '<br><b>มีงานรออยู่แล้ว รอให้เสร็จก่อน</b>' : ''}</div>
       <span class="wk"><span class="dot ${online ? 'd-ok' : 'd-bad'}"></span>${online ? 'เครื่องสร้างรีพอร์ตพร้อม' : 'เครื่องสร้างรีพอร์ตปิดอยู่' + (REP.worker?.last_seen ? ' · เห็นล่าสุด ' + bkkDateTime(REP.worker.last_seen) : '') + ' · เปิดเครื่องแล้วงานจะรันต่อเอง'}</span></div>`;
