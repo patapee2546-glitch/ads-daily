@@ -212,9 +212,9 @@ tbody tr[aria-selected=true]{background:var(--accent-tint);box-shadow:inset 2px 
 .ct-c{font-size:12.5px;font-weight:500;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center;gap:5px}
 .ct-m{font-size:11px;color:oklch(100% 0 0 / .82);font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden}
 .cal-t .ct-ok{color:oklch(90% 0.16 150);font-weight:700}
-.cal-t.topup{background:oklch(50% 0.2 25);box-shadow:inset 3px 0 0 oklch(80% 0.14 40);text-decoration:none}.cal-t.topup.done{background:oklch(42% 0.12 25)}
+.cal-t.topup{text-decoration:none}
 .ct-baht{font-style:normal;font-weight:700;width:16px;height:16px;border-radius:50%;display:inline-grid;place-items:center;background:oklch(100% 0 0 / .22);font-size:10px;flex:none}
-.cs.topv b{color:oklch(72% 0.17 25)}.cs b small{font-size:13px;font-weight:500;color:var(--text-3)}
+.cs.topv b{color:var(--warn)}.cs b small{font-size:13px;font-weight:500;color:var(--text-3)}
 .ct-ok{font-style:normal;color:var(--ok);font-size:11px}.ct-late{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--warn);flex:none}
 .cal-t em{font-style:normal;font-size:10px;font-weight:500;padding:0 6px;border-radius:999px;line-height:16px;margin-left:auto}
 .cal-t em.ok{background:color-mix(in oklab,var(--ok) 25%,transparent);color:var(--ok)}.cal-t em.warn{background:color-mix(in oklab,var(--warn) 25%,transparent);color:var(--warn)}.cal-t em.bad{background:color-mix(in oklab,var(--bad) 25%,transparent);color:var(--bad)}
@@ -2659,7 +2659,7 @@ function manualRepHTML(active, online){
     const hol = HOLIDAYS[d];
     cells.push(`<div class="cal-d${d === TODAY ? ' today' : ''}${dow === 0 || dow === 6 ? ' we' : ''}${hol ? ' hol' : ''}" role="gridcell" aria-label="${thShort(d, 1)}${hol ? ' · วันหยุด ' + hol : ''}${ts.length ? ' · ' + ts.length + ' งาน' : ''}">
       <span class="cal-top"><span class="cal-n">${+d.slice(8)}</span>${hol ? `<span class="cal-hol">${hol}</span>` : ''}</span>
-      ${ts.map(t => { if (t.kind === 'topup') return `<a class="cal-t topup${t.completed ? ' done' : ''}" href="https://app.asana.com/0/0/${t.gid}" target="_blank" rel="noopener" title="${esc(t.name)} · เปิดใน Asana">
+      ${ts.map(t => { if (t.kind === 'topup') return `<a class="cal-t topup${t.completed ? ' done' : ''}" style="--c:${taskCol(t)}" href="https://app.asana.com/0/0/${t.gid}" target="_blank" rel="noopener" title="${esc(t.name)} · เปิดใน Asana">
           <span class="ct-c">${t.completed ? '<i class="ct-ok" aria-label="ทำแล้ว">✓</i>' : '<i class="ct-baht" aria-hidden="true">฿</i>'}${esc(topupLabel(t))}</span><span class="ct-m">${t.completed ? 'เติมงบแล้ว' : 'ต้องเติมงบ'}</span></a>`;
         const j = jobOfTask(t.gid), st = j && ST[j.status], q = taskParts(t.name), dn = isDone(t), late = !dn && t.dueOn < TODAY;
         return `<button class="cal-t${dn ? ' done' : ''}${late ? ' late' : ''}" style="--c:${taskCol(t)}" data-gen="${t.gid}" title="${esc(t.name)}${t.projects[0] ? '\n' + esc(t.projects[0].name) : ''}">
@@ -2677,7 +2677,7 @@ function manualRepHTML(active, online){
       <button class="ghost icon" id="repLoad" aria-label="รีเฟรชจาก Asana" title="รีเฟรชจาก Asana">${REPT === 'loading' ? '…' : '↻'}</button></div>
     <div class="cal-stats">${stat(inMonth.length, 'งานรีพอร์ตเดือนนี้')}${stat(open.length, 'ยังไม่ได้ทำ', open.length ? 'warnv' : '')}${stat(soon, 'ถึงกำหนดใน 7 วัน')}${stat(made, 'PDF ที่สร้างจากเว็บ')}${stat(`${tops.length}${topsOpen ? ` <small>· ค้าง ${topsOpen}</small>` : ''}`, 'เติมงบเดือนนี้', topsOpen ? 'topv' : '')}</div>
     <div class="cal" role="grid" aria-label="ปฏิทินงานรีพอร์ต ${mName} ${yName}">${['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัส', 'ศุกร์', 'เสาร์'].map((x, i) => `<div class="cal-h${i === 0 || i === 6 ? ' we' : ''}" role="columnheader">${x}</div>`).join('')}${cells.join('')}</div>
-    <p class="cal-foot"><span><i class="ct-ok">✓</i> ทำแล้ว (สร้างซ้ำได้)</span><span><i class="ct-late"></i> เลยกำหนด ยังไม่ได้ทำ</span><span><i class="cal-hol" style="font-style:normal;padding:0 6px">หยุด</i> วันหยุดบริษัท</span><span><i class="ct-baht" style="background:oklch(50% 0.2 25);color:#fff">฿</i> เติมงบ (กดเปิดใน Asana)</span><span>PDF โหลดลง Downloads ของเครื่องนี้ · ไม่ลง Drive · ไม่ส่ง Telegram</span></p>
+    <p class="cal-foot"><span><i class="ct-ok">✓</i> ทำแล้ว (สร้างซ้ำได้)</span><span><i class="ct-late"></i> เลยกำหนด ยังไม่ได้ทำ</span><span><i class="cal-hol" style="font-style:normal;padding:0 6px">หยุด</i> วันหยุดบริษัท</span><span><i class="ct-baht" style="background:var(--text-3);color:var(--bg)">฿</i> เติมงบ (กดเปิดใน Asana)</span><span>PDF โหลดลง Downloads ของเครื่องนี้ · ไม่ลง Drive · ไม่ส่ง Telegram</span></p>
   </div>`;
 }
 function genRangeText(){
