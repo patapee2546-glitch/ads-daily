@@ -162,7 +162,8 @@ tbody tr[aria-selected=true]{background:var(--accent-tint);box-shadow:inset 2px 
 .runlist .tr{grid-column:1/-1;height:6px;border-radius:3px;background:var(--tint);overflow:hidden}
 .runlist .tr b{display:block;height:100%;border-radius:3px;background:var(--accent)}
 .runlist .t-bad .tr b,.runlist .rr.t-bad .tr b{background:var(--bad)}.runlist .rr.t-warn .tr b{background:var(--warn)}
-.issue{max-width:280px;overflow:hidden;text-overflow:ellipsis;color:var(--text-2)}
+.issue{max-width:340px;overflow:hidden;text-overflow:ellipsis;color:var(--text-2)}
+.neck{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.neck:not(.muted):not(.t-ok):not(.t-warn):not(.t-bad){color:var(--text)}.issue .iss{font-size:12px;margin-top:2px}
 .iss{display:flex;align-items:center;gap:6px;min-width:0}.iss-t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}.iss small{white-space:nowrap;flex:none}
 .iss-x{all:unset;cursor:pointer;flex:none;font-size:11px;padding:1px 7px;border-radius:6px;border:1px solid var(--line-2);color:var(--text-3)}
 .iss-x:hover{color:var(--bad);border-color:var(--bad)}.iss-x:focus-visible{outline:2px solid var(--accent)}
@@ -1110,12 +1111,38 @@ function openIssues(c){
   }
   return out;
 }
+// คอขวด: the ONE thing holding this clinic back right now, from the last 7 full days vs the 7 before.
+// First rule that fires wins (blocked ads > money > no chats > seen too often > pricier > fewer chats > budget > no RE).
+// ponytail: fixed thresholds on daily numbers, no per-clinic tuning; daily frequency, not 7-day unique frequency.
+function bottleneck(name){
+  const end = day === TODAY ? shiftDay(day, -1) : day, w = (from, n) => { let sp = 0, res = 0, cap = 0;
+    for (let i = 0; i < n; i++) { const x = rec(shiftDay(from, -i), name); sp += +x.budget?.spend || 0; res += +x.ads?.results || 0; cap += +capOf(x, name) || 0; }
+    return {sp, res, cap, cpr: res ? sp / res : null}; };
+  const a = w(end, 7), b = w(shiftDay(end, -7), 7), now = rec(day, name).ads || {}, m = window.ADS_DATA?.[end]?.clinics?.[name] || {}, run = runway(name);
+  const pct = (x, y) => Math.round((x / y - 1) * 100);
+  if (+now.rejected > 0 || +now.issues > 0) return ['bad', `แอดติด: ${[+now.rejected && `ถูกปฏิเสธ ${now.rejected}`, +now.issues && `ติดปัญหา ${now.issues}`].filter(Boolean).join(' · ')} ตัว → แก้แล้วส่งตรวจใหม่`];
+  if (run?.days != null && run.days < 2) return ['bad', `เงินเหลือรันได้ ${run.days.toFixed(1)} วัน → เติมเงิน`];
+  if (!a.sp) { let d = end; for (let i = 0; i < 60 && !(+rec(d, name).budget?.spend > 0); i++) d = shiftDay(d, -1);
+    const last = +rec(d, name).budget?.spend > 0 ? ` ตั้งแต่ ${+shiftDay(d, 1).slice(8)}/${+shiftDay(d, 1).slice(5, 7)}` : '';
+    return ['bad', `แอดไม่ใช้เงิน${last}${+now.live === 0 || +m.live === 0 ? ' · ไม่มีแอดวิ่ง' : ''} → เปิดแอด/เช็คบัญชี`]; }
+  if (!a.res) return ['bad', `ใช้ ${baht(a.sp)} ใน 7 วันแต่ไม่มีแชท → เช็คแอด/ปลายทางแชท`];
+  const up = a.cpr && b.cpr ? a.cpr / b.cpr : null, f = +m.frequency || 0;
+  if (f >= 2.5 && (up == null || up >= 1.1)) return ['warn', `คนเห็นซ้ำ (ความถี่ ${f.toFixed(2)}/วัน)${up ? ` ฿/แชท +${pct(a.cpr, b.cpr)}%` : ''} → สื่อใหม่ หรือขยายกลุ่ม`];
+  if (up >= 1.25) return ['warn', `แชทแพงขึ้น ${baht(b.cpr)} → ${baht(a.cpr)} (+${pct(a.cpr, b.cpr)}%) → ดูสื่อ/ชุดที่แพง`];
+  if (b.res >= 10 && a.res <= b.res * .7) return ['warn', `แชทลด ${b.res} → ${a.res} (${pct(a.res, b.res)}%)${a.sp < b.sp * .8 ? ' เพราะใช้เงินน้อยลง' : ''}`];
+  if (a.cap && a.sp < a.cap * .7) return ['warn', `ใช้งบแค่ ${Math.round(a.sp / a.cap * 100)}% ของเพดาน → แอดส่งไม่ออก/งบตั้งต่ำ`];
+  const re = (reRank() || []).filter(x => x.clinic === name);
+  if (re[0]?.share === 0) return ['warn', `ยังไม่มี RE · คนอุ่น ${int(re[0].pool)} จาก ${re[0].camp} → เปิด RE`];
+  if (up != null && up <= .85) return ['ok', `฿/แชทถูกลง ${-pct(a.cpr, b.cpr)}% (${baht(a.cpr)}) → ขยายงบได้`];
+  return ['ok', `ไม่มีคอขวด · ${baht(a.cpr)}/แชท ${a.res} แชท 7 วัน`];
+}
+const neckHTML = name => { const [t, txt] = bottleneck(name); return `<div class="neck${t ? ' t-' + t : ' muted'}" title="${esc(txt)}">${esc(txt)}</div>`; };
 function issueCell(c, r){
-  const xs = openIssues(c.name), h = headline(r);
-  if (!xs.length) return `<td class="issue" title="${esc(h)}">${esc(h) || '<span class="muted">–</span>'}</td>`;
-  const txt = xs.map(o => `${o.name}: ${o.note}`).join(' · ') + (h && !xs.some(o => h.endsWith(o.note)) ? ' · ' + h : '');
+  const xs = openIssues(c.name), nk = neckHTML(c.name);
+  if (!xs.length) return `<td class="issue">${nk}</td>`;
+  const txt = xs.map(o => `${o.name}: ${o.note}`).join(' · ');
   const since = xs.reduce((a, o) => o.d < a ? o.d : a, day);
-  return `<td class="issue"><div class="iss"><span class="iss-t" title="${esc(txt)}">${esc(txt)}</span>
+  return `<td class="issue">${nk}<div class="iss"><span class="iss-t" title="${esc(txt)}">${esc(txt)}</span>
     ${since < day ? `<small class="muted">ตั้งแต่ ${+since.slice(8)}/${+since.slice(5, 7)}</small>` : ''}
     <button class="iss-x" data-iss-x="${esc(c.name)}" title="ได้สื่อ / แก้แล้ว ลบประเด็นนี้ออกจาก timeline">ลบ</button></div></td>`;
 }
@@ -1248,12 +1275,13 @@ function runwayCell(name){
 }
 
 function renderToday(){
+  if (!snaps) loadSnaps();   // the คอขวด 'no RE' rule reads the nightly ad snapshot
   const list = visible();
   return renderMetrics() + `<div class="card">
     <div class="card-h"><b>${dayLabel()}</b><span>${list.length} คลินิก</span>${dayFrom ? '<span class="muted">ยอดรวมทั้งช่วง · จุดสถานะเป็นของวันสุดท้าย · การเข้าถึง/ความถี่ = คนไม่ซ้ำทั้งช่วงจาก Meta</span>' : ''}${!dayFrom && day === TODAY ? `<span class="t-warn">วันนี้ยังไม่จบ · ยอดถึง ${esc(window.ADS_DATA?.[day]?.fetched || '–')}</span>` : ''}<span class="spacer"></span>
       <span><kbd>J</kbd> <kbd>K</kbd> เลื่อน · <kbd>Enter</kbd> เปิด · <kbd>←</kbd> <kbd>→</kbd> เปลี่ยนวัน · <kbd>/</kbd> ค้นหา</span></div>
     <div class="scroll"><table>
-      <thead><tr><th>คลินิก</th><th>แอด · เพจ · งบ · ลีด</th><th class="num">ใช้ / เพดาน</th><th class="num">ผลลัพธ์</th><th class="num">฿/ผลลัพธ์</th><th class="num" title="จำนวนการซื้อ เหมือนช่อง การซื้อ ใน Ads Manager">การซื้อ</th><th class="num" title="การเข้าถึง (คนไม่ซ้ำ) ของวันนั้น ทั้งบัญชี">การเข้าถึง</th><th class="num" title="ความถี่ = การแสดงผล ÷ การเข้าถึง">ความถี่</th><th class="num" title="การเล่นวิดีโอนาน 3 วินาทีขึ้นไป">วิดีโอ 3 วิ</th><th class="num" title="เงินคงเหลือล่าสุด ÷ ยอดใช้เฉลี่ย 7 วัน">รันได้อีก</th><th>ประเด็น</th></tr></thead>
+      <thead><tr><th>คลินิก</th><th>แอด · เพจ · งบ · ลีด</th><th class="num">ใช้ / เพดาน</th><th class="num">ผลลัพธ์</th><th class="num">฿/ผลลัพธ์</th><th class="num" title="จำนวนการซื้อ เหมือนช่อง การซื้อ ใน Ads Manager">การซื้อ</th><th class="num" title="การเข้าถึง (คนไม่ซ้ำ) ของวันนั้น ทั้งบัญชี">การเข้าถึง</th><th class="num" title="ความถี่ = การแสดงผล ÷ การเข้าถึง">ความถี่</th><th class="num" title="การเล่นวิดีโอนาน 3 วินาทีขึ้นไป">วิดีโอ 3 วิ</th><th class="num" title="เงินคงเหลือล่าสุด ÷ ยอดใช้เฉลี่ย 7 วัน">รันได้อีก</th><th title="คอขวดตอนนี้ (7 วันล่าสุด เทียบ 7 วันก่อนหน้า) · บรรทัดล่าง = ประเด็นที่ทีมพิมพ์ไว้">คอขวด / ประเด็น</th></tr></thead>
       <tbody>${list.length ? list.map(c => {
         const r = sumRec(c.name), k = calc(r), cap = capOf(r, c.name), pct = +r.budget?.spend && +cap ? r.budget.spend/cap*100 : null;
         const m = sumMeta(c.name), err = m.error;  // raw Meta numbers (reach / frequency / 3-s plays)
@@ -1406,7 +1434,7 @@ async function loadSnaps(){
   snapsBusy = false;
   if (error) { console.error('ad_snapshots', error); setTimeout(loadSnaps, 60e3); return; }
   // home: redraw in place (resetting fxKey would replay the card entrance = a second flash); brain needs the reset to mount its graph
-  snaps = data; if (['dash', 'brain'].includes(view) && !typingInMain()) { if (view !== 'dash') fxKey = ''; render(); }
+  snaps = data; if (['dash', 'brain', 'today'].includes(view) && !typingInMain()) { if (view !== 'dash') fxKey = ''; render(); }
 }
 // stars from an index = cost per chat ÷ the clinic's own normal (1 = normal, 0.8 = 20% cheaper)
 const starsOf = i => i == null ? 0 : i <= .7 ? 5 : i <= .85 ? 4 : i <= 1 ? 3 : i <= 1.2 ? 2 : 1;
