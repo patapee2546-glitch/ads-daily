@@ -162,6 +162,7 @@ tbody tr[aria-selected=true]{background:var(--accent-tint);box-shadow:inset 2px 
 .runlist .tr{grid-column:1/-1;height:6px;border-radius:3px;background:var(--tint);overflow:hidden}
 .runlist .tr b{display:block;height:100%;border-radius:3px;background:var(--accent)}
 .runlist .t-bad .tr b,.runlist .rr.t-bad .tr b{background:var(--bad)}.runlist .rr.t-warn .tr b{background:var(--warn)}
+.tr-wk{color:var(--text-2);font-size:13px}
 .issue{max-width:340px;overflow:hidden;text-overflow:ellipsis;color:var(--text-2)}
 .neck{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.neck:not(.muted):not(.t-ok):not(.t-warn):not(.t-bad){color:var(--text)}.issue .iss{font-size:12px;margin-top:2px}
 .iss{display:flex;align-items:center;gap:6px;min-width:0}.iss-t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}.iss small{white-space:nowrap;flex:none}
@@ -2616,8 +2617,10 @@ function renderTired(){
   const nm = (list, id) => list.find(x => x.id === id)?.name || '';
   const tab = (k, label, sel, clear) => `<button class="tr-tab" data-trlv="${k}" aria-selected="${tiredLevel === k}">${label}${sel ? `<span class="tr-sel">${esc(sel)} <i data-trclr="${clear}" role="button" aria-label="ยกเลิกการเลือก">×</i></span>` : ''}</button>`;
   const tabs = `<div class="tr-tabs" role="tablist">${tab('campaigns', 'แคมเปญ', tiredCamp && nm(camps, tiredCamp), 'camp')}${tab('adsets', 'ชุดโฆษณา', tiredSet && nm(sets, tiredSet), 'set')}${tab('ads', 'โฆษณา', '', '')}</div>`;
-  const sum = `<div class="tr-sum"><span><b class="t-bad">${cnt('tired')}</b> สื่อล้า</span><span><b class="t-warn">${cnt('warn')}</b> เริ่มล้า</span><span><b>${cnt('ok')}</b> ปกติ</span><span class="muted">จากโฆษณาที่ใช้งานอยู่ ${act.length} ตัว</span></div>`;
-  const body = rows.map(x => { const [vl, vc] = TV[x.level] || ['–', ''], w = x.weeks, last = w.at(-1) || {};
+  const sum = `<div class="tr-sum"><span><b class="t-bad">${cnt('tired')}</b> สื่อล้า</span><span><b class="t-warn">${cnt('warn')}</b> เริ่มล้า</span><span><b>${cnt('ok')}</b> ปกติ</span><span class="muted">จากโฆษณาที่ใช้งานอยู่ ${act.length} ตัว</span>${T.since ? `<span class="tr-wk">ตัวเลข 3 ค่า = ${[0, 7, 14].map(k => { const a = shiftDay(T.since, k), b = shiftDay(a, 6), f = d => `${+d.slice(8)}/${+d.slice(5, 7)}`; return f(a) + '–' + f(b); }).join(' › ')} (เก่า → ล่าสุด) · ช่องที่ขึ้น – = สัปดาห์นั้นไม่ได้ใช้เงิน/ไม่มีแชท</span>` : ''}</div>`;
+  // always 3 slots by date: Meta skips a week with no spend, which would otherwise shift the values into the wrong week
+  const slots = x => T.since ? [0, 7, 14].map(k => x.weeks.find(q => q.from === shiftDay(T.since, k)) || {spend: 0, results: 0}) : x.weeks;
+  const body = rows.map(x => { const [vl, vc] = TV[x.level] || ['–', ''], w = slots(x), last = w.at(-1) || {};
     const under = tiredLevel === 'campaigns' ? tiredUnder('campaign_id', x.id) : tiredLevel === 'adsets' ? tiredUnder('adset_id', x.id) : 0;
     const drill = tiredLevel !== 'ads' ? ` data-trdrill="${x.id}"` : '';
     return `<tr${drill}><td><span class="tr-on ${x.status === 'ACTIVE' ? 'on' : ''}">${x.status === 'ACTIVE' ? 'ใช้งานอยู่' : 'ปิด'}</span></td>
