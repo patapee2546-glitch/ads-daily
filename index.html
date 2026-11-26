@@ -791,6 +791,7 @@ tbody tr:active{background:var(--accent-tint-2)}
     <button role="tab" data-view="angel"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9Z"/><path d="M19 15v4M17 17h4"/></svg>แอดนางฟ้า</button>
     <button role="tab" data-view="listen"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-6.4A8 8 0 1 1 21 12Z"/><path d="M8 11h.01M12 11h.01M16 11h.01"/></svg>คอมเมนต์</button>
     <button role="tab" data-view="tired"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="7" width="17" height="10" rx="2"/><path d="M22 11v2M6 10v4"/></svg>สื่อล้า</button>
+    <button role="tab" data-view="reject"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m5.6 5.6 12.8 12.8"/></svg>สื่อ reject</button>
     <button role="tab" data-view="media"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.5"/><path d="m21 16-5-5-9 8"/></svg>สื่อคู่แข่ง</button>
   </div>
   <button class="ghost icon bell" id="bell"  aria-label="แจ้งเตือน"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><b id="bellN"></b></button>
@@ -2642,6 +2643,27 @@ function trend(ws, f, fmt, worseUp = true, say = null, extra = ''){
   const line = say && ch != null ? (up ? `${say[0]} ${Math.round(ch * 100)}%` : down ? `${say[1]} ${Math.round(-ch * 100)}%` : say[2]) : '';
   return `<span class="tr ${up ? (worseUp ? 't-bad' : 't-ok') : down ? (worseUp ? 't-ok' : 't-bad') : ''}" title="3 สัปดาห์ เก่า → ล่าสุด">${v.map(x => x == null ? '–' : fmt(x)).join('<i>›</i>')}</span>${line || extra ? `<small class="tr-say">${[line, extra].filter(Boolean).join(' · ')}</small>` : ''}`;
 }
+// ---- สื่อ reject: every switched-on ad Meta rejected or flagged, per clinic, from the latest Meta pull (meta_days "problems").
+// "kind (reason): campaign > ad set > ad" -> parts; an ad name may itself contain " > ", so everything after the 2nd goes to the ad
+const rejParse = t => { const m = /^(.+?) \((.*?)\): (.*)$/.exec(t) || [, 'ติดปัญหา', '', t], p = m[3].split(' > ');
+  return {kind: m[1], why: m[2], camp: p[0] || '', set: p[1] || '', ad: p.slice(2).join(' > ')}; };
+console.assert(rejParse('ถูกปฏิเสธ (สุขภาพ): A > B > C > D').ad === 'C > D' && rejParse('ถูกปฏิเสธ (สุขภาพ): A > B > C').why === 'สุขภาพ', 'rejParse');
+let rejClinic = '';
+function renderReject(){
+  const A = window.ADS_DATA || {}, d = Object.keys(A).filter(k => !A[k].history).sort().at(-1), src = A[d]?.clinics || {};
+  const all = db.clinics.flatMap(c => (src[c.name]?.problems || []).map(t => ({c, ...rejParse(t)})));
+  const names = [...new Set(all.map(x => x.c.name))];
+  if (rejClinic && !names.includes(rejClinic)) rejClinic = '';
+  const rows = all.filter(x => !rejClinic || x.c.name === rejClinic), nRej = rows.filter(x => x.kind === 'ถูกปฏิเสธ').length;
+  const head = `<div class="dash-h"><h2>สื่อ reject</h2><p>แอดที่เปิดอยู่แต่ Meta ปฏิเสธหรือติดปัญหา · จากการดึงล่าสุด${d ? ` ${thDate(d)} ${esc(A[d].fetched || '')}` : ''}</p></div>
+    <div class="ang-ctl"><select id="rejClinic" aria-label="คลินิก"><option value="">ทุกคลินิก (${all.length})</option>${names.map(n => `<option ${n === rejClinic ? 'selected' : ''} value="${esc(n)}">${esc(n)} (${all.filter(x => x.c.name === n).length})</option>`).join('')}</select></div>`;
+  if (!rows.length) return head + `<div class="card"><div class="card-h"><b class="t-ok">ไม่มีสื่อถูก reject</b><span>แอดที่เปิดอยู่ของ ${db.clinics.length} คลินิกผ่านการตรวจทั้งหมด</span></div></div>`;
+  return head + `<div class="card"><div class="tr-sum"><span><b class="t-bad">${nRej}</b> ถูกปฏิเสธ</span><span><b class="t-warn">${rows.length - nRej}</b> ติดปัญหา</span><span class="muted">นับเฉพาะแอดที่เปิดอยู่ในแคมเปญและชุดโฆษณาที่เปิดอยู่</span></div>
+    <div class="scroll"><table class="tr-t"><thead><tr><th>คลินิก</th><th>สถานะ</th><th>เหตุผลจาก Meta</th><th>โฆษณา</th><th>ชุดโฆษณา</th><th>แคมเปญ</th></tr></thead>
+    <tbody>${rows.map(x => `<tr><td>${adsLink(x.c, esc(x.c.name))}</td><td><span class="pill ${x.kind === 'ถูกปฏิเสธ' ? 'bad' : 'warn'}">${esc(x.kind)}</span></td>
+      <td>${esc(x.why) || '<span class="muted">ไม่ระบุ</span>'}</td><td><b style="font-weight:500">${esc(x.ad)}</b></td><td class="muted">${esc(x.set)}</td><td class="muted">${esc(x.camp)}</td></tr>`).join('')}</tbody></table></div>
+    <div class="legend-note">กดชื่อคลินิกเพื่อเปิด Ads Manager ของบัญชีนั้น · รายการอัปเดตทุกครั้งที่ดึงจาก Meta (ทุก 30 นาที หรือกดปุ่ม ดึงจาก Meta)</div></div>`;
+}
 function renderTired(){
   const cs = db.clinics.filter(c => !/google/i.test(c.name));
   if (!cs.some(c => c.id === tiredClinic)) { tiredClinic = cs[0]?.id; tiredCamp = tiredSet = null; }
@@ -2691,6 +2713,7 @@ document.addEventListener('click', e => {
   if (e.target.id === 'trReload') { delete TIRED[tiredClinic]; fxKey = ''; render(); }
 });
 document.addEventListener('change', e => {
+  if (e.target.id === 'rejClinic') { rejClinic = e.target.value; fxKey = ''; render(); }
   if (e.target.id === 'trClinic') { tiredClinic = +e.target.value; tiredCamp = tiredSet = null; fxKey = ''; render(); }
   if (e.target.id === 'trAll') { tiredAll = e.target.checked; fxKey = ''; render(); }
 });
@@ -3044,7 +3067,7 @@ function renderReports(){
         ${j.log && j.status === 'failed' ? `<details><summary>ดู log</summary><pre>${esc(j.log)}</pre></details>` : ''}</div>`; }).join('')
       || `<div class="job muted">ยังไม่ได้สร้างรีพอร์ตจากเครื่องนี้ · กดงานในปฏิทินด้านบน</div>`}</div>`;
 }
-const mainHTML = () => view === 'dash' ? renderDash() : view === 'reports' ? renderReports() : view === 'posts' ? renderPosts() : view === 'angel' ? renderAngel() : view === 'media' ? `<iframe id="radar" src="radar/index.html" title="คลังสื่อคู่แข่ง (Competitor Ad Radar)"></iframe>` : view === 'log' ? renderLog() : view === 'today' ? renderToday() : view === 'leadnote' ? renderLeadNote('lead') : view === 'adsnote' ? renderLeadNote('adsb') : view === 'history' ? renderHistory() : view === 'brain' ? renderBrain() : view === 'policy' ? renderPolicy() : view === 'running' ? renderRunning() : view === 'tired' ? renderTired() : view === 'listen' ? renderListen()
+const mainHTML = () => view === 'dash' ? renderDash() : view === 'reports' ? renderReports() : view === 'posts' ? renderPosts() : view === 'angel' ? renderAngel() : view === 'media' ? `<iframe id="radar" src="radar/index.html" title="คลังสื่อคู่แข่ง (Competitor Ad Radar)"></iframe>` : view === 'log' ? renderLog() : view === 'today' ? renderToday() : view === 'leadnote' ? renderLeadNote('lead') : view === 'adsnote' ? renderLeadNote('adsb') : view === 'history' ? renderHistory() : view === 'brain' ? renderBrain() : view === 'policy' ? renderPolicy() : view === 'running' ? renderRunning() : view === 'tired' ? renderTired() : view === 'reject' ? renderReject() : view === 'listen' ? renderListen()
   : `<div class="card"><div class="card-h"><b>ข้อความสรุป ${thDate(day)}</b><span>วางใน LINE หรือ Obsidian ได้</span></div><pre>${esc(summaryText(day))}</pre></div>`;
 const typingInMain = () => /INPUT|TEXTAREA/.test(document.activeElement?.tagName) && document.activeElement.closest('#main');
 
@@ -3145,7 +3168,7 @@ function render(){
   if (polView && polView !== view) pol = POL0();
   polView = ['policy', 'running'].includes(view) ? view : null;
   $('#dayslot').innerHTML = rangeButton('day');
-  document.querySelector('.datebox').style.display = ['dash', 'log', 'angel', 'media', 'reports'].includes(view) ? 'none' : '';
+  document.querySelector('.datebox').style.display = ['dash', 'log', 'angel', 'media', 'reports', 'reject'].includes(view) ? 'none' : '';
   document.querySelectorAll('[role=tab]').forEach(b => b.setAttribute('aria-selected', b.dataset.view===view));
   try { if (document.querySelector(`[role=tab][data-view="${CSS.escape(view)}"]`)) sessionStorage.setItem(VIEW_KEY, view); } catch {}
   // the media library is an iframe: keep it (and its scroll/filters) across the page's periodic re-renders
