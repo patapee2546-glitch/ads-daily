@@ -164,6 +164,7 @@ tbody tr[aria-selected=true]{background:var(--accent-tint);box-shadow:inset 2px 
 .runlist .t-bad .tr b,.runlist .rr.t-bad .tr b{background:var(--bad)}.runlist .rr.t-warn .tr b{background:var(--warn)}
 .issue{max-width:280px;overflow:hidden;text-overflow:ellipsis;color:var(--text-2)}
 .iss{display:flex;align-items:center;gap:6px;min-width:0}.iss-t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}.iss small{white-space:nowrap;flex:none}
+td.re-c{max-width:260px}
 .iss-x{all:unset;cursor:pointer;flex:none;font-size:11px;padding:1px 7px;border-radius:6px;border:1px solid var(--line-2);color:var(--text-3)}
 .iss-x:hover{color:var(--bad);border-color:var(--bad)}.iss-x:focus-visible{outline:2px solid var(--accent)}
 .muted{color:var(--text-3)}
@@ -1108,6 +1109,15 @@ function openIssues(c){
   }
   return out;
 }
+// "ควร RE" column: this clinic's best campaign to retarget (same ranking as the home Top 10)
+function reCell(xs){
+  if (!snaps) return '<td class="re-c"><span class="muted">…</span></td>';
+  if (!xs?.length) return '<td class="re-c"><span class="muted">–</span></td>';
+  const c = xs[0], tone = c.share === 0 ? 'bad' : c.share < .15 ? 'warn' : 'ok';
+  const more = xs.slice(1, 4).map(x => `${x.camp} (คนอุ่น ${int(x.pool)})`).join('\n');
+  return `<td class="re-c"><div class="iss"><span class="iss-t" title="${esc(c.camp)}\nคนอุ่น ${int(c.pool)} · แชท ${int(c.r)} · คอมเมนต์/แชร์ ${int(c.eng)} · ดูวิดีโอจบ ${int(c.vid)}${more ? '\n\nตัวถัดไป:\n' + esc(more) : ''}">${esc(c.camp)}</span>
+    <small style="color:var(--${tone})">${c.share === 0 ? 'ยังไม่มี RE' : `RE ${Math.round(c.share * 100)}%`}</small>${xs.length > 1 ? `<small class="muted">+${xs.length - 1}</small>` : ''}</div></td>`;
+}
 function issueCell(c, r){
   const xs = openIssues(c.name), h = headline(r);
   if (!xs.length) return `<td class="issue" title="${esc(h)}">${esc(h) || '<span class="muted">–</span>'}</td>`;
@@ -1246,12 +1256,13 @@ function runwayCell(name){
 }
 
 function renderToday(){
-  const list = visible();
+  if (!snaps) loadSnaps();
+  const list = visible(), reBy = Map.groupBy(reRank() || [], x => x.cid);   // already ranked best-first
   return renderMetrics() + `<div class="card">
     <div class="card-h"><b>${dayLabel()}</b><span>${list.length} คลินิก</span>${dayFrom ? '<span class="muted">ยอดรวมทั้งช่วง · จุดสถานะเป็นของวันสุดท้าย · การเข้าถึง/ความถี่ = คนไม่ซ้ำทั้งช่วงจาก Meta</span>' : ''}${!dayFrom && day === TODAY ? `<span class="t-warn">วันนี้ยังไม่จบ · ยอดถึง ${esc(window.ADS_DATA?.[day]?.fetched || '–')}</span>` : ''}<span class="spacer"></span>
       <span><kbd>J</kbd> <kbd>K</kbd> เลื่อน · <kbd>Enter</kbd> เปิด · <kbd>←</kbd> <kbd>→</kbd> เปลี่ยนวัน · <kbd>/</kbd> ค้นหา</span></div>
     <div class="scroll"><table>
-      <thead><tr><th>คลินิก</th><th>แอด · เพจ · งบ · ลีด</th><th class="num">ใช้ / เพดาน</th><th class="num">ผลลัพธ์</th><th class="num">฿/ผลลัพธ์</th><th class="num" title="จำนวนการซื้อ เหมือนช่อง การซื้อ ใน Ads Manager">การซื้อ</th><th class="num" title="การเข้าถึง (คนไม่ซ้ำ) ของวันนั้น ทั้งบัญชี">การเข้าถึง</th><th class="num" title="ความถี่ = การแสดงผล ÷ การเข้าถึง">ความถี่</th><th class="num" title="การเล่นวิดีโอนาน 3 วินาทีขึ้นไป">วิดีโอ 3 วิ</th><th class="num" title="เงินคงเหลือล่าสุด ÷ ยอดใช้เฉลี่ย 7 วัน">รันได้อีก</th><th>ประเด็น</th></tr></thead>
+      <thead><tr><th>คลินิก</th><th>แอด · เพจ · งบ · ลีด</th><th class="num">ใช้ / เพดาน</th><th class="num">ผลลัพธ์</th><th class="num">฿/ผลลัพธ์</th><th class="num" title="จำนวนการซื้อ เหมือนช่อง การซื้อ ใน Ads Manager">การซื้อ</th><th class="num" title="การเข้าถึง (คนไม่ซ้ำ) ของวันนั้น ทั้งบัญชี">การเข้าถึง</th><th class="num" title="ความถี่ = การแสดงผล ÷ การเข้าถึง">ความถี่</th><th class="num" title="การเล่นวิดีโอนาน 3 วินาทีขึ้นไป">วิดีโอ 3 วิ</th><th class="num" title="เงินคงเหลือล่าสุด ÷ ยอดใช้เฉลี่ย 7 วัน">รันได้อีก</th><th>ประเด็น</th><th title="แคมเปญตัวเปิดที่มีคนอุ่นเยอะที่สุดของคลินิก ที่ควรทำ RE ต่อ (90 วัน · อัปเดตทุกคืน)">ควร RE</th></tr></thead>
       <tbody>${list.length ? list.map(c => {
         const r = sumRec(c.name), k = calc(r), cap = capOf(r, c.name), pct = +r.budget?.spend && +cap ? r.budget.spend/cap*100 : null;
         const m = sumMeta(c.name), err = m.error;  // raw Meta numbers (reach / frequency / 3-s plays)
@@ -1267,8 +1278,8 @@ function renderToday(){
           <td class="num">${m.frequency ? `<span class="${m.frequency >= 4 ? 't-warn' : ''}" title="${m.frequency >= 4 ? 'ความถี่สูง คนเดิมเห็นซ้ำบ่อย ระวังแอดล้า' : ''}">${(+m.frequency).toFixed(2)}</span>` : '<span class="muted">–</span>'}</td>
           <td class="num">${m.video_3s ? int(m.video_3s) : '<span class="muted">–</span>'}</td>
           <td class="num">${runwayCell(c.name)}</td>
-          ${issueCell(c, r)}</tr>`;
-      }).join('') : `<tr><td colspan="11" class="muted">ไม่พบคลินิกที่ชื่อมี "${esc(q)}"</td></tr>`}</tbody>
+          ${issueCell(c, r)}${reCell(reBy.get(c.id))}</tr>`;
+      }).join('') : `<tr><td colspan="12" class="muted">ไม่พบคลินิกที่ชื่อมี "${esc(q)}"</td></tr>`}</tbody>
     </table></div></div>`;
 }
 
@@ -1404,7 +1415,7 @@ async function loadSnaps(){
   snapsBusy = false;
   if (error) { console.error('ad_snapshots', error); setTimeout(loadSnaps, 60e3); return; }
   // home: redraw in place (resetting fxKey would replay the card entrance = a second flash); brain needs the reset to mount its graph
-  snaps = data; if (['dash', 'brain'].includes(view) && !typingInMain()) { if (view !== 'dash') fxKey = ''; render(); }
+  snaps = data; if (['dash', 'brain', 'today'].includes(view) && !typingInMain()) { if (view !== 'dash') fxKey = ''; render(); }
 }
 // stars from an index = cost per chat ÷ the clinic's own normal (1 = normal, 0.8 = 20% cheaper)
 const starsOf = i => i == null ? 0 : i <= .7 ? 5 : i <= .85 ? 4 : i <= 1 ? 3 : i <= 1.2 ? 2 : 1;
@@ -1443,7 +1454,7 @@ function reRank(){
     for (const a of sn.data.ads || []) {
       const rec = (a.wk || []).filter(w => w[0] >= since).reduce((x, w) => x + w[1], 0); allSp += rec;
       if (a.kind === 're') { reSp += rec; continue; }
-      const k = a.campaign || a.name, c = camps[k] ??= {camp: k, clinic: sn.data.clinic, sp: 0, rec: 0, r: 0, pu: 0, eng: 0, vid: 0};
+      const k = a.campaign || a.name, c = camps[k] ??= {camp: k, clinic: sn.data.clinic, cid: sn.clinic_id, sp: 0, rec: 0, r: 0, pu: 0, eng: 0, vid: 0};
       c.sp += a.spend || 0; c.rec += rec; c.r += a.results || 0; c.pu += a.purchases || 0; c.eng += (a.comments || 0) + (a.shares || 0); c.vid += a.thru || 0; }
     const share = allSp ? reSp / allSp : 0;
     for (const c of Object.values(camps)) { c.i = c.r ? c.sp / c.r / avg : null;
