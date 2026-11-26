@@ -2888,7 +2888,8 @@ function genRangeText(){
 function openGen(gid){
   genTask = REPT.find(t => t.gid === gid); if (!genTask) return;
   const j = jobOfTask(gid), online = REP?.worker?.last_seen && Date.now() - Date.parse(REP.worker.last_seen) < 90e3;
-  const busy = REP?.jobs.some(x => x.status === 'queued' || x.status === 'running');
+  // a 'running' job with no progress for 30 min is a dead run (the Mac slept or crashed): it must not block everyone forever
+  const busy = REP?.jobs.some(x => x.status === 'queued' || (x.status === 'running' && Date.now() - Date.parse(x.progress?.at || x.started_at) < 30 * 60e3));
   const q = taskParts(genTask.name), top = genTask.kind === 'topup';
   if (top) q.clinic = topupLabel(genTask), q.cycle = '';
   $('#genTitle').textContent = top ? 'งานเติมงบ' : 'Generate report';
