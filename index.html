@@ -1501,15 +1501,15 @@ function renderDash(){
     <div class="card gauge span-4" ${cardI()}><div class="card-h"><b>เช็คแอดแล้ว</b><span>เมื่อวาน ${thDate(chkDay)}</span></div>
       ${ring(checked / Math.max(1, db.clinics.length), `${checked}/${db.clinics.length}`, 'คลินิก', `เมื่อวานเช็คแอดแล้ว ${checked} จาก ${db.clinics.length} คลินิก`)}</div>
 
+    <div class="card chart-card span-12" ${cardI()}><div class="card-h"><b>ต้นทุนต่อแชทรายวัน</b><span>ทุกคลินิกรวม · ต่ำ = ดี · เส้นประ = ค่าเฉลี่ย 28 วันก่อนหน้า${cprB ? ` ${baht(cprB)}` : ''}</span></div>
+      ${areaChart('cpr', rows, 'cpr', baht, true, {W: 1200, H: 230, ref: cprB, refLabel: cprB ? 'ปกติ ' + baht(cprB) : ''})}</div>
+
     <div class="card span-12" ${cardI()}><div class="card-h"><b>แคมเปญที่ควรทำ RE</b><span>Top 10 · แคมเปญตัวเปิดที่มีคนอุ่นเยอะ ราคาดี และยังรันใน 30 วัน · 90 วันล่าสุด</span></div>
       <div class="rank">${!reTop ? '<div class="muted pad">กำลังโหลดแอด…</div>' : reTop.slice(0, 10).map((c, k) => `<div class="rk re"><span class="no">${k + 1}</span><span class="nm"><b title="${esc(c.camp)}">${esc(c.camp)}</b><small><button class="link" data-open="${esc(c.clinic)}">${esc(c.clinic)}</button></small></span>
         <span class="pool"><b>${int(c.pool)}</b><small>คนอุ่น · แชท ${int(c.r)} · คอมเมนต์/แชร์ ${int(c.eng)} · ดูวิดีโอจบ ${int(c.vid)}</small></span>
         <span class="cp">${baht(c.sp / c.r)}<small class="${c.i < 1 ? 't-ok' : 't-bad'}">${vsNormal(c.i)}${c.pu ? ` · ${int(c.pu)} ซื้อ` : ''}</small></span>
         <span class="re-tag" style="color:var(--${c.share === 0 ? 'bad' : c.share < .15 ? 'warn' : 'ok'})">${c.share === 0 ? 'คลินิกยังไม่มี RE' : c.share < .15 ? `RE แค่ ${Math.round(c.share * 100)}% ของงบ` : `มี RE แล้ว ${Math.round(c.share * 100)}%`}</span></div>`).join('') || '<div class="muted pad">ยังไม่มีแคมเปญตัวเปิดที่ใช้เงินพอจะแนะนำ RE</div>'}</div>
       <div class="legend-note">คนอุ่น = แชท + คอมเมนต์/แชร์ + ดูวิดีโอจบ (ThruPlay) ของแคมเปญนั้น 90 วัน (คนเดียวกันอาจนับซ้ำ) · นับแคมเปญที่ใช้ ≥฿500 ใน 30 วัน ได้ ≥5 แชท และ ฿/แชทไม่แพงกว่าปกติเกิน 20% (ยกเว้นมียอดซื้อ) · ป้าย = สัดส่วนงบ RE ของคลินิก 30 วัน</div></div>
-
-    <div class="card chart-card span-12" ${cardI()}><div class="card-h"><b>ต้นทุนต่อแชทรายวัน</b><span>ทุกคลินิกรวม · ต่ำ = ดี · เส้นประ = ค่าเฉลี่ย 28 วันก่อนหน้า${cprB ? ` ${baht(cprB)}` : ''}</span></div>
-      ${areaChart('cpr', rows, 'cpr', baht, true, {W: 1200, H: 230, ref: cprB, refLabel: cprB ? 'ปกติ ' + baht(cprB) : ''})}</div>
 
     <div class="card span-7" ${cardI()}><div class="card-h"><b>อันดับคลินิก</b><span>฿/แชท เทียบ 28 วันก่อนหน้าของคลินิกเอง</span></div>
       <div class="rank">${rank.map((x, k) => `<div class="rk"><span class="no">${k + 1}</span><button class="link nm" data-open="${esc(x.name)}">${esc(x.name)}</button>${starHTML(x.st)}
