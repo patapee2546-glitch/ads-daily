@@ -1064,7 +1064,7 @@ function sumMeta(c){
   if (!rr) loadRangeReach();
   const x = rr?.[cl?.id] || {};
   return {video_3s: rangeDays().reduce((a, d) => a + (+one(d).video_3s || 0), 0), ...(ds => ds.some(x => x.imp_vid != null) ? {imp_vid: ds.reduce((a, x) => a + (+x.imp_vid || 0), 0), imp_img: ds.reduce((a, x) => a + (+x.imp_img || 0), 0)} : {})(rangeDays().map(one)), error: one(day).error, range: true,
-    reach: x.reach, frequency: x.frequency, loading: !rr};
+    reach: x.reach, frequency: x.frequency, reach_img: x.reach_img, reach_vid: x.reach_vid, loading: !rr};
 }
 // unique reach / frequency of a multi-day range comes from Meta for the whole range (daily figures don't add up);
 // cached per owner+range; ranges ending today refetch after 30 min, a failed fetch after 1 min.
@@ -1296,7 +1296,7 @@ function renderToday(){
     <div class="card-h"><b>${dayLabel()}</b><span>${list.length} คลินิก</span>${dayFrom ? '<span class="muted">ยอดรวมทั้งช่วง · จุดสถานะเป็นของวันสุดท้าย · การเข้าถึง/ความถี่ = คนไม่ซ้ำทั้งช่วงจาก Meta</span>' : ''}${!dayFrom && day === TODAY ? `<span class="t-warn">วันนี้ยังไม่จบ · ยอดถึง ${esc(window.ADS_DATA?.[day]?.fetched || '–')}</span>` : ''}<span class="spacer"></span>
       <span><kbd>J</kbd> <kbd>K</kbd> เลื่อน · <kbd>Enter</kbd> เปิด · <kbd>←</kbd> <kbd>→</kbd> เปลี่ยนวัน · <kbd>/</kbd> ค้นหา</span></div>
     <div class="scroll"><table>
-      <thead><tr><th>คลินิก</th><th>แอด · เพจ · งบ · ลีด</th><th class="num">ใช้ / เพดาน</th><th class="num">ผลลัพธ์</th><th class="num">฿/ผลลัพธ์</th><th class="num" title="จำนวนการซื้อ เหมือนช่อง การซื้อ ใน Ads Manager">การซื้อ</th><th class="num" title="การเข้าถึง (คนไม่ซ้ำ) ของวันนั้น ทั้งบัญชี">การเข้าถึง</th><th class="num" title="จำนวนครั้งที่แอดรูปถูกแสดง (คน × ครั้ง) · รูป + วิดีโอ = การแสดงผลทั้งบัญชี">แสดงรูป</th><th class="num" title="จำนวนครั้งที่แอดวิดีโอถูกแสดง (คน × ครั้ง) · แอดวิดีโอ = แอดที่มีการเล่น 3 วิ">แสดงวิดีโอ</th><th class="num" title="ความถี่ = การแสดงผล ÷ การเข้าถึง">ความถี่</th><th class="num" title="CPM = ค่าแสดงแอด 1,000 ครั้ง (ยอดใช้ ÷ การแสดงผล × 1,000) · เหลือง = แพงกว่าเฉลี่ย 7 วันก่อนหน้า 30% ขึ้นไป">CPM</th><th class="num" title="การเล่นวิดีโอนาน 3 วินาทีขึ้นไป · % = ดู 3 วิ ÷ แสดงวิดีโอ (คอลัมน์ทางซ้าย) · นับเป็นครั้งทั้งคู่">วิดีโอ 3 วิ</th><th class="num" title="เงินคงเหลือล่าสุด ÷ ยอดใช้เฉลี่ย 7 วัน">รันได้อีก</th><th title="คอขวดตอนนี้ (7 วันล่าสุด เทียบ 7 วันก่อนหน้า) · บรรทัดล่าง = ประเด็นที่ทีมพิมพ์ไว้">คอขวด / ประเด็น</th></tr></thead>
+      <thead><tr><th>คลินิก</th><th>แอด · เพจ · งบ · ลีด</th><th class="num">ใช้ / เพดาน</th><th class="num">ผลลัพธ์</th><th class="num">฿/ผลลัพธ์</th><th class="num" title="จำนวนการซื้อ เหมือนช่อง การซื้อ ใน Ads Manager">การซื้อ</th><th class="num" title="การเข้าถึง (คนไม่ซ้ำ) ของวันนั้น ทั้งบัญชี">การเข้าถึง</th><th class="num" title="จำนวนคนไม่ซ้ำที่เห็นแอดรูป · คนที่เห็นทั้งรูปและวิดีโอถูกนับทั้งสองช่อง">เข้าถึงรูป</th><th class="num" title="จำนวนคนไม่ซ้ำที่เห็นแอดวิดีโอ (แอดที่มีการเล่น 3 วิ)">เข้าถึงวิดีโอ</th><th class="num" title="ความถี่ = การแสดงผล ÷ การเข้าถึง">ความถี่</th><th class="num" title="CPM = ค่าแสดงแอด 1,000 ครั้ง (ยอดใช้ ÷ การแสดงผล × 1,000) · เหลือง = แพงกว่าเฉลี่ย 7 วันก่อนหน้า 30% ขึ้นไป">CPM</th><th class="num" title="การเล่นวิดีโอนาน 3 วินาทีขึ้นไป · ดู 3 วิ นับเป็นจำนวนครั้ง (คนเดียวดูซ้ำนับทุกรอบ) · % = ดู 3 วิ ÷ จำนวนครั้งที่แอดวิดีโอถูกแสดง">วิดีโอ 3 วิ</th><th class="num" title="เงินคงเหลือล่าสุด ÷ ยอดใช้เฉลี่ย 7 วัน">รันได้อีก</th><th title="คอขวดตอนนี้ (7 วันล่าสุด เทียบ 7 วันก่อนหน้า) · บรรทัดล่าง = ประเด็นที่ทีมพิมพ์ไว้">คอขวด / ประเด็น</th></tr></thead>
       <tbody>${list.length ? list.map(c => {
         const r = sumRec(c.name), k = calc(r), cap = capOf(r, c.name), pct = +r.budget?.spend && +cap ? r.budget.spend/cap*100 : null;
         const m = sumMeta(c.name), err = m.error;  // raw Meta numbers (reach / frequency / 3-s plays)
@@ -1309,11 +1309,11 @@ function renderToday(){
           <td class="num">${k.cpr ? (b => `<span class="${cprTone(k.cpr, b)}"${b ? ` title="เฉลี่ย 7 วันก่อนหน้า ${baht(b)} ต่อผลลัพธ์ (${k.cpr >= b ? '+' : ''}${Math.round((k.cpr / b - 1) * 100)}%)"` : ''}>${baht(k.cpr)}</span>`)(cprBase(c.name)) : '–'}</td>
           <td class="num">${r.ads?.purchases != null ? `<span class="run"><b>${+r.ads.purchases ? int(r.ads.purchases) : '–'}</b>${+r.ads.purchase_value ? `<small>${baht(r.ads.purchase_value)}</small>` : ''}</span>` : '<span class="muted">–</span>'}</td>
           <td class="num">${m.reach ? int(m.reach) : `<span class="muted"${m.loading ? ' title="กำลังดึงการเข้าถึงทั้งช่วงจาก Meta"' : ''}>${m.loading ? '…' : '–'}</span>`}</td>
-          <td class="num">${m.imp_img != null ? int(m.imp_img) : '<span class="muted">–</span>'}</td>
-          <td class="num">${m.imp_vid != null ? int(m.imp_vid) : '<span class="muted">–</span>'}</td>
+          <td class="num">${m.reach_img != null ? int(m.reach_img) : `<span class="muted">${m.loading ? '…' : '–'}</span>`}</td>
+          <td class="num">${m.reach_vid != null ? int(m.reach_vid) : `<span class="muted">${m.loading ? '…' : '–'}</span>`}</td>
           <td class="num">${m.frequency ? `<span class="${m.frequency >= 4 ? 't-warn' : ''}" title="${m.frequency >= 4 ? 'ความถี่สูง คนเดิมเห็นซ้ำบ่อย ระวังแอดล้า' : ''}">${(+m.frequency).toFixed(2)}</span>` : '<span class="muted">–</span>'}</td>
           <td class="num">${cpmCell(c.name, r, m)}</td>
-          <td class="num">${m.video_3s ? `<span class="run"><b>${int(m.video_3s)}</b>${m.imp_vid ? `<small title="ดู 3 วิ ${int(m.video_3s)} ครั้ง ÷ แอดวิดีโอถูกแสดง ${int(m.imp_vid)} ครั้ง · นับเป็นครั้งทั้งคู่ จึงไม่เกิน 100%">${Math.round(m.video_3s / m.imp_vid * 100)}% ของแสดงวิดีโอ</small>` : ''}</span>` : '<span class="muted">–</span>'}</td>
+          <td class="num">${m.video_3s ? `<span class="run"><b>${int(m.video_3s)}</b>${m.imp_vid ? `<small title="ดู 3 วิ ${int(m.video_3s)} ครั้ง ÷ แอดวิดีโอถูกแสดง ${int(m.imp_vid)} ครั้ง · นับเป็นครั้งทั้งคู่ จึงไม่เกิน 100%">${Math.round(m.video_3s / m.imp_vid * 100)}% ของ ${int(m.imp_vid)} ครั้งที่แสดง</small>` : ''}</span>` : '<span class="muted">–</span>'}</td>
           <td class="num">${runwayCell(c.name)}</td>
           ${issueCell(c, r)}</tr>`;
       }).join('') : `<tr><td colspan="14" class="muted">ไม่พบคลินิกที่ชื่อมี "${esc(q)}"</td></tr>`}</tbody>
