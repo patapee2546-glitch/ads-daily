@@ -1063,7 +1063,7 @@ function sumMeta(c){
   const cl = db.clinics.find(x => x.name === c), rr = rangeReach[`${OWNER}|${dayFrom}|${day}`];
   if (!rr) loadRangeReach();
   const x = rr?.[cl?.id] || {};
-  return {video_3s: rangeDays().reduce((a, d) => a + (+one(d).video_3s || 0), 0), error: one(day).error, range: true,
+  return {video_3s: rangeDays().reduce((a, d) => a + (+one(d).video_3s || 0), 0), imp_vid: rangeDays().reduce((a, d) => a + (+one(d).imp_vid || 0), 0), error: one(day).error, range: true,
     reach: x.reach, frequency: x.frequency, loading: !rr};
 }
 // unique reach / frequency of a multi-day range comes from Meta for the whole range (daily figures don't add up);
@@ -1275,6 +1275,18 @@ function runwayCell(name){
   return `<span class="run ${runTone(w)}" title="${w.kind}เหลือ ${baht(w.left)} ÷ ใช้เฉลี่ย ${baht(w.avg)}/วัน (ข้อมูล ${thDate(w.asOf)})"><b>${w.days == null ? '–' : w.days.toFixed(1) + ' วัน'}</b><small>${runMoney(w)}</small></span>`;
 }
 
+// CPM of the whole account: spend ÷ impressions × 1000, impressions = reach × frequency (both already pulled from Meta).
+// Judged against the clinic's own 7 days before the shown day/range, like ฿/result.
+const cpmOf = (spend, m) => +spend > 0 && m?.reach > 0 && m.frequency > 0 ? spend / (m.reach * m.frequency) * 1000 : null;
+function cpmCell(name, r, m){
+  const v = cpmOf(r.budget?.spend, m); if (!v) return '<span class="muted">–</span>';
+  const start = dayFrom || day; let sp = 0, imp = 0;
+  for (let i = 1; i <= 7; i++) { const d = shiftDay(start, -i), x = window.ADS_DATA?.[d]?.clinics?.[name], s = +rec(d, name).budget?.spend || 0;
+    if (s > 0 && x?.reach > 0 && x.frequency > 0) { sp += s; imp += x.reach * x.frequency; } }
+  const base = imp ? sp / imp * 1000 : null, up = base ? v / base : null;
+  return `<span class="${up >= 1.3 ? 't-warn' : up && up <= .8 ? 't-ok' : ''}" title="${base ? `เฉลี่ย 7 วันก่อนหน้า ${baht(base)} (${up >= 1 ? '+' : ''}${Math.round((up - 1) * 100)}%)` : 'ยังไม่มีค่าเฉลี่ย 7 วันก่อนหน้า'}">${baht(v)}</span>`;
+}
+console.assert(Math.abs(cpmOf(500, {reach: 5000, frequency: 2}) - 50) < 1e-9 && cpmOf(0, {reach: 1, frequency: 1}) === null, 'cpm');
 function renderToday(){
   if (!snaps) loadSnaps();   // the คอขวด 'no RE' rule reads the nightly ad snapshot
   const list = visible();
@@ -1282,7 +1294,7 @@ function renderToday(){
     <div class="card-h"><b>${dayLabel()}</b><span>${list.length} คลินิก</span>${dayFrom ? '<span class="muted">ยอดรวมทั้งช่วง · จุดสถานะเป็นของวันสุดท้าย · การเข้าถึง/ความถี่ = คนไม่ซ้ำทั้งช่วงจาก Meta</span>' : ''}${!dayFrom && day === TODAY ? `<span class="t-warn">วันนี้ยังไม่จบ · ยอดถึง ${esc(window.ADS_DATA?.[day]?.fetched || '–')}</span>` : ''}<span class="spacer"></span>
       <span><kbd>J</kbd> <kbd>K</kbd> เลื่อน · <kbd>Enter</kbd> เปิด · <kbd>←</kbd> <kbd>→</kbd> เปลี่ยนวัน · <kbd>/</kbd> ค้นหา</span></div>
     <div class="scroll"><table>
-      <thead><tr><th>คลินิก</th><th>แอด · เพจ · งบ · ลีด</th><th class="num">ใช้ / เพดาน</th><th class="num">ผลลัพธ์</th><th class="num">฿/ผลลัพธ์</th><th class="num" title="จำนวนการซื้อ เหมือนช่อง การซื้อ ใน Ads Manager">การซื้อ</th><th class="num" title="การเข้าถึง (คนไม่ซ้ำ) ของวันนั้น ทั้งบัญชี">การเข้าถึง</th><th class="num" title="ความถี่ = การแสดงผล ÷ การเข้าถึง">ความถี่</th><th class="num" title="การเล่นวิดีโอนาน 3 วินาทีขึ้นไป">วิดีโอ 3 วิ</th><th class="num" title="เงินคงเหลือล่าสุด ÷ ยอดใช้เฉลี่ย 7 วัน">รันได้อีก</th><th title="คอขวดตอนนี้ (7 วันล่าสุด เทียบ 7 วันก่อนหน้า) · บรรทัดล่าง = ประเด็นที่ทีมพิมพ์ไว้">คอขวด / ประเด็น</th></tr></thead>
+      <thead><tr><th>คลินิก</th><th>แอด · เพจ · งบ · ลีด</th><th class="num">ใช้ / เพดาน</th><th class="num">ผลลัพธ์</th><th class="num">฿/ผลลัพธ์</th><th class="num" title="จำนวนการซื้อ เหมือนช่อง การซื้อ ใน Ads Manager">การซื้อ</th><th class="num" title="การเข้าถึง (คนไม่ซ้ำ) ของวันนั้น ทั้งบัญชี">การเข้าถึง</th><th class="num" title="คนไม่ซ้ำที่เห็นแอดรูป · คนที่เห็นทั้งรูปและวิดีโอถูกนับทั้งสองช่อง รวมกันจึงมากกว่าการเข้าถึงทั้งบัญชีได้">เข้าถึงรูป</th><th class="num" title="คนไม่ซ้ำที่เห็นแอดวิดีโอ (แอดที่มีการเล่น 3 วิ)">เข้าถึงวิดีโอ</th><th class="num" title="ความถี่ = การแสดงผล ÷ การเข้าถึง">ความถี่</th><th class="num" title="CPM = ค่าแสดงแอด 1,000 ครั้ง (ยอดใช้ ÷ การแสดงผล × 1,000) · เหลือง = แพงกว่าเฉลี่ย 7 วันก่อนหน้า 30% ขึ้นไป">CPM</th><th class="num" title="การเล่นวิดีโอนาน 3 วินาทีขึ้นไป · % = ดู 3 วิ ÷ การแสดงผลของแอดวิดีโอเท่านั้น · เทียบกับคลินิกเดียวกันวันก่อนๆ">วิดีโอ 3 วิ</th><th class="num" title="เงินคงเหลือล่าสุด ÷ ยอดใช้เฉลี่ย 7 วัน">รันได้อีก</th><th title="คอขวดตอนนี้ (7 วันล่าสุด เทียบ 7 วันก่อนหน้า) · บรรทัดล่าง = ประเด็นที่ทีมพิมพ์ไว้">คอขวด / ประเด็น</th></tr></thead>
       <tbody>${list.length ? list.map(c => {
         const r = sumRec(c.name), k = calc(r), cap = capOf(r, c.name), pct = +r.budget?.spend && +cap ? r.budget.spend/cap*100 : null;
         const m = sumMeta(c.name), err = m.error;  // raw Meta numbers (reach / frequency / 3-s plays)
@@ -1295,11 +1307,14 @@ function renderToday(){
           <td class="num">${k.cpr ? (b => `<span class="${cprTone(k.cpr, b)}"${b ? ` title="เฉลี่ย 7 วันก่อนหน้า ${baht(b)} ต่อผลลัพธ์ (${k.cpr >= b ? '+' : ''}${Math.round((k.cpr / b - 1) * 100)}%)"` : ''}>${baht(k.cpr)}</span>`)(cprBase(c.name)) : '–'}</td>
           <td class="num">${r.ads?.purchases != null ? `<span class="run"><b>${+r.ads.purchases ? int(r.ads.purchases) : '–'}</b>${+r.ads.purchase_value ? `<small>${baht(r.ads.purchase_value)}</small>` : ''}</span>` : '<span class="muted">–</span>'}</td>
           <td class="num">${m.reach ? int(m.reach) : `<span class="muted"${m.loading ? ' title="กำลังดึงการเข้าถึงทั้งช่วงจาก Meta"' : ''}>${m.loading ? '…' : '–'}</span>`}</td>
+          <td class="num">${m.reach_img != null ? int(m.reach_img) : `<span class="muted"${m.range ? ' title="แยกรูป/วิดีโอดูได้ทีละวัน (คนไม่ซ้ำของหลายวันบวกกันไม่ได้)"' : ''}>–</span>`}</td>
+          <td class="num">${m.reach_vid != null ? int(m.reach_vid) : '<span class="muted">–</span>'}</td>
           <td class="num">${m.frequency ? `<span class="${m.frequency >= 4 ? 't-warn' : ''}" title="${m.frequency >= 4 ? 'ความถี่สูง คนเดิมเห็นซ้ำบ่อย ระวังแอดล้า' : ''}">${(+m.frequency).toFixed(2)}</span>` : '<span class="muted">–</span>'}</td>
-          <td class="num">${m.video_3s ? int(m.video_3s) : '<span class="muted">–</span>'}</td>
+          <td class="num">${cpmCell(c.name, r, m)}</td>
+          <td class="num">${m.video_3s ? `<span class="run"><b>${int(m.video_3s)}</b>${m.imp_vid ? `<small title="ดู 3 วิ ${int(m.video_3s)} ÷ แสดงผลแอดวิดีโอ ${int(m.imp_vid)}">${Math.round(m.video_3s / m.imp_vid * 100)}% หยุดดู</small>` : ''}</span>` : '<span class="muted">–</span>'}</td>
           <td class="num">${runwayCell(c.name)}</td>
           ${issueCell(c, r)}</tr>`;
-      }).join('') : `<tr><td colspan="11" class="muted">ไม่พบคลินิกที่ชื่อมี "${esc(q)}"</td></tr>`}</tbody>
+      }).join('') : `<tr><td colspan="14" class="muted">ไม่พบคลินิกที่ชื่อมี "${esc(q)}"</td></tr>`}</tbody>
     </table></div></div>`;
 }
 
