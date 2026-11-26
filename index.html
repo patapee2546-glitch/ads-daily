@@ -164,7 +164,8 @@ tbody tr[aria-selected=true]{background:var(--accent-tint);box-shadow:inset 2px 
 .runlist .tr b{display:block;height:100%;border-radius:3px;background:var(--accent)}
 .runlist .t-bad .tr b,.runlist .rr.t-bad .tr b{background:var(--bad)}.runlist .rr.t-warn .tr b{background:var(--warn)}
 .rej-body{padding:14px 18px;display:grid;gap:12px}.rej-pv{width:100%;height:640px;border:0;border-radius:14px;background:#fff}.rej-img{width:100%;border-radius:14px}
-.rej-h{margin:0;font-size:12px;font-weight:500;color:var(--text-3)}.rej-cap{margin:0;white-space:pre-wrap;font:inherit;font-size:14px;line-height:1.6;max-height:260px;overflow:auto}.rej-fb{font-size:13px;color:var(--text-2);line-height:1.6;max-height:200px;overflow:auto}.rej-fb p{margin:0 0 6px}.rej-fb b{color:var(--bad);font-weight:600}
+.rej-h{margin:0;font-size:12px;font-weight:500;color:var(--text-3)}.rej-cap{margin:0;white-space:pre-wrap;font:inherit;font-size:14px;line-height:1.6;max-height:260px;overflow:auto}.rej-why{border:1px solid var(--line-2);border-radius:14px;padding:12px 14px;background:var(--tint)}.rej-why h4{margin:0 0 6px;font-size:14px}.rej-why p{margin:0 0 6px;font-size:13px;color:var(--text-2);line-height:1.55}.rej-why ol{margin:0;padding-left:18px;display:grid;gap:8px;font-size:13px;line-height:1.5}.rej-why small{display:block;color:var(--text-3);font-size:12px}
+.rej-fb{font-size:13px;color:var(--text-2);line-height:1.6;max-height:200px;overflow:auto}.rej-fb p{margin:0 0 6px}.rej-fb b{color:var(--bad);font-weight:600}
 .rej-links{display:flex;gap:8px;flex-wrap:wrap}.rej-links a{text-decoration:none}
 .tr-h{display:block;font-size:11px;font-weight:400;color:var(--text-3);white-space:nowrap}
 .issue{min-width:300px;max-width:420px;white-space:normal;overflow:hidden;text-overflow:ellipsis;color:var(--text-2)}
@@ -1644,6 +1645,15 @@ const PRULES = [
     why: 'Meta ห้ามเนื้อหาทางการแพทย์ที่น่ากลัวหรือรุนแรง', fix: 'ตรวจภาพประกอบว่าไม่มีเข็ม/เลือด/แผล'},
   {pol: 'กฎหมายสถานพยาบาล (โปรโมชัน)', id: 'B5', sev: 'caution', name: 'โปรลด/แถม', rx: /ลด\s*\d+\s*%|ซื้อ\s*1\s*แถม\s*1|แถมฟรี|แถม/gi,
     why: 'โปรทำได้ แต่ต้องระบุราคาและเงื่อนไขให้ชัด ไม่จูงใจเกินจำเป็น', fix: 'ใส่ราคาเต็ม ราคาโปร และเงื่อนไข/วันหมดเขต'},
+  // Meta "สุขภาพและสุขภาวะ" (Personal health and appearance): what body / slimming ads are rejected for most often
+  {pol: 'Personal health and appearance', id: 'A2', sev: 'block', name: 'อ้างผลลดสัดส่วนเป็นตัวเลข', rx: /(?:หาย|ลด|ลง|เล็กลง|หายไป)\s*(?:ไป)?\s*\d+(?:\.\d+)?\s*(?:นิ้ว|กก\.?|กิโล(?:กรัม)?|โล|ซม\.?|เซน(?:ติเมตร)?|ไซ[ซส]์)/gi,
+    why: 'Meta ห้ามอ้างผลลัพธ์ลดน้ำหนัก/สัดส่วนเป็นตัวเลขเจาะจง ถือเป็นผลลัพธ์ที่ไม่สมจริง', fix: 'ตัดตัวเลขผลลัพธ์ออก เล่าโปรแกรม เครื่อง หรือขั้นตอนแทน'},
+  {pol: 'Personal health and appearance', id: 'A6', sev: 'fix', name: 'ยืนยันผลว่าจริง/หายแน่', rx: /(?:ไขมัน|พุง|สิว|ฝ้า|ริ้วรอย)?\s*หายจริง|ลดจริง|เห็นผลจริง|ได้ผลจริง|เอาอยู่|เรื่องจริง|รีวิวจริง/gi,
+    why: 'การยืนยันว่าได้ผลจริงกับทุกคนเข้าข่ายรับประกันผล และกฎหมายสถานพยาบาลห้ามใช้รีวิวยืนยันผล', fix: 'ใช้คำว่า "ผลลัพธ์ขึ้นอยู่กับแต่ละบุคคล" และเลี่ยงคำว่า จริง/หาย/เอาอยู่'},
+  {pol: 'Personal health and appearance', id: 'A2', sev: 'fix', name: 'ได้ผลโดยไม่ต้องพยายาม', rx: /ไม่(?:อยาก|ต้อง)\s*ออกกำลังกาย|ไม่ต้อง\s*(?:อด|คุม)อาหาร|ไม่ต้องเหนื่อย/gi,
+    why: 'Meta มองว่าเป็นการสัญญาผลลัพธ์ที่ไม่สมจริง (ผอมได้โดยไม่ต้องทำอะไร)', fix: 'พูดว่าเป็นตัวช่วยควบคู่กับการดูแลตัวเอง'},
+  {pol: 'Personal health and appearance', id: 'A1', sev: 'fix', name: 'ตอกย้ำจุดด้อยของร่างกาย', rx: /ไขมัน(?:เกิน|สะสม|ส่วนเกิน|เหนียง)|ลดไม่ลง|ใหญ่ไปหมด|พุง(?:ยื่น|ย้วย|ห้อย)|ต้นขาใหญ่|ต้นแขนใหญ่|หุ่นพัง|อ้วน|เหนียง|six\s*pack\s*หาย/gi,
+    why: 'Meta ห้ามเนื้อหาที่ทำให้คนรู้สึกแย่กับรูปร่างตัวเองเพื่อขายบริการ', fix: 'พูดถึงเป้าหมายเชิงบวก เช่น "กระชับสัดส่วน" "ดูแลรูปร่าง" แทนการชี้ปัญหา'},
 ];
 const SEV = {block: ['Block', 't-bad'], fix: ['Fix Required', 't-warn'], caution: ['Caution', 'muted']};
 const POLICY_INDEX = 'https://transparency.meta.com/policies/ad-standards/';
@@ -1655,6 +1665,7 @@ function policyScan(text){
   let safe = text; for (const r of PRULES) if ('to' in r) safe = safe.replace(r.rx, r.to);
   return {hits, verdict, safe: safe.replace(/[ \t]{2,}/g, ' ')};
 }
+console.assert(policyScan('เอวหาย 6 นิ้ว').verdict === 'block' && policyScan('ไม่อยากออกกำลังกาย ไขมันหายจริง').hits.length >= 2, 'body rules');
 console.assert(policyScan('โบท็อกซ์ ลดริ้วรอย 100% อันดับ 1').verdict === 'block' && policyScan('ปรึกษาแพทย์ฟรี ทักแชทได้เลย ฆสพ. 123').verdict === 'pass'
   && policyScan('คุณมีสิวใช่ไหม').hits.some(h => h.r.id === 'A1') && !/โบท็อก/.test(policyScan('โปรโบท็อกซ์ 50u').safe), 'policy rules');
 const POL0 = () => ({url: '', text: '', ad: null, busy: false, err: '', media: [], ocr: '', mBusy: '', run: null});
@@ -2658,12 +2669,24 @@ async function loadRejPreview(x){
   if (error || data?.error) setTimeout(() => { delete REJ_PV[x.id]; }, 30e3);
   if (view === 'reject' && rejSel?.id === x.id) renderPanel();
 }
+// "why was it rejected", in plain words: Meta only names the policy group, so the caption is run through the team's own
+// rule engine (ตรวจกฎ Meta) to point at the words most likely responsible.
+// ponytail: caption text only; words inside the image / video are not read. Upgrade = OCR or AI mode from the policy tab.
+function rejWhyHTML(x, v){
+  const seen = new Set(), rank = {block: 0, fix: 1, caution: 2};
+  const hits = policyScan(v.body || '').hits.filter(h => !seen.has(h.r.id + h.word.toLowerCase()) && seen.add(h.r.id + h.word.toLowerCase())).sort((a, b) => rank[a.r.sev] - rank[b.r.sev]);
+  const by = Map.groupBy(hits, h => h.r);
+  return `<div class="rej-why"><h4>สรุป: โดน reject เพราะอะไร</h4>
+    <p>Meta จัดเป็นหมวด <b>${esc(x.why) || 'ไม่ระบุ'}</b> (Meta ไม่บอกว่าผิดที่คำไหน ข้างล่างคือจุดที่ระบบเจอในแคปชัน)</p>
+    ${by.size ? `<ol>${[...by].slice(0, 6).map(([r, hs]) => `<li><b class="${SEV[r.sev][1]}">${esc(r.name)}</b> — คำว่า ${hs.slice(0, 4).map(h => `“${esc(h.word)}”`).join(' ')}<small>${esc(r.why)}</small><small class="t-ok">แก้: ${esc(r.fix)}</small></li>`).join('')}</ol>`
+      : `<p class="t-warn">แคปชันไม่เจอคำเสี่ยงตามกฎของทีม → น่าจะโดนจากภาพหรือเนื้อหาในวิดีโอ (เช่น ภาพก่อน-หลัง สัดส่วนร่างกาย คำพูดในคลิป) ซึ่งระบบยังอ่านไม่ได้ ให้ดูสื่อด้านล่าง</p>`}</div>`;
+}
 function rejPanelHTML(){
   const x = rejSel, v = REJ_PV[x.id]; if (x.id && !v) loadRejPreview(x);
   const media = !x.id ? '<div class="muted pad">ยังไม่มีรหัสแอดของรายการนี้ · กดปุ่ม ดึงจาก Meta ด้านบนหนึ่งครั้งแล้วเปิดใหม่</div>'
     : !v || v === 'loading' ? '<div class="muted pad">กำลังดึงสื่อจาก Meta…</div>'
     : v.error ? `<div class="t-bad pad">${esc(v.error)}</div>`
-    : `${v.iframe ? `<iframe class="rej-pv" src="${esc(v.iframe)}" title="ตัวอย่างแอด" loading="lazy" scrolling="yes"></iframe>` : v.thumb ? `<img class="rej-img" src="${esc(v.thumb)}" alt="">` : '<div class="muted pad">Meta ไม่ส่งตัวอย่างของแอดนี้</div>'}
+    : `${rejWhyHTML(x, v)}${v.iframe ? `<iframe class="rej-pv" src="${esc(v.iframe)}" title="ตัวอย่างแอด" loading="lazy" scrolling="yes"></iframe>` : v.thumb ? `<img class="rej-img" src="${esc(v.thumb)}" alt="">` : '<div class="muted pad">Meta ไม่ส่งตัวอย่างของแอดนี้</div>'}
        ${v.body ? `<h4 class="rej-h">แคปชัน</h4><pre class="rej-cap">${esc(v.body)}</pre>` : ''}
        ${v.feedback ? `<h4 class="rej-h">คำอธิบายจาก Meta</h4><div class="rej-fb">${Object.entries(v.feedback).map(([k, t]) => `<p><b>${esc(k)}</b> ${esc(String(t).trim())}</p>`).join('')}</div>` : ''}
        <div class="rej-links">${v.post ? `<a class="ghost" href="${esc(v.post)}" target="_blank" rel="noopener">เปิดโพสต์ ↗</a>` : ''}${x.c.act ? `<a class="ghost" href="https://adsmanager.facebook.com/adsmanager/manage/ads/edit?act=${encodeURIComponent(x.c.act)}&selected_ad_ids=${encodeURIComponent(x.id)}" target="_blank" rel="noopener">เปิดใน Ads Manager ↗</a>` : ''}</div>`;
