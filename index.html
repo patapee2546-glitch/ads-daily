@@ -2730,6 +2730,7 @@ const FAIL_TH = {MAPPING_NOT_FOUND: 'ยังไม่ได้ผูกโป�
   OUTPUT_EXISTS: 'มีไฟล์รีพอร์ตชื่อนี้อยู่แล้ว → กดสร้างใหม่อีกครั้ง',
   AUTOMATION_BUSY: 'เครื่องสร้างรีพอร์ตกำลังทำรอบอื่น → รอสักครู่แล้วกดสร้างใหม่',
   ASANA_HTTP_ERROR: 'อ่านงานจาก Asana ไม่ได้ → เช็ก token Asana ของเครื่องสร้างรีพอร์ต',
+  META_HTTP_4XX: 'Meta ไม่ให้ดึงข้อมูลบัญชีโฆษณานี้ → บัญชี Facebook ของเครื่องสร้างรีพอร์ตยังไม่มีสิทธิ์บัญชีนี้ (หรือ token หมดอายุ) บอกแอดมิน',
   META_TOKEN_INVALID: 'token Meta ของเครื่องสร้างรีพอร์ตหมดอายุ → ต่อ token ใหม่'};
 const failWhy = j => { const c = (String(j.note || '') + ' ' + String(j.log || '')).match(/\b[A-Z][A-Z_]{5,}\b/g)?.find(x => FAIL_TH[x]);
   return c ? FAIL_TH[c] : j.note || 'ดู log ด้านล่าง'; };
