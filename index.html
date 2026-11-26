@@ -1028,7 +1028,9 @@ const int = n => n === '' || n == null || isNaN(n) ? '–' : Math.round(n).toLoc
 const todayISO = () => iso(new Date(Date.now() - new Date().getTimezoneOffset()*6e4));
 let TODAY = todayISO();
 let day = TODAY;   // open on today (the team asked for the current day; today's spend is still running)
-let cur = null, view = 'dash', q = '';
+// reload (F5 or the auto-reload after a deploy) reopens the tab you were on; sessionStorage = per browser tab
+const VIEW_KEY = 'ads-daily-view';
+let cur = null, view = (() => { try { const v = sessionStorage.getItem(VIEW_KEY); if (v && document.querySelector(`[role=tab][data-view="${CSS.escape(v)}"]`)) return v; } catch {} return 'dash'; })(), q = '';
 let rng = {from: iso(new Date(Date.parse(TODAY) - 13*864e5)), to: TODAY};   // dashboard range, both ends inclusive: the last 14 days up to today
 let rngCpr = null;                                // own range for the cost-per-result-by-clinic card; null = same as rng
 let rp = null;                                    // open range picker: {target, from, to, hover, month: 'YYYY-MM'}
@@ -3056,6 +3058,7 @@ function render(){
   $('#dayslot').innerHTML = rangeButton('day');
   document.querySelector('.datebox').style.display = ['dash', 'log', 'angel', 'media', 'reports'].includes(view) ? 'none' : '';
   document.querySelectorAll('[role=tab]').forEach(b => b.setAttribute('aria-selected', b.dataset.view===view));
+  try { if (document.querySelector(`[role=tab][data-view="${CSS.escape(view)}"]`)) sessionStorage.setItem(VIEW_KEY, view); } catch {}
   // the media library is an iframe: keep it (and its scroll/filters) across the page's periodic re-renders
   if (boardBusy) return;   // mid-drag on the notes board: a rebuild would drop the item being moved
   const key = `${view}|${OWNER}|${dayFrom}|${day}`, same = key === fxKey, before = same ? snapNums() : null; fxEnter = !same;
