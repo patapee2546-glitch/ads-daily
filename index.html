@@ -2725,6 +2725,14 @@ const PIPE_M = [
   ['ผล', [['done', 'เสร็จ', 'กดดาวน์โหลดซ้ำได้ที่ปุ่มด้านบน']]],
 ];
 const ORDER = ['queued', 'claim', 'asana', 'pdf', 'drive', 'telegram', 'done'];
+// report-app error code -> what it means and who fixes it (falls back to the raw note)
+const FAIL_TH = {MAPPING_NOT_FOUND: 'ยังไม่ได้ผูกโปรเจกต์ Asana นี้กับบัญชีโฆษณา → บอกแอดมินให้ผูกก่อน แล้วกดสร้างใหม่',
+  OUTPUT_EXISTS: 'มีไฟล์รีพอร์ตชื่อนี้อยู่แล้ว → กดสร้างใหม่อีกครั้ง',
+  AUTOMATION_BUSY: 'เครื่องสร้างรีพอร์ตกำลังทำรอบอื่น → รอสักครู่แล้วกดสร้างใหม่',
+  ASANA_HTTP_ERROR: 'อ่านงานจาก Asana ไม่ได้ → เช็ก token Asana ของเครื่องสร้างรีพอร์ต',
+  META_TOKEN_INVALID: 'token Meta ของเครื่องสร้างรีพอร์ตหมดอายุ → ต่อ token ใหม่'};
+const failWhy = j => { const c = (String(j.note || '') + ' ' + String(j.log || '')).match(/\b[A-Z][A-Z_]{5,}\b/g)?.find(x => FAIL_TH[x]);
+  return c ? FAIL_TH[c] : j.note || 'ดู log ด้านล่าง'; };
 function pipeHTML(j){
   const pr = j.progress || {};
   const cur = j.status === 'queued' ? 'queued' : j.status === 'done' ? 'end' : !pr.stage ? 'claim' : pr.stage === 'failed' ? 'done' : pr.stage;
@@ -2736,7 +2744,7 @@ function pipeHTML(j){
   return `<div class="pipe" role="list" aria-label="ขั้นตอนการรันรีพอร์ต">${PIPE_M.map(([h, nodes]) => `<div class="ph"><h4>${h}</h4>${nodes.map(([k, t, d]) => {
     const i = ORDER.indexOf(k);
     let cls = i < at ? 'done' : i === at ? (failed ? 'bad' : 'now') : '';
-    if (k === 'done' && failed) { cls = 'bad'; t = 'ไม่สำเร็จ'; d = j.note || 'ดู log ด้านล่าง'; }
+    if (k === 'done' && failed) { cls = 'bad'; t = 'ไม่สำเร็จ'; d = failWhy(j); }
     if (cls !== 'done' && cnt[k] && /[1-9]/.test(cnt[k])) cls = cls || 'done';  // a clinic already passed this step
     return `<div class="nd ${cls}" role="listitem"${cls === 'now' ? ' aria-current="step"' : ''}><b>${t}</b><small>${esc(d)}</small>${cnt[k] ? `<small class="cnt">${cnt[k]}</small>` : ''}</div>`; }).join('')}</div>`).join('')}</div>
     ${j.status === 'running' && pr.current ? `<div class="flow-now">ล่าสุด: ${esc(pr.current)}${pr.at ? ' · อัปเดต ' + bkkTime(pr.at) : ''}</div>` : ''}`;
@@ -2975,14 +2983,16 @@ function renderReports(){
   const ST_LABEL = {queued: ['รอคิว', 'warn'], running: ['กำลังรัน', 'warn'], done: ['เสร็จ', 'ok'], failed: ['ไม่สำเร็จ', 'bad']};
   return `<div class="card"><div class="card-h"><b>รีพอร์ตลูกค้า</b><span>ใช้ได้ทุกเครื่อง Windows · Mac · มือถือ · PDF สร้างที่เครื่องกลางของออฟฟิศ</span></div>
     ${manualRepHTML(active, online)}
-    ${REP.jobs.filter(j => j.requested_by === me && j.params?.task)  // each person sees only their own สร้างเอง jobs
+    ${REP.jobs.filter((j, k, all) => j.requested_by === me && j.params?.task   // each person sees only their own สร้างเอง jobs
+        // a failed run stays (flow + where it broke) until the same task succeeds later or the person presses ลบ
+        && !(j.status === 'failed' && all.some(x => x.status === 'done' && x.params?.task?.gid === j.params.task.gid && x.created_at > j.created_at)))
       .map(j => { const [l, t] = ST_LABEL[j.status] || [j.status, ''], live = j.status === 'queued' || j.status === 'running';
       return `<div class="job"><div class="job-h"><span class="pill ${t}">${l}</span><b>${bkkDateTime(j.created_at)}</b>
         <span class="muted">${esc(REP.names[j.requested_by] || (j.requested_by ? 'สมาชิก' : 'ระบบ'))}${j.finished_at ? ' · จบ ' + bkkDateTime(j.finished_at) : j.started_at ? ' · เริ่ม ' + bkkDateTime(j.started_at) : ''}</span>
         ${j.note ? `<span class="muted">${esc(j.note)}</span>` : ''}
         ${j.status !== 'running' && j.requested_by === me ? `<button class="ghost rep-cancel" data-rep-cancel="${j.id}" data-q="${j.status === 'queued' ? 1 : ''}">${j.status === 'queued' ? 'ยกเลิก' : 'ลบ'}</button>` : ''}
         ${j.pdf_path ? `<button class="rep-run sm" data-rep-pdf="${esc(j.pdf_path)}" data-rep-name="${esc(j.note || 'report.pdf')}">ดาวน์โหลด PDF</button>` : ''}</div>
-        ${live ? pipeHTML(j) : ''}
+        ${live || j.status === 'failed' ? pipeHTML(j) : ''}
         ${(msg => msg ? `<div class="rep-msg"><div class="rep-msg-h"><b>ข้อความพร้อมส่ง</b><button class="ghost" data-copy-msg="${j.id}">คัดลอกข้อความ</button></div><pre>${esc(msg)}</pre></div>` : '')(reportMessage(j.results?.[0]?.summary, daysOfTask(j.params?.task?.name)))}
         ${j.log && j.status === 'failed' ? `<details><summary>ดู log</summary><pre>${esc(j.log)}</pre></details>` : ''}</div>`; }).join('')
       || `<div class="job muted">ยังไม่ได้สร้างรีพอร์ตจากเครื่องนี้ · กดงานในปฏิทินด้านบน</div>`}</div>`;
