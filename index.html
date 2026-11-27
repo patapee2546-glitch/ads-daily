@@ -101,8 +101,11 @@ header .menu .pop{background:var(--pop);min-width:290px}
 .menu .pop button:hover,.menu .pop label:hover{background:var(--hover)}
 .menu .pop .acct-row label.av-pick{display:block;width:auto;padding:0;border-radius:50%}.menu .pop .acct-row label.av-link{display:inline-block;width:auto;padding:0;background:none}
 
-.body{display:grid;grid-template-columns:minmax(0,1fr) 0;min-height:0;transition:grid-template-columns .15s}
-.body.open{grid-template-columns:minmax(0,1fr) 460px}
+.body{display:grid;grid-template-columns:auto minmax(0,1fr) 0;min-height:0;transition:grid-template-columns .15s}
+.body.open{grid-template-columns:auto minmax(0,1fr) 460px}
+/* rarely used tabs: a left column; the everyday ones stay in the header bar */
+.side{flex-direction:column;align-self:start;margin:20px 0 0 12px;border-radius:22px}
+.side button{font-size:13px}
 main{overflow:auto;padding:20px;scrollbar-gutter:stable}
 /* scrollbars blend with the glass theme (the default light track glared in dark mode) */
 :root{color-scheme:light dark}
@@ -533,11 +536,11 @@ pre{white-space:pre-wrap;font:12px/1.6 var(--sans);margin:0;padding:12px;color:v
 @media (max-width:560px){.span-3{grid-column:span 12}.brow{grid-template-columns:90px minmax(0,1fr) 64px}}
 @media (prefers-reduced-motion:reduce){.stat-card:hover{transform:none}}
 @media (max-width:900px){
-  .body.open{grid-template-columns:minmax(0,1fr) 0}
+  .body.open{grid-template-columns:auto minmax(0,1fr) 0}
   aside{position:fixed;inset:0 0 0 auto;width:min(440px,100vw);z-index:10;box-shadow:-8px 0 24px oklch(0% 0 0 / .2)}
   .search{width:140px}
 }
-@media (max-width:560px){header h1{display:none}.metrics{grid-template-columns:1fr}main{padding:8px}}
+@media (max-width:560px){.body,.body.open{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr)}.side{flex-direction:row;overflow-x:auto;margin:8px 8px 0;border-radius:999px}.side button{flex:none}header h1{display:none}.metrics{grid-template-columns:1fr}main{padding:8px}}
 /* ---- inviting + lively layer: colour on what you can press, motion only in answer to what you do ---- */
 :root{--grad:var(--accent);--glow:none}
 .seg button{transition:background .15s,color .15s,transform .1s,box-shadow .15s}
@@ -792,13 +795,6 @@ tbody tr:active{background:var(--accent-tint-2)}
     <button role="tab" data-view="reject"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m5.6 5.6 12.8 12.8"/></svg>สื่อ reject</button>
     <button role="tab" data-view="tired"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="7" width="17" height="10" rx="2"/><path d="M22 11v2M6 10v4"/></svg>สื่อล้า</button>
     <button role="tab" data-view="listen"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-6.4A8 8 0 1 1 21 12Z"/><path d="M8 11h.01M12 11h.01M16 11h.01"/></svg>คอมเมนต์</button>
-    <button role="tab" data-view="running"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v12H4z"/><path d="m10 8 4 2-4 2z"/><path d="M8 20h8"/></svg>โพสต์รันแอด</button>
-    <button role="tab" data-view="posts"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg>โพสต์เพจ</button>
-    <button role="tab" data-view="angel"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9Z"/><path d="M19 15v4M17 17h4"/></svg>แอดนางฟ้า</button>
-    <button role="tab" data-view="media"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.5"/><path d="m21 16-5-5-9 8"/></svg>สื่อคู่แข่ง</button>
-    <button role="tab" data-view="reports"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18"/><path d="M8 17v-5M13 17V8M18 17v-9"/></svg>รีพอร์ต</button>
-    <button role="tab" data-view="policy"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6Z"/><path d="m9 12 2 2 4-4"/></svg>ตรวจกฎ Meta</button>
-    <button role="tab" data-view="brain"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><circle cx="4.5" cy="6" r="1.8"/><circle cx="19.5" cy="6" r="1.8"/><circle cx="5" cy="19" r="1.8"/><circle cx="19" cy="18.5" r="1.8"/><path d="M6 7.2 9.6 10.3M18 7.2l-3.6 3.1M6.4 17.9l3.3-3.6M17.6 17.4l-3.3-3.2"/></svg>สมอง</button>
   </div>
   <button class="ghost icon bell" id="bell"  aria-label="แจ้งเตือน"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><b id="bellN"></b></button>
   <span class="spacer"></span>
@@ -883,6 +879,15 @@ tbody tr:active{background:var(--accent-tint-2)}
   </form>
 </dialog>
 <div class="body" id="body">
+  <nav class="seg side" role="tablist" aria-label="เมนูที่ใช้ไม่บ่อย">
+    <button role="tab" data-view="running"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v12H4z"/><path d="m10 8 4 2-4 2z"/><path d="M8 20h8"/></svg>โพสต์รันแอด</button>
+    <button role="tab" data-view="posts"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg>โพสต์เพจ</button>
+    <button role="tab" data-view="angel"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9Z"/><path d="M19 15v4M17 17h4"/></svg>แอดนางฟ้า</button>
+    <button role="tab" data-view="media"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.5"/><path d="m21 16-5-5-9 8"/></svg>สื่อคู่แข่ง</button>
+    <button role="tab" data-view="reports"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18"/><path d="M8 17v-5M13 17V8M18 17v-9"/></svg>รีพอร์ต</button>
+    <button role="tab" data-view="policy"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6Z"/><path d="m9 12 2 2 4-4"/></svg>ตรวจกฎ Meta</button>
+    <button role="tab" data-view="brain"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><circle cx="4.5" cy="6" r="1.8"/><circle cx="19.5" cy="6" r="1.8"/><circle cx="5" cy="19" r="1.8"/><circle cx="19" cy="18.5" r="1.8"/><path d="M6 7.2 9.6 10.3M18 7.2l-3.6 3.1M6.4 17.9l3.3-3.6M17.6 17.4l-3.3-3.2"/></svg>สมอง</button>
+  </nav>
   <main id="main"></main>
   <aside id="panel" aria-label="รายละเอียดคลินิก"></aside>
 </div>
