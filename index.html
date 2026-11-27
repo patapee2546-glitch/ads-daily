@@ -1317,9 +1317,11 @@ function cpmCell(name, r, m){
   return `<span class="${up >= 1.3 ? 't-warn' : up && up <= .8 ? 't-ok' : ''}" title="${base ? `เฉลี่ย 7 วันก่อนหน้า ${baht(base)} (${up >= 1 ? '+' : ''}${Math.round((up - 1) * 100)}%)` : 'ยังไม่มีค่าเฉลี่ย 7 วันก่อนหน้า'}">${baht(v)}</span>`;
 }
 console.assert(Math.abs(cpmOf(500, {reach: 5000, frequency: 2}) - 50) < 1e-9 && cpmOf(0, {reach: 1, frequency: 1}) === null, 'cpm');
+// clinic table order: most money spent in the shown day/range first; equal amounts keep the saved order
+const byMoney = () => [...visible()].sort((a, b) => (+sumRec(b.name).budget?.spend || 0) - (+sumRec(a.name).budget?.spend || 0));
 function renderToday(){
   if (!snaps) loadSnaps();   // the คอขวด 'no RE' rule reads the nightly ad snapshot
-  const list = visible();
+  const list = byMoney();
   return renderMetrics() + `<div class="card">
     <div class="card-h"><b>${dayLabel()}</b><span>${list.length} คลินิก</span>${dayFrom ? '<span class="muted">ยอดรวมทั้งช่วง · จุดสถานะเป็นของวันสุดท้าย · การเข้าถึง/ความถี่ = คนไม่ซ้ำทั้งช่วงจาก Meta</span>' : ''}${!dayFrom && day === TODAY ? `<span class="t-warn">วันนี้ยังไม่จบ · ยอดถึง ${esc(window.ADS_DATA?.[day]?.fetched || '–')}</span>` : ''}<span class="spacer"></span>
       <span><kbd>J</kbd> <kbd>K</kbd> เลื่อน · <kbd>Enter</kbd> เปิด · <kbd>←</kbd> <kbd>→</kbd> เปลี่ยนวัน · <kbd>/</kbd> ค้นหา</span></div>
@@ -3364,7 +3366,7 @@ $('#main').addEventListener('click', e => {
   const tr = e.target.closest('tr[data-c]'); if (tr) open(tr.dataset.c);
 });
 function step(n){
-  const list = visible().map(c => c.name); if (!list.length) return;
+  const list = (view === 'today' ? byMoney() : visible()).map(c => c.name); if (!list.length) return;   // J/K follow the order on screen
   const i = list.indexOf(cur);
   open(list[i < 0 ? 0 : (i + n + list.length) % list.length]);
 }
