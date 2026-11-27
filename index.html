@@ -1319,6 +1319,11 @@ function cpmCell(name, r, m){
 console.assert(Math.abs(cpmOf(500, {reach: 5000, frequency: 2}) - 50) < 1e-9 && cpmOf(0, {reach: 1, frequency: 1}) === null, 'cpm');
 // clinic table order: biggest budget cap of the shown day/range first; equal caps keep the saved order
 const byMoney = () => { const cap = c => +capOf(sumRec(c.name), c.name) || 0; return [...visible()].sort((a, b) => cap(b) - cap(a)); };
+// a past day has no ad status of its own (Meta only returns numbers for it), so the row says what is running right now
+function nowRunning(name){
+  const A = window.ADS_DATA || {}, d = Object.keys(A).filter(k => !A[k].history && A[k].clinics?.[name] && !A[k].clinics[name].error).sort().at(-1);
+  return d ? 'ตอนนี้: ' + metaState(A[d].clinics[name]) : 'ยังไม่มีสถานะแอดจาก Meta';
+}
 function renderToday(){
   if (!snaps) loadSnaps();   // the คอขวด 'no RE' rule reads the nightly ad snapshot
   const list = byMoney();
@@ -1331,7 +1336,7 @@ function renderToday(){
         const r = sumRec(c.name), k = calc(r), cap = capOf(r, c.name), pct = +r.budget?.spend && +cap ? r.budget.spend/cap*100 : null;
         const m = sumMeta(c.name), err = m.error;  // raw Meta numbers (reach / frequency / 3-s plays)
         return `<tr tabindex="0" data-c="${esc(c.name)}" aria-selected="${c.name===cur}">
-          <td class="name">${adsLink(c, esc(c.name))}<small>${r.ads?.monitored ? '<span class="mon">✓ มอนิเตอร์แล้ว</span> · ' : ''}${r.ads?.state ? esc(r.ads.state) : r._history ? 'ย้อนหลังจาก Meta' : err ? 'ดึงจาก Meta ไม่ได้' : 'กรอกเอง'}</small></td>
+          <td class="name">${adsLink(c, esc(c.name))}<small>${r.ads?.monitored ? '<span class="mon">✓ มอนิเตอร์แล้ว</span> · ' : ''}${r.ads?.state ? esc(r.ads.state) : r._history ? esc(nowRunning(c.name)) : err ? 'ดึงจาก Meta ไม่ได้' : 'กรอกเอง'}</small></td>
           <td><span class="dots">${TOPICS.map(t => `<span class="dot d-${r[t.id]?.status||''}" title="${t.name}: ${ST[r[t.id]?.status]||'ยังไม่เช็ค'}"></span>`).join('')}</span></td>
           <td class="num"><div class="cap"><span>${baht(r.budget?.spend)} <span class="muted">/ ${baht(cap)}</span></span>
             ${pct != null ? `<span class="bar" title="${pct.toFixed(0)}% ของเพดาน"><b class="${pct>120?'over':pct>100?'warn':''}" style="width:${Math.min(pct,125)/1.25}%"></b><i style="left:80%"></i></span>` : ''}</div></td>
