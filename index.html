@@ -167,6 +167,7 @@ tbody tr[aria-selected=true]{background:var(--accent-tint);box-shadow:inset 2px 
 .rej-h{margin:0;font-size:12px;font-weight:500;color:var(--text-3)}.rej-cap{margin:0;white-space:pre-wrap;font:inherit;font-size:14px;line-height:1.6;max-height:260px;overflow:auto}.rej-why{border:1px solid var(--line-2);border-radius:14px;padding:12px 14px;background:var(--tint)}.rej-why h4{margin:0 0 6px;font-size:14px}.rej-why p{margin:0 0 6px;font-size:13px;color:var(--text-2);line-height:1.55}.rej-why ol{margin:0;padding-left:18px;display:grid;gap:8px;font-size:13px;line-height:1.5}.rej-why small{display:block;color:var(--text-3);font-size:12px}
 .rej-fb{font-size:13px;color:var(--text-2);line-height:1.6;max-height:200px;overflow:auto}.rej-fb p{margin:0 0 6px}.rej-fb b{color:var(--bad);font-weight:600}
 .rej-links{display:flex;gap:8px;flex-wrap:wrap}.rej-links a{text-decoration:none}
+.run-now{font-weight:500;color:var(--text-2)}
 .tr-h{display:block;font-size:11px;font-weight:400;color:var(--text-3);white-space:nowrap}
 .issue{min-width:300px;max-width:420px;white-space:normal;overflow:hidden;text-overflow:ellipsis;color:var(--text-2)}
 .neck{font-weight:500;white-space:normal;line-height:1.45;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}.neck:not(.muted):not(.t-ok):not(.t-warn):not(.t-bad){color:var(--text)}.issue .iss{font-size:12px;margin-top:2px}
@@ -1319,10 +1320,11 @@ function cpmCell(name, r, m){
 console.assert(Math.abs(cpmOf(500, {reach: 5000, frequency: 2}) - 50) < 1e-9 && cpmOf(0, {reach: 1, frequency: 1}) === null, 'cpm');
 // clinic table order: biggest budget cap of the shown day/range first; equal caps keep the saved order
 const byMoney = () => { const cap = c => +capOf(sumRec(c.name), c.name) || 0; return [...visible()].sort((a, b) => cap(b) - cap(a)); };
-// a past day has no ad status of its own (Meta only returns numbers for it), so the row says what is running right now
+// "รันในระบบ": the daily budget switched on in Meta right now (running campaigns / ad sets), from the latest pull.
+// It is "now", so the same figure shows whichever day is being viewed.
 function nowRunning(name){
-  const A = window.ADS_DATA || {}, d = Object.keys(A).filter(k => !A[k].history && A[k].clinics?.[name] && !A[k].clinics[name].error).sort().at(-1);
-  return d ? 'ตอนนี้: ' + metaState(A[d].clinics[name]) : 'ยังไม่มีสถานะแอดจาก Meta';
+  const A = window.ADS_DATA || {}, d = Object.keys(A).filter(k => !A[k].history && A[k].clinics?.[name] && !A[k].clinics[name].error).sort().at(-1), v = d && A[d].clinics[name];
+  return v?.run_budget != null ? `รันในระบบ ${baht(v.run_budget)}/วัน` : '';
 }
 function renderToday(){
   if (!snaps) loadSnaps();   // the คอขวด 'no RE' rule reads the nightly ad snapshot
@@ -1336,7 +1338,7 @@ function renderToday(){
         const r = sumRec(c.name), k = calc(r), cap = capOf(r, c.name), pct = +r.budget?.spend && +cap ? r.budget.spend/cap*100 : null;
         const m = sumMeta(c.name), err = m.error;  // raw Meta numbers (reach / frequency / 3-s plays)
         return `<tr tabindex="0" data-c="${esc(c.name)}" aria-selected="${c.name===cur}">
-          <td class="name">${adsLink(c, esc(c.name))}<small>${r.ads?.monitored ? '<span class="mon">✓ มอนิเตอร์แล้ว</span> · ' : ''}${r.ads?.state ? esc(r.ads.state) : r._history ? esc(nowRunning(c.name)) : err ? 'ดึงจาก Meta ไม่ได้' : 'กรอกเอง'}</small></td>
+          <td class="name">${adsLink(c, esc(c.name))}<small>${r.ads?.monitored ? '<span class="mon">✓ มอนิเตอร์แล้ว</span> · ' : ''}${(run => [run && `<b class="run-now" title="งบรายวันของแคมเปญและชุดโฆษณาที่เปิดอยู่ใน Meta ตอนนี้ (ไม่รวมงบตลอดอายุแคมเปญ)">${esc(run)}</b>`, r.ads?.state ? esc(r.ads.state) : r._history ? '' : err ? 'ดึงจาก Meta ไม่ได้' : run ? '' : 'กรอกเอง'].filter(Boolean).join(' · '))(nowRunning(c.name))}</small></td>
           <td><span class="dots">${TOPICS.map(t => `<span class="dot d-${r[t.id]?.status||''}" title="${t.name}: ${ST[r[t.id]?.status]||'ยังไม่เช็ค'}"></span>`).join('')}</span></td>
           <td class="num"><div class="cap"><span>${baht(r.budget?.spend)} <span class="muted">/ ${baht(cap)}</span></span>
             ${pct != null ? `<span class="bar" title="${pct.toFixed(0)}% ของเพดาน"><b class="${pct>120?'over':pct>100?'warn':''}" style="width:${Math.min(pct,125)/1.25}%"></b><i style="left:80%"></i></span>` : ''}</div></td>
