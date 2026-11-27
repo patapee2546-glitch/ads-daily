@@ -80,13 +80,13 @@ header .seg[role=tablist] button{white-space:nowrap;flex:none}
 header .menu .pop{background:var(--pop);min-width:290px}
 .menu .acct{padding:8px 12px 4px;display:grid}.menu .acct small{font-size:11px;color:var(--text-3)}.menu .acct b{font-size:13px;font-weight:600;overflow-wrap:anywhere}
 .menu hr{border:0;border-top:1px solid var(--line);margin:4px 0}
-#pwDlg,#balDlg,#genDlg,#asanaDlg,#alertDlg{border:1px solid var(--line);border-radius:14px;background:var(--pop);color:var(--text);padding:20px;width:min(380px,calc(100vw - 32px))}
-#genDlg,#asanaDlg{border-radius:18px;padding:24px;box-shadow:0 24px 60px rgba(40,20,90,.35);outline:none}
-#genDlg h2,#asanaDlg h2{margin:0 0 4px;font-size:18px}
-#pwDlg::backdrop,#balDlg::backdrop,#genDlg::backdrop,#asanaDlg::backdrop,#alertDlg::backdrop{backdrop-filter:blur(3px);background:oklch(0% 0 0 / .4)}
+#pwDlg,#balDlg,#genDlg,#asanaDlg,#metaDlg,#alertDlg{border:1px solid var(--line);border-radius:14px;background:var(--pop);color:var(--text);padding:20px;width:min(380px,calc(100vw - 32px))}
+#genDlg,#asanaDlg,#metaDlg{border-radius:18px;padding:24px;box-shadow:0 24px 60px rgba(40,20,90,.35);outline:none}
+#genDlg h2,#asanaDlg h2,#metaDlg h2{margin:0 0 4px;font-size:18px}
+#pwDlg::backdrop,#balDlg::backdrop,#genDlg::backdrop,#asanaDlg::backdrop,#metaDlg::backdrop,#alertDlg::backdrop{backdrop-filter:blur(3px);background:oklch(0% 0 0 / .4)}
 #pwDlg h2,#balDlg h2,#alertDlg h2{font-size:16px;margin:0 0 12px}
-#pwDlg label,#balDlg label,#asanaDlg label{display:grid;gap:4px;font-size:12px;color:var(--text-3);margin-bottom:10px}
-#pwDlg input,#balDlg input,#asanaDlg input{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 10px;color:var(--text);font:inherit}
+#pwDlg label,#balDlg label,#asanaDlg label,#metaDlg label{display:grid;gap:4px;font-size:12px;color:var(--text-3);margin-bottom:10px}
+#pwDlg input,#balDlg input,#asanaDlg input,#metaDlg input{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 10px;color:var(--text);font:inherit}
 .pw-actions{display:flex;gap:8px;justify-content:flex-end}
 .acct-row{display:flex!important;gap:12px;align-items:center}
 .av-pick{position:relative;cursor:pointer;flex:none}.av{width:48px;height:48px;border-radius:50%;object-fit:cover;display:block}
@@ -254,7 +254,10 @@ tbody tr[aria-selected=true]{background:var(--accent-tint);box-shadow:inset 2px 
 .gr-d{display:grid;gap:2px}.gr-d:last-of-type{text-align:right}.gr-d small{font-size:11.5px;color:var(--text-3)}.gr-d b{font-size:16px;font-weight:600;font-variant-numeric:tabular-nums}
 .gr-n{display:grid;place-items:center;width:64px;height:64px;border-radius:50%;background:var(--accent-tint-2);color:var(--text)}.gr-n b{font-size:22px;line-height:1;font-variant-numeric:tabular-nums}.gr-n small{font-size:11px;color:var(--text-2)}
 .gr-note{grid-column:1/-1;margin:2px 0 0;font-size:12px;color:var(--text-3)}.gen-range .t-bad{grid-column:1/-1;margin:0}
-#genDlg,#asanaDlg{width:min(520px,calc(100vw - 32px))}
+#genDlg,#asanaDlg,#metaDlg{width:min(520px,calc(100vw - 32px))}
+#metaDlg{max-height:calc(100vh - 40px);overflow:auto}
+.mt-perm{display:grid;grid-template-columns:20px auto 1fr;gap:2px 8px;font-size:13px;margin:8px 0}.mt-perm .ok{color:var(--good,#3fb27f)}.mt-perm .no{color:var(--bad,#e5534b)}.mt-perm code{font-size:12px}.mt-perm span:last-child{color:var(--text-3)}
+.mt-box{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:8px 0;font-size:13px}.mt-box.bad{border-color:var(--bad,#e5534b)}.mt-box ul{margin:4px 0 0;padding-left:18px;max-height:140px;overflow:auto}
 @media (max-width:760px){.cal-stats{grid-template-columns:repeat(2,1fr)}.cal-d{min-height:84px;padding:4px}.cal-t{padding:4px 5px}.ct-c{font-size:11px}.ct-m{display:none}.cal-h{padding:8px 4px;font-size:11px}.cal-info{order:9;flex-basis:100%}}.mrep{display:grid;gap:14px;padding:14px}.mrow{display:grid;gap:6px}.mrow .link{font-size:12px}
 .mtitle{font-size:13px;color:var(--text-2);padding:8px 12px;border:1px dashed var(--line-2);border-radius:10px}.mtitle b{color:var(--text)}
 .rep-msg{margin:10px 0 2px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
@@ -821,6 +824,7 @@ tbody tr:active{background:var(--accent-tint-2)}
         <div><small>เข้าสู่ระบบเป็น</small><b id="acctName">–</b><label class="av-link">เปลี่ยนรูปโปรไฟล์<input type="file" id="avFile2" accept="image/*" hidden></label></div></div>
       <button id="changePw">เปลี่ยนรหัสผ่าน</button>
       <button id="asanaSet">Asana token (เครื่องนี้)</button>
+      <button id="metaSet">Meta token (ผู้ดูแล Ads)</button>
       <hr>
       <button id="addClinic">เพิ่มคลินิก</button>
       <button id="toggleClinics">เปิด/ปิดบัญชี</button>
@@ -863,6 +867,16 @@ tbody tr:active{background:var(--accent-tint-2)}
     <label>พิมพ์อีกครั้ง<input type="password" id="pwNew2" autocomplete="new-password" minlength="8" required></label>
     <p class="gate-err" id="pwErr" role="alert"></p>
     <div class="pw-actions"><button type="button" class="ghost" id="pwCancel">ยกเลิก</button><button class="btn-primary" id="pwSave">บันทึกรหัสผ่าน</button></div>
+  </form>
+</dialog>
+<dialog id="metaDlg" aria-labelledby="metaTitle">
+  <form id="metaForm">
+    <h2 id="metaTitle">Meta token ของผู้ดูแล Ads</h2>
+    <p class="acc-hint">ชื่อใหม่ = เพิ่มคนใหม่ในแถบด้านบน พร้อมคลินิกจากบัญชีโฆษณาที่ token เห็น · ชื่อเดิม = เปลี่ยน token ของคนนั้น · token เก็บที่เซิร์ฟเวอร์ เปิดดูกลับไม่ได้</p>
+    <label>ผู้ดูแล Ads<input id="metaWho" list="metaWhoList" autocomplete="off" maxlength="40" placeholder="เช่น Spe Fluke" required><datalist id="metaWhoList"></datalist></label>
+    <label>Token<input type="password" id="metaTok" autocomplete="off" placeholder="วาง token (EAA… / EAG…)" required></label>
+    <div id="metaOut" aria-live="polite"></div>
+    <div class="pw-actions"><button type="button" class="ghost" id="metaCancel">ปิด</button><button type="button" class="ghost" id="metaCheck">ตรวจสิทธิ์</button><button class="btn-primary" id="metaSave" disabled>บันทึก</button></div>
   </form>
 </dialog>
 <dialog id="asanaDlg" aria-labelledby="asanaTitle">
@@ -940,9 +954,10 @@ const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsIn
 const REMEMBER_KEY = 'ads-daily-remember';
 const authStore = () => { try { return localStorage.getItem(REMEMBER_KEY) === '0' ? sessionStorage : localStorage; } catch { return localStorage; } };
 // each person has their own clinic list; the whole page shows one list at a time (?owner=ใหม่ or the last one picked)
-const OWNERS = ['ดิน', 'ใหม่', 'ปอนด์', 'เท่'], OWNER_NAME = {'ดิน': 'Spe Din', 'ใหม่': 'Spe Mai', 'ปอนด์': 'Spe Pond', 'เท่': 'Spe Ta'};   // DB keeps ดิน/ใหม่/ปอนด์/เท่; the page shows these names
+const OWNERS = ['ดิน', 'ใหม่', 'ปอนด์', 'เท่'], OWNER_NAME = {'ดิน': 'Spe Din', 'ใหม่': 'Spe Mai', 'ปอนด์': 'Spe Pond', 'เท่': 'Spe Ta'};   // first paint; loadOwners() adds people saved from ⋯ → Meta token
+   // DB keeps ดิน/ใหม่/ปอนด์/เท่; the page shows these names
 const OWNER = (() => { const u = new URLSearchParams(location.search).get('owner'); let s = null; try { s = localStorage.getItem('ads-daily-owner'); } catch {}
-  return OWNERS.includes(u) ? u : OWNERS.includes(s) ? s : OWNERS[0]; })();
+  return (u || s || OWNERS[0]).trim().slice(0, 40); })();   // any owner key: added people are only known after sign-in
 const sb = supabase.createClient(SB_URL, SB_ANON, {auth: {storage: {
   getItem: k => authStore().getItem(k), setItem: (k, v) => authStore().setItem(k, v), removeItem: k => authStore().removeItem(k)}}});
 let me = null;
@@ -3082,6 +3097,47 @@ function openAsana(){
   $('#asanaDel').hidden = !has; document.querySelector('details.menu')?.removeAttribute('open'); $('#asanaDlg').showModal(); $('#asanaIn').focus();
 }
 $('#asanaSet').onclick = openAsana;
+// ⋯ → Meta token: the token-save function checks the token with Meta (and on บันทึก stores it + adds the person / clinics)
+let metaLast = null;
+const metaReport = r => {
+  const exp = r.expires_at ? new Date(r.expires_at * 1000).toLocaleDateString('th-TH', {day: 'numeric', month: 'short', year: 'numeric'}) : 'ไม่หมดอายุ';
+  return `${r.blockers.length ? `<div class="mt-box bad"><b>ยังบันทึกไม่ได้</b><ul>${r.blockers.map(b => `<li>${esc(b)}</li>`).join('')}</ul></div>` : ''}
+    <div class="mt-box"><b>${r.owner.isNew ? 'เพิ่มคนใหม่' : 'เปลี่ยน token ของ'} ${esc(r.owner.label)}</b> · หมดอายุ: ${exp} · เห็นบัญชีโฆษณา ${r.accounts} · เพจ ${r.pages}
+      <div class="mt-perm">${r.perms.map(x => `<span class="${x.ok ? 'ok' : 'no'}">${x.ok ? '✓' : '✗'}</span><code>${x.p}</code><span>${esc(x.why)}${!x.ok && x.must ? ' · จำเป็น' : ''}</span>`).join('')}</div>
+      ${r.perms.some(x => !x.ok && /^pages_/.test(x.p)) ? '<div class="muted">ขาดสิทธิ์เพจ: โพสต์เพจและคอมเมนต์ของคนนี้จะดึงไม่ได้</div>' : ''}</div>
+    <div class="mt-box"><b>คลินิกใหม่ที่จะเพิ่ม ${r.fresh.length}</b> (เปิด ${r.fresh.filter(a => a.active).length} · ปิด ${r.fresh.filter(a => !a.active).length} เพราะ 30 วันไม่ได้ใช้เงิน)
+      ${r.fresh.length ? `<ul>${r.fresh.map(a => `<li>${esc(a.name)}${a.active ? ` · ฿${a.spend30.toLocaleString()}/30 วัน` : ' · ปิด'}</li>`).join('')}</ul>` : ''}
+      ${r.mine ? `<div class="muted">มีอยู่แล้วของ ${esc(r.owner.label)} ${r.mine} บัญชี</div>` : ''}
+      ${r.taken.length ? `<div class="muted">เป็นของคนอื่นอยู่แล้ว ไม่ย้าย: ${r.taken.map(t => `${esc(t.name)} (${esc(t.owner)})`).join(', ')}</div>` : ''}</div>`;
+};
+async function metaCall(save){
+  const label = $('#metaWho').value.trim(), token = $('#metaTok').value.trim();
+  if (!label || !token) { $('#metaOut').innerHTML = '<p class="gate-err">ใส่ชื่อผู้ดูแลและ token ก่อน</p>'; return; }
+  $('#metaOut').innerHTML = `<p class="muted">${save ? 'กำลังบันทึก…' : 'กำลังตรวจกับ Meta…'}</p>`; $('#metaSave').disabled = true;
+  const {data, error} = await sb.functions.invoke('token-save', {body: {label, token, save}});
+  const r = data || (await error?.context?.json?.().catch(() => null));
+  if (!r || r.error && !r.perms) { $('#metaOut').innerHTML = `<p class="gate-err">${esc(r?.error || error?.message || 'ตรวจไม่ได้')}</p>`; return; }
+  metaLast = {label, token};
+  $('#metaOut').innerHTML = metaReport(r) + (r.error ? `<p class="gate-err">${esc(r.error)}</p>` : '');
+  $('#metaSave').disabled = !!r.blockers.length || r.saved;
+  if (r.saved) {
+    $('#metaOut').insertAdjacentHTML('afterbegin', `<div class="mt-box"><b>✓ บันทึกแล้ว</b> เพิ่มคลินิก ${r.added} · ระบบดึงยอดจะใช้ token นี้ในรอบถัดไป</div>`);
+    $('#metaTok').value = ''; await loadOwners(); if (r.owner.key === OWNER) { await loadAll(); render(); }
+  }
+}
+$('#metaSet').onclick = () => {
+  document.querySelector('details.menu')?.removeAttribute('open');
+  $('#metaWhoList').innerHTML = Object.values(OWNER_NAME).map(l => `<option value="${esc(l)}">`).join('');
+  $('#metaOut').innerHTML = ''; $('#metaSave').disabled = true; $('#metaTok').value = '';
+  sb.rpc('meta_token_status').then(({data}) => { if (data?.length && !$('#metaOut').innerHTML) $('#metaOut').innerHTML = `<div class="mt-box"><b>token ที่ตั้งไว้</b><ul>${data.map(t => `<li>${esc(t.label)} · ${esc(t.saved_by_name || '–')} · ${bkkTime(t.saved_at)} ${new Date(t.saved_at).toLocaleDateString('th-TH')}</li>`).join('')}</ul></div>`; });
+  $('#metaDlg').showModal(); $('#metaWho').focus();
+};
+$('#metaCancel').onclick = () => $('#metaDlg').close();
+$('#metaCheck').onclick = () => metaCall(false);
+$('#metaTok').onchange = () => metaCall(false);
+$('#metaWho').oninput = () => { $('#metaSave').disabled = true; };
+$('#metaForm').onsubmit = e => { e.preventDefault(); const l = $('#metaWho').value.trim(), t = $('#metaTok').value.trim();
+  if (metaLast && metaLast.label === l && metaLast.token === t) metaCall(true); else metaCall(false); };
 $('#asanaCancel').onclick = () => $('#asanaDlg').close();
 $('#asanaDel').onclick = () => { try { localStorage.removeItem(ASANA_KEY); } catch {} REPT = null; $('#asanaDlg').close(); if (view === 'reports') { fxKey = ''; render(); } };
 $('#asanaForm').onsubmit = e => { e.preventDefault(); const v = $('#asanaIn').value.trim(); if (!v) return;
@@ -3611,12 +3667,21 @@ function showGate(msg = '', err = ''){
 // a plain username (no "@") is an account named <username>@ads-daily.local, made by the admin in Supabase
 const USER_DOMAIN = 'ads-daily.local';
 const loginEmail = v => (v = v.trim().toLowerCase()).includes('@') ? v : `${v}@${USER_DOMAIN}`;
-for (const b of document.querySelectorAll('#ownerSeg button')) {
-  b.setAttribute('aria-selected', b.dataset.owner === OWNER);
-  b.onclick = () => { try { localStorage.setItem('ads-daily-owner', b.dataset.owner); } catch {}
-    location.replace(location.pathname + '?owner=' + encodeURIComponent(b.dataset.owner)); };
+function ownerButtons(){
+  $('#ownerSeg').innerHTML = Object.entries(OWNER_NAME).map(([k, l]) => `<button data-owner="${esc(k)}" aria-selected="${k === OWNER}">${esc(l)}</button>`).join('');
+  for (const b of document.querySelectorAll('#ownerSeg button'))
+    b.onclick = () => { try { localStorage.setItem('ads-daily-owner', b.dataset.owner); } catch {}
+      location.replace(location.pathname + '?owner=' + encodeURIComponent(b.dataset.owner)); };
+  document.title = `อัปเดตแอดรายวัน · ${OWNER_NAME[OWNER] || OWNER}`; slideSegs();
 }
-document.title = `อัปเดตแอดรายวัน · ${OWNER_NAME[OWNER]}`;
+ownerButtons();
+async function loadOwners(){
+  const {data} = await sb.from('owners').select('key,label').order('sort');
+  if (!data?.length) return;
+  for (const k of Object.keys(OWNER_NAME)) delete OWNER_NAME[k];
+  for (const o of data) OWNER_NAME[o.key] = o.label;
+  ownerButtons();
+}
 $('#gateForm').onsubmit = async e => {
   e.preventDefault(); $('#gErr').textContent = '';
   if (recovering) {
@@ -3657,7 +3722,7 @@ async function boot(){
   const {data: {session}} = await sb.auth.getSession();
   if (!session || recovering) return showGate('', recovering ? '' : startErr);
   me = session.user.id; $('#acctName').textContent = acctLabel(session.user.email); showAvatar(session.user);
-  try { await loadAll(); }
+  try { await Promise.all([loadAll(), loadOwners()]); }
   catch (e) { return showGate('', e.message === 'notmember' ? 'บัญชีนี้ยังไม่ได้รับสิทธิ์ดูข้อมูล ติดต่อแอดมิน' : 'โหลดข้อมูลไม่ได้: ' + e.message); }
   gate.hidden = true; render(); showPulled();
   if (booted) return; booted = true;
