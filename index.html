@@ -934,9 +934,6 @@ const TOPICS = [
   {id:'lead', name:'คุณภาพแชท/ลีด', fields:[
     ['level','ระดับ','select',['','ดี','กลาง','แย่']], ['match','แชทตรงกลุ่ม (%)','number'],
     ['booked','นัดหมาย','number'], ['reply','เวลาตอบเฉลี่ย (นาที)','number']]},
-  {id:'page', name:'เพจ/หน้าเว็บ', fields:[
-    ['posts','โพสต์ใหม่','number'], ['comments','คอมเมนต์ค้างตอบ','number'],
-    ['inbox','ข้อความค้างตอบ','number'], ['web','หน้าเว็บ/ลิงก์','select',['','ใช้งานได้','ช้า','เข้าไม่ได้','ไม่มีหน้าเว็บ']]]},
 ];
 const META_KV = {
   ads: [['results','ผลลัพธ์'], ['purchases','การซื้อ'], ['purchase_value','มูลค่าการซื้อ','฿'], ['rejected','ถูกปฏิเสธ'], ['issues','ติดปัญหา']],
@@ -2160,7 +2157,7 @@ function brainPanel(n, links){
 // ---- daily log: one page per day for every clinic; a new empty day starts after midnight ----
 const LOG_START = '2026-11-23';
 let logDay = null;  // null = follow today (rolls over at midnight)
-const LOG_TOPICS = [['budget','งบ'], ['ads','แอด'], ['lead','ลีด'], ['page','เพจ']];
+const LOG_TOPICS = [['budget','งบ'], ['ads','แอด'], ['lead','ลีด']];
 // โน้ตแชท/ลีด: a free board (Canva-like) per clinic per day. Items {id, type:'text'|'img', x, y, w, h, text|path} live in
 // the day record lead.board; lead.note is kept as the joined text so the panel preview / summary still read it.
 // Images (chat screenshots = customer data) go to the private bucket lead-notes and are shown through 1-hour signed URLs.
@@ -3230,7 +3227,6 @@ function summaryText(d){
     const k = calc(r);
     lines.push('', `■ ${c.name}`);
     lines.push(`แอด: ${ST[r.ads?.status]||'-'}${r.ads?.state?` · ${r.ads.state}`:''} · ผลลัพธ์ ${r.ads?.results||'-'} · ฿/ผลลัพธ์ ${k.cpr?baht(k.cpr):'-'}${r.ads?.purchases>0?` · ซื้อ ${r.ads.purchases} ครั้ง ${baht(r.ads.purchase_value)}`:''}${r.ads?.rejected>0?` · ถูกปฏิเสธ ${r.ads.rejected}`:''}${r.ads?.issues>0?` · ติดปัญหา ${r.ads.issues}`:''}${r.ads?.note?`\n  ${r.ads.note}`:''}`);
-    lines.push(`เพจ: ${ST[r.page?.status]||'-'} · ค้างตอบ ${r.page?.inbox||0} ข้อความ / ${r.page?.comments||0} คอมเมนต์${r.page?.note?`\n  ${r.page.note}`:''}`);
     lines.push(`งบ: ${ST[r.budget?.status]||'-'} · ใช้ ${baht(r.budget?.spend)} / ${baht(r.budget?.cap)}${r._why?.budget?` · ${r._why.budget}`:''}${r.budget?.change?` · ${r.budget.change}`:''}${r.budget?.note?`\n  ${r.budget.note}`:''}`);
     lines.push(`แชท/ลีด: ${ST[r.lead?.status]||'-'} · ระดับ ${r.lead?.level||'-'} · นัด ${r.lead?.booked||0}${r.lead?.note?`\n  ${r.lead.note}`:''}`);
   }
