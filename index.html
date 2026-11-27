@@ -923,7 +923,7 @@ tbody tr:active{background:var(--accent-tint-2)}
   </nav>
   <section class="bot" aria-label="บอทแนะนำการปรับแอด">
     <div class="bot-h"><b>ถามบอท</b><small>แนะนำจากตัวเลข 21 วันล่าสุด</small></div>
-    <div class="bot-log" id="botLog" aria-live="polite"><p class="bot-a">พิมพ์ชื่อคลินิก เช่น “mabella ควรปรับอะไร” แล้วบอทจะบอกว่าควรลดงบ เพิ่มงบ หรือปิดแอดตัวไหน</p></div>
+    <div class="bot-log" id="botLog" aria-live="polite"><p class="bot-a">พิมพ์ชื่อคลินิก เช่น “mabella ควรปรับอะไร” ควรลดงบ เพิ่มงบ หรือปิดแอดตัวไหน · หรือถาม “… หัตถการไหนเด่น” “… มุมขายไหนดี”</p></div>
     <form id="botForm" class="bot-f"><input id="botIn" placeholder="ถามเรื่องคลินิก…" aria-label="คำถามถึงบอท" autocomplete="off"><button aria-label="ส่ง">ส่ง</button></form>
   </section>
   </div>
@@ -2765,8 +2765,28 @@ function adviceHTML(c, T){
     + sec('ปิดแอด', v.off, d => `<li>${link('ads', d.x)}<small>${d.r} · ${d.why.join(' · ')}</small></li>`);
   return `<b>${esc(c.name)}</b> · ต้นทุนเฉลี่ย 21 วัน ${baht(v.base)}/ผลลัพธ์${body || '<br>ไม่มีอะไรต้องปรับ ตัวเลขสัปดาห์ล่าสุดอยู่ในเกณฑ์'}<small>ปรับครั้งละ 20% เพื่อไม่ให้ Meta เริ่มเรียนรู้ใหม่ · บอทแค่แนะนำ ไม่ได้เปลี่ยนอะไรใน Meta</small>`;
 }
+// "หัตถการไหนเด่น" / "มุมขายไหนดี": the clinic's 90-day snapshot ads (same data as สมอง), grouped, cheapest vs the clinic's normal first
+function groupHTML(c, by, label){
+  const rows = (brainData() || []).filter(a => a.c === c.name);
+  if (!rows.length) return `<b>${esc(c.name)}</b>: ยังไม่มีข้อมูลแอด 90 วันของคลินิกนี้ในสมอง (อัปเดตทุกคืนตี 2)`;
+  const g = new Map(); for (const a of rows) for (const k of by(a)) (g.get(k) ?? g.set(k, []).get(k)).push(a);
+  const list = [...g].map(([k, xs]) => ({k, s: xs.reduce((t, x) => t + x.s, 0), r: xs.reduce((t, x) => t + x.r, 0), i: bIdx(xs), n: xs.length}))
+    .filter(x => x.r >= 5).sort((a, b) => (a.i ?? 9) - (b.i ?? 9));
+  if (!list.length) return `<b>${esc(c.name)}</b>: ยังไม่มี${label}ไหนได้ผลลัพธ์ถึง 5 ใน 90 วัน เลยยังบอกไม่ได้ว่าอันไหนเด่น`;
+  const most = [...list].sort((a, b) => b.r - a.r)[0];
+  return `<b>${esc(c.name)}</b> · ${label}ที่ต้นทุนดีสุด 90 วันล่าสุด<ul>${list.slice(0, 5).map(x => `<li><b>${esc(x.k)}</b> · ${int(x.r)} ผลลัพธ์ · ${baht(x.s / x.r)}/ผลลัพธ์<small>${vsNormal(x.i)} · ใช้ ${baht(x.s)} · ${x.n} แอด</small></li>`).join('')}</ul>`
+    + `<small>ได้ผลลัพธ์เยอะสุด: ${esc(most.k)} (${int(most.r)}) · นับเฉพาะ${label}ที่ได้ผลลัพธ์ 5 ขึ้นไป · ดูละเอียดในแท็บสมอง</small>`;
+}
+const BOT_HELP = 'บอทตอบได้ 3 แบบ: “… ควรปรับอะไร” (ลด/เพิ่มงบ ปิดแอด) · “… หัตถการไหนเด่น” · “… มุมขายไหนดี”';
+// what the question asks; null = a question the rules can't answer
+const botIntent = q => /หัตถการ|treatment|ทำอะไรดี|ขายดี|บริการไหน/i.test(q) ? 'treat' : /มุม|angle|hook|ฮุก|ข้อความ|แคปชัน/i.test(q) ? 'angle'
+  : /ปรับ|งบ|ลด|เพิ่ม|ปิด|optimi|ควรทำ|แนะนำ|ยังไงดี/i.test(q) ? 'adjust' : null;
+console.assert(botIntent('lalida หัตถการไหนเด่นๆ') === 'treat' && botIntent('mabella ควรปรับอะไร') === 'adjust' && botIntent('mabella มุมขายไหนดี') === 'angle' && botIntent('mabella เดือนนี้เป็นไง') === null, 'bot intent');
 const botSay = (html, cls = 'bot-a') => { const p = document.createElement('p'); p.className = cls; p.innerHTML = html; $('#botLog').append(p); p.scrollIntoView({block: 'nearest'}); return p; };
-async function botAnswer(c){
+async function botAnswer(c, intent = 'adjust'){
+  if (intent !== 'adjust') { const p = botSay('กำลังโหลดข้อมูลสมอง…'); if (!snaps) await loadSnaps();
+    while (snapsBusy) await new Promise(r => setTimeout(r, 300));
+    p.innerHTML = intent === 'treat' ? groupHTML(c, a => [a.tr], 'หัตถการ') : groupHTML(c, a => a.ang.length ? a.ang : ['ไม่เข้ามุมไหน'], 'มุมขาย'); return; }
   if (!c.act) { botSay(`<b>${esc(c.name)}</b> ไม่มีบัญชีโฆษณา Meta ในระบบ`); return; }
   const p = botSay('กำลังดึงตัวเลขจาก Meta… ประมาณ 10–20 วินาที');
   if (!TIRED[c.id] || TIRED[c.id].error) await loadTired(c.id);
@@ -2783,11 +2803,14 @@ function botMatch(q){
 }
 $('#botForm').onsubmit = e => { e.preventDefault(); const q = $('#botIn').value.trim(); if (!q) return;
   botSay(esc(q), 'bot-q'); $('#botIn').value = '';
-  const m = botMatch(q);
-  if (!m.length) botSay('ไม่เจอชื่อคลินิกในคำถาม ลองพิมพ์ชื่อคลินิก (ภาษาเดียวกับในรายการ) อีกครั้ง');
+  const m = botMatch(q), it = botIntent(q) || (m.length && q.toLowerCase().replace(/\s+/g, '').length <= Math.max(...m.map(c => c.name.length)) + 2 ? 'adjust' : null);
+  botIntentLast = it;
+  if (!it) botSay(`ยังตอบคำถามแบบนี้ไม่ได้ ${BOT_HELP}`);
+  else if (!m.length) botSay('ไม่เจอชื่อคลินิกในคำถาม ลองพิมพ์ชื่อคลินิก (ภาษาเดียวกับในรายการ) อีกครั้ง');
   else if (m.length > 1) botSay(`หมายถึงคลินิกไหน?<span class="bot-pick">${m.map(c => `<button type="button" data-botc="${c.id}">${esc(c.name)}</button>`).join('')}</span>`);
-  else botAnswer(m[0]); };
-$('#botLog').onclick = e => { const b = e.target.closest('[data-botc]'); if (!b) return; const c = db.clinics.find(x => x.id === +b.dataset.botc); if (c) { botSay(esc(c.name), 'bot-q'); botAnswer(c); } };
+  else botAnswer(m[0], it); };
+let botIntentLast = 'adjust';
+$('#botLog').onclick = e => { const b = e.target.closest('[data-botc]'); if (!b) return; const c = db.clinics.find(x => x.id === +b.dataset.botc); if (c) { botSay(esc(c.name), 'bot-q'); botAnswer(c, botIntentLast); } };
 const TTAG = {repeat: 'คนเห็นซ้ำ', rising: 'แพงขึ้นเรื่อยๆ', ctr: 'CTR ลด'};
 const tvRank = {tired: 0, warn: 1, ok: 2, few: 3};
 // 3 weekly values old -> new, coloured by direction, plus one plain-Thai line saying what it means
