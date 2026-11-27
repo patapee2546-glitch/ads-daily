@@ -790,7 +790,7 @@ tbody tr:active{background:var(--accent-tint-2)}
 <header>
   <h1>อัปเดตแอดรายวัน</h1>
   <div class="seg" id="ownerSeg" aria-label="ลูกค้าของใคร">
-    <button data-owner="ดิน">Spe Din</button><button data-owner="ใหม่">Spe Mai</button><button data-owner="ปอนด์">Spe Pond</button>
+    <button data-owner="ดิน">Spe Din</button><button data-owner="ใหม่">Spe Mai</button><button data-owner="ปอนด์">Spe Pond</button><button data-owner="เท่">Spe Ta</button>
   </div>
   <span class="hbreak" aria-hidden="true"></span>
   <div class="seg" role="tablist">
@@ -940,7 +940,7 @@ const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsIn
 const REMEMBER_KEY = 'ads-daily-remember';
 const authStore = () => { try { return localStorage.getItem(REMEMBER_KEY) === '0' ? sessionStorage : localStorage; } catch { return localStorage; } };
 // each person has their own clinic list; the whole page shows one list at a time (?owner=ใหม่ or the last one picked)
-const OWNERS = ['ดิน', 'ใหม่', 'ปอนด์'], OWNER_NAME = {'ดิน': 'Spe Din', 'ใหม่': 'Spe Mai', 'ปอนด์': 'Spe Pond'};   // DB keeps ดิน/ใหม่/ปอนด์; the page shows these names
+const OWNERS = ['ดิน', 'ใหม่', 'ปอนด์', 'เท่'], OWNER_NAME = {'ดิน': 'Spe Din', 'ใหม่': 'Spe Mai', 'ปอนด์': 'Spe Pond', 'เท่': 'Spe Ta'};   // DB keeps ดิน/ใหม่/ปอนด์/เท่; the page shows these names
 const OWNER = (() => { const u = new URLSearchParams(location.search).get('owner'); let s = null; try { s = localStorage.getItem('ads-daily-owner'); } catch {}
   return OWNERS.includes(u) ? u : OWNERS.includes(s) ? s : OWNERS[0]; })();
 const sb = supabase.createClient(SB_URL, SB_ANON, {auth: {storage: {
