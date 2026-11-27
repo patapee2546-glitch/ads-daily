@@ -2489,30 +2489,33 @@ function renderLog(){
   </div>`;
 }
 // ---- page posts (was the local Page Hub app): pulled into Supabase every 30 min by the page-posts function ----
-const POSTS = {};          // day -> {posts, checks} | 'loading'
+const POSTS = {};          // 'from|to' -> {posts, checks} | 'loading' (the header's day range, one day = from equals to)
 let postClinic = '';       // '' = all clinics
+// ponytail: one query per range; Supabase returns at most 1000 rows, so a very long range of busy pages can cut off — page by .range() if that happens
+const postsKey = () => `${dayFrom || day}|${day}`;
 async function loadPosts(d, force){
+  const [from, to] = d.split('|');
   if (POSTS[d] && !force) return;
   POSTS[d] = 'loading';
   const ids = db.clinics.map(c => c.id);
   const [p, k] = await Promise.all([
-    sb.from('page_posts').select('clinic_id,page_name,created_time,message,permalink,picture,ad_status').eq('day', d).in('clinic_id', ids).order('created_time', {ascending: false}),
-    sb.from('page_checks').select('clinic_id,ok,error,checked_at').eq('day', d).in('clinic_id', ids)]);
+    sb.from('page_posts').select('clinic_id,page_name,created_time,message,permalink,picture,ad_status').gte('day', from).lte('day', to).in('clinic_id', ids).order('created_time', {ascending: false}),
+    sb.from('page_checks').select('clinic_id,ok,error,checked_at').gte('day', from).lte('day', to).in('clinic_id', ids).order('checked_at')]);
   POSTS[d] = {posts: p.data || [], checks: k.data || [], err: p.error?.message || k.error?.message};
-  if (view === 'posts' && day === d && !typingInMain()) render();
+  if (view === 'posts' && postsKey() === d && !typingInMain()) render();
 }
 function renderPosts(){
-  const P = POSTS[day];
-  if (!P || P === 'loading') { loadPosts(day); return `<div class="card"><div class="card-h"><b>โพสต์เพจ ${thDate(day)}</b><span>กำลังโหลด…</span></div></div>`; }
+  const P = POSTS[postsKey()];
+  if (!P || P === 'loading') { loadPosts(postsKey()); return `<div class="card"><div class="card-h"><b>โพสต์เพจ ${dayLabel()}</b><span>กำลังโหลด…</span></div></div>`; }
   if (P.err) return `<div class="card"><div class="card-h"><b>โพสต์เพจ</b><span>โหลดไม่ได้: ${esc(P.err)}</span></div></div>`;
   const nameOf = Object.fromEntries(db.clinics.map(c => [c.id, c.name])), chk = Object.fromEntries(P.checks.map(c => [c.clinic_id, c]));
   const count = id => P.posts.filter(x => x.clinic_id === id).length;
   const cs = visible(), posted = cs.filter(c => count(c.id)), none = cs.filter(c => !count(c.id) && chk[c.id]?.ok), unknown = cs.filter(c => !count(c.id) && !chk[c.id]?.ok);
   const last = P.checks.map(c => c.checked_at).sort().pop();
   const shown = P.posts.filter(x => (!postClinic || nameOf[x.clinic_id] === postClinic) && cs.some(c => c.id === x.clinic_id));
-  const tm = t => new Date(t).toLocaleTimeString('th-TH', {hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok'});
+  const tm = t => new Date(t).toLocaleString('th-TH', {...(dayFrom ? {day: 'numeric', month: 'short'} : {}), hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok'});
   const names = xs => xs.map(c => `<button class="link" data-pc="${esc(c.name)}">${esc(c.name)}</button>`).join(', ');
-  return `<div class="card"><div class="card-h"><b>โพสต์เพจ ${thDate(day)}</b><span>${P.posts.length} โพสต์ · ดึงล่าสุด ${last ? bkkTime(last) : '–'} · อัปเดตเองทุก 30 นาที</span>
+  return `<div class="card"><div class="card-h"><b>โพสต์เพจ ${dayLabel()}</b><span>${P.posts.length} โพสต์ · ดึงล่าสุด ${last ? bkkTime(last) : '–'} · อัปเดตเองทุก 30 นาที</span>
       <span class="spacer"></span><button class="ghost" data-posts-reload>ดึงโพสต์ตอนนี้</button></div>
     <div class="pstat"><span>โพสต์แล้ว <b>${posted.length}</b>/${cs.length}</span>${P.posts.some(x => x.ad_status) ? `<span>รันแอดแล้ว <b>${P.posts.filter(x => x.ad_status && cs.some(c => c.id === x.clinic_id)).length}</b> โพสต์</span>` : ''}
       ${none.length ? `<span>ยังไม่โพสต์: <span class="names">${names(none)}</span></span>` : ''}
@@ -2523,7 +2526,7 @@ function renderPosts(){
       ${x.picture ? `<img src="${esc(x.picture)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ''}
       <div class="msg">${esc(x.message || '(ไม่มีข้อความ)')}</div>
       ${x.permalink ? `<div class="pf"><a href="${esc(x.permalink)}" target="_blank" rel="noopener">เปิดโพสต์ใน Facebook</a></div>` : ''}</article>`).join('')
-    || `<div class="card"><div class="card-h"><span>ไม่มีโพสต์${postClinic ? 'ของ ' + esc(postClinic) : ''}ในวันนี้</span></div></div>`}</div>`;
+    || `<div class="card"><div class="card-h"><span>ไม่มีโพสต์${postClinic ? 'ของ ' + esc(postClinic) : ''}ใน${dayFrom ? 'ช่วงนี้' : 'วันนี้'}</span></div></div>`}</div>`;
 }
 // ---- angel ads: per clinic, ads with cheap cost per result AND purchases, over 30/60/90/365 days (angel-ads function) ----
 const ANGEL = {};                       // 'clinicId|days' -> result | 'loading' | {error}
@@ -3413,7 +3416,7 @@ $('#main').addEventListener('click', e => {
   const st = e.target.closest('[data-astep]'); if (st) { const n = +st.dataset.astep; angelStep = angelStep === n ? 0 : n; render(); return; }
   const pc = e.target.closest('[data-pc]'); if (pc) { postClinic = pc.dataset.pc; render(); return; }
   if (e.target.closest('[data-posts-reload]')) { const b = e.target.closest('button'); b.disabled = true; b.textContent = 'กำลังดึง…';
-    sb.functions.invoke('page-posts', {body: {days: 2}}).then(({error}) => { if (error) alert('ดึงโพสต์ไม่ได้: ' + error.message); loadPosts(day, true); }); return; }
+    sb.functions.invoke('page-posts', {body: {days: 2}}).then(({error}) => { if (error) alert('ดึงโพสต์ไม่ได้: ' + error.message); loadPosts(postsKey(), true); }); return; }
   const ld = e.target.closest('[data-logday]'); if (ld) { logDay = ld.dataset.logday === TODAY ? null : ld.dataset.logday; if (cur) { day = ld.dataset.logday; dayFrom = null; } render(); return; }
   const ls = e.target.closest('[data-logst]'); if (ls) {
     const [c, t, v] = ls.dataset.logst.split('|'), d = logDay || TODAY, o = (((db.days[d] ??= {})[c] ??= {})[t] ??= {});
