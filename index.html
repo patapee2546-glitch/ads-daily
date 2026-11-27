@@ -786,6 +786,10 @@ tbody tr:active{background:var(--accent-tint-2)}
 @media (prefers-reduced-motion:reduce){*{animation:none!important}.metric:hover,.ghost:hover,.ghost:active,.seg button:active,tbody tr:hover .dots .dot{transform:none}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 @supports not (backdrop-filter:blur(1px)){:root{--surface:var(--surface-2)}}
+.exp-b{all:unset;cursor:pointer;color:var(--text-3);font-size:12px;padding:2px 4px;border-radius:6px}.exp-b:hover{background:var(--hover);color:var(--accent)}.exp-b:focus-visible{outline:2px solid currentColor}
+.logmon{all:unset;display:block;cursor:pointer;margin-top:4px;font-size:11.5px;color:var(--text-3);border-radius:6px;padding:1px 0}.logmon[aria-pressed=true]{color:var(--ok);font-weight:600}.logmon:hover{color:var(--accent)}.logmon:focus-visible{outline:2px solid currentColor}
+.fields .rng{grid-column:1/-1;color:var(--c);font-size:12px;font-weight:500}.rng-row{display:flex;align-items:center;gap:12px}
+.fields .rng input{flex:1;accent-color:var(--c);height:24px;padding:0;border:0;background:none}.rng output{min-width:44px;text-align:right;font-variant-numeric:tabular-nums;color:var(--text)}
 </style>
 </head>
 <body>
@@ -932,9 +936,14 @@ const TOPICS = [
   {id:'budget', name:'งบ', fields:[['cap','เพดาน (฿/วัน)','number'], ['change','ปรับงบวันนี้','select',['','ไม่ปรับ','เพิ่ม','ลด','หยุด']]]},
   {id:'ads', name:'แอด', fields:[]},
   {id:'lead', name:'คุณภาพแชท/ลีด', fields:[
-    ['level','ระดับ','select',['','ดี','กลาง','แย่']], ['match','แชทตรงกลุ่ม (%)','number'],
-    ['booked','นัดหมาย','number'], ['reply','เวลาตอบเฉลี่ย (นาที)','number']]},
+    ['hi','High Intent %','range','var(--ok)'], ['mid','Medium Intent %','range','var(--warn)'],
+    ['lo','Low Intent %','range','oklch(70% 0.15 50)'], ['ghost','แชทผี %','range','var(--bad)'], ['booked','นัดหมาย','number']]},
 ];
+// chat quality level from the intent sliders. ponytail: fixed cut-offs (High + half of Medium ≥ 50 = ดี, ≥ 25 = กลาง); tune here if the team disagrees
+const INTENT = ['hi', 'mid', 'lo', 'ghost'];
+const leadLevel = d => INTENT.some(f => d[f] !== '' && d[f] != null) ? ((+d.hi || 0) + (+d.mid || 0) / 2 >= 50 ? 'ดี' : (+d.hi || 0) + (+d.mid || 0) / 2 >= 25 ? 'กลาง' : 'แย่') : '';
+const leadLvlHTML = d => { const lv = leadLevel(d), sum = INTENT.reduce((a, f) => a + (+d[f] || 0), 0);
+  return lv ? `<span>ระดับ <b class="${{ดี: 't-ok', กลาง: 't-warn', แย่: 't-bad'}[lv]}">${lv}</b> · คำนวณจาก High + ครึ่งหนึ่งของ Medium${sum !== 100 ? ` · รวมทุกช่อง ${sum}% (ควรเป็น 100%)` : ''}</span>` : '<span class="muted">เลื่อนแถบด้านบน แล้วระบบจะคำนวณระดับให้</span>'; };
 const META_KV = {
   ads: [['results','ผลลัพธ์'], ['purchases','การซื้อ'], ['purchase_value','มูลค่าการซื้อ','฿'], ['rejected','ถูกปฏิเสธ'], ['issues','ติดปัญหา']],
   budget: [['spend','ใช้วันนั้น','฿'], ['balance','prepaid เหลือ','฿'], ['limit_left','วงเงินเหลือ','฿']],
@@ -995,11 +1004,11 @@ async function loadMeta(){
   window.ADS_DATA = A;
 }
 async function loadAll(){
-  const {data: cl, error} = await sb.from('clinics').select('id,name,page_url,cap,sort,ad_account_id,manual_balance,manual_balance_at,manual_balance_limit,funnel,fb_page_ids,service_end').eq('active', true).eq('owner', OWNER).order('sort');
+  const {data: cl, error} = await sb.from('clinics').select('id,name,page_url,cap,sort,ad_account_id,manual_balance,manual_balance_at,manual_balance_limit,funnel,fb_page_ids,service_end,expect_results').eq('active', true).eq('owner', OWNER).order('sort');
   if (error) throw error;
   // RLS returns no rows to non-members; an owner with every clinic switched off is still a member
   if (!cl.length && !(await sb.from('members').select('user_id').limit(1)).data?.length) throw new Error('notmember');
-  db.clinics = cl.map(c => ({id: c.id, name: c.name, act: c.ad_account_id || '', mbal: c.manual_balance == null ? null : +c.manual_balance, mbalAt: c.manual_balance_at, mbalLim: c.manual_balance_limit == null ? null : +c.manual_balance_limit, page: c.page_url || '', pages: c.fb_page_ids || [], end: c.service_end || '', cap: c.cap == null ? '' : +c.cap, funnel: c.funnel}));
+  db.clinics = cl.map(c => ({id: c.id, name: c.name, act: c.ad_account_id || '', mbal: c.manual_balance == null ? null : +c.manual_balance, mbalAt: c.manual_balance_at, mbalLim: c.manual_balance_limit == null ? null : +c.manual_balance_limit, page: c.page_url || '', pages: c.fb_page_ids || [], end: c.service_end || '', cap: c.cap == null ? '' : +c.cap, exp: c.expect_results, funnel: c.funnel}));
   const byId = Object.fromEntries(db.clinics.map(c => [c.id, c.name]));
   db.days = {};
   for (const r of await fetchAll('checks', 'day,clinic_id,data')) if (byId[r.clinic_id]) (db.days[r.day] ??= {})[byId[r.clinic_id]] = r.data;
@@ -1366,7 +1375,7 @@ function renderToday(){
     <div class="card-h"><b>${dayLabel()}</b><span>${list.length} คลินิก</span>${dayFrom ? '<span class="muted">ยอดรวมทั้งช่วง · จุดสถานะเป็นของวันสุดท้าย · การเข้าถึง/ความถี่ = คนไม่ซ้ำทั้งช่วงจาก Meta</span>' : ''}${!dayFrom && day === TODAY ? `<span class="t-warn">วันนี้ยังไม่จบ · ยอดถึง ${esc(window.ADS_DATA?.[day]?.fetched || '–')}</span>` : ''}<span class="spacer"></span>
       <span><kbd>J</kbd> <kbd>K</kbd> เลื่อน · <kbd>Enter</kbd> เปิด · <kbd>←</kbd> <kbd>→</kbd> เปลี่ยนวัน · <kbd>/</kbd> ค้นหา</span></div>
     <div class="scroll"><table>
-      <thead><tr><th>คลินิก</th><th>งบ · แอด · ลีด</th><th class="num">ใช้ / เพดาน</th><th class="num">ผลลัพธ์</th><th class="num">฿/ผลลัพธ์</th><th class="num" title="จำนวนการซื้อ เหมือนช่อง การซื้อ ใน Ads Manager">การซื้อ</th><th class="num" title="การเข้าถึง (คนไม่ซ้ำ) ของวันนั้น ทั้งบัญชี">การเข้าถึง</th><th class="num" title="จำนวนคนไม่ซ้ำที่เห็นแอดรูป · คนที่เห็นทั้งรูปและวิดีโอถูกนับทั้งสองช่อง">เข้าถึงรูป</th><th class="num" title="จำนวนคนไม่ซ้ำที่เห็นแอดวิดีโอ (แอดที่มีการเล่น 3 วิ)">เข้าถึงวิดีโอ</th><th class="num" title="ความถี่ = การแสดงผล ÷ การเข้าถึง">ความถี่</th><th class="num" title="CPM = ค่าแสดงแอด 1,000 ครั้ง (ยอดใช้ ÷ การแสดงผล × 1,000) · เหลือง = แพงกว่าเฉลี่ย 7 วันก่อนหน้า 30% ขึ้นไป">CPM</th><th class="num" title="การเล่นวิดีโอนาน 3 วินาทีขึ้นไป · ดู 3 วิ นับเป็นจำนวนครั้ง (คนเดียวดูซ้ำนับทุกรอบ) · % = ดู 3 วิ ÷ จำนวนครั้งที่แอดวิดีโอถูกแสดง">วิดีโอ 3 วิ</th><th class="num" title="เงินคงเหลือล่าสุด ÷ ยอดใช้เฉลี่ย 7 วัน">รันได้อีก</th><th title="อ่านจาก ฿/แชท · CPM · อัตราคนทัก · หยุดดู 3 วิ · ความถี่ ของ 7 วันล่าสุดเทียบ 7 วันก่อนหน้า แล้วสรุปว่าเพราะอะไร · บรรทัดล่าง = ประเด็นที่ทีมพิมพ์ไว้">ประเด็น (สรุปจากตัวเลข)</th></tr></thead>
+      <thead><tr><th>คลินิก</th><th>งบ · แอด · ลีด</th><th class="num">ใช้ / เพดาน</th><th class="num" title="ผลลัพธ์จริง / ที่คาดหวัง (ต่อวัน × จำนวนวันที่เลือก) · กดตัวเลขหลัง / เพื่อตั้ง">ผลลัพธ์ / คาดหวัง</th><th class="num">฿/ผลลัพธ์</th><th class="num" title="จำนวนการซื้อ เหมือนช่อง การซื้อ ใน Ads Manager">การซื้อ</th><th class="num" title="การเข้าถึง (คนไม่ซ้ำ) ของวันนั้น ทั้งบัญชี">การเข้าถึง</th><th class="num" title="จำนวนคนไม่ซ้ำที่เห็นแอดรูป · คนที่เห็นทั้งรูปและวิดีโอถูกนับทั้งสองช่อง">เข้าถึงรูป</th><th class="num" title="จำนวนคนไม่ซ้ำที่เห็นแอดวิดีโอ (แอดที่มีการเล่น 3 วิ)">เข้าถึงวิดีโอ</th><th class="num" title="ความถี่ = การแสดงผล ÷ การเข้าถึง">ความถี่</th><th class="num" title="CPM = ค่าแสดงแอด 1,000 ครั้ง (ยอดใช้ ÷ การแสดงผล × 1,000) · เหลือง = แพงกว่าเฉลี่ย 7 วันก่อนหน้า 30% ขึ้นไป">CPM</th><th class="num" title="การเล่นวิดีโอนาน 3 วินาทีขึ้นไป · ดู 3 วิ นับเป็นจำนวนครั้ง (คนเดียวดูซ้ำนับทุกรอบ) · % = ดู 3 วิ ÷ จำนวนครั้งที่แอดวิดีโอถูกแสดง">วิดีโอ 3 วิ</th><th class="num" title="เงินคงเหลือล่าสุด ÷ ยอดใช้เฉลี่ย 7 วัน">รันได้อีก</th><th title="อ่านจาก ฿/แชท · CPM · อัตราคนทัก · หยุดดู 3 วิ · ความถี่ ของ 7 วันล่าสุดเทียบ 7 วันก่อนหน้า แล้วสรุปว่าเพราะอะไร · บรรทัดล่าง = ประเด็นที่ทีมพิมพ์ไว้">ประเด็น (สรุปจากตัวเลข)</th></tr></thead>
       <tbody>${list.length ? list.map(c => {
         const r = sumRec(c.name), k = calc(r), cap = capOf(r, c.name), pct = +r.budget?.spend && +cap ? r.budget.spend/cap*100 : null;
         const m = sumMeta(c.name), err = m.error;  // raw Meta numbers (reach / frequency / 3-s plays)
@@ -1375,7 +1384,7 @@ function renderToday(){
           <td><span class="dots">${TOPICS.map(t => `<span class="dot d-${r[t.id]?.status||''}" title="${t.name}: ${ST[r[t.id]?.status]||'ยังไม่เช็ค'}"></span>`).join('')}</span></td>
           <td class="num"><div class="cap"><span>${baht(r.budget?.spend)} <span class="muted">/ ${baht(cap)}</span></span>
             ${pct != null ? `<span class="bar" title="${pct.toFixed(0)}% ของเพดาน"><b class="${pct>120?'over':pct>100?'warn':''}" style="width:${Math.min(pct,125)/1.25}%"></b><i style="left:80%"></i></span>` : ''}</div></td>
-          <td class="num">${int(r.ads?.results)}</td>
+          <td class="num">${expCell(c, r)}</td>
           <td class="num">${k.cpr ? (b => `<span class="${cprTone(k.cpr, b)}"${b ? ` title="เฉลี่ย 7 วันก่อนหน้า ${baht(b)} ต่อผลลัพธ์ (${k.cpr >= b ? '+' : ''}${Math.round((k.cpr / b - 1) * 100)}%)"` : ''}>${baht(k.cpr)}</span>`)(cprBase(c.name)) : '–'}</td>
           <td class="num">${r.ads?.purchases != null ? `<span class="run"><b>${+r.ads.purchases ? int(r.ads.purchases) : '–'}</b>${+r.ads.purchase_value ? `<small>${baht(r.ads.purchase_value)}</small>` : ''}</span>` : '<span class="muted">–</span>'}</td>
           <td class="num">${m.reach ? int(m.reach) : `<span class="muted"${m.loading ? ' title="กำลังดึงการเข้าถึงทั้งช่วงจาก Meta"' : ''}>${m.loading ? '…' : '–'}</span>`}</td>
@@ -1388,6 +1397,13 @@ function renderToday(){
           ${issueCell(c, r)}</tr>`;
       }).join('') : `<tr><td colspan="14" class="muted">ไม่พบคลินิกที่ชื่อมี "${esc(q)}"</td></tr>`}</tbody>
     </table></div></div>`;
+}
+
+// results vs expected: the clinic's expected results per day × the days on screen; click the "/ …" part to set it
+function expCell(c, r){
+  const n = rangeDays().length, want = c.exp ? c.exp * n : 0, got = +r.ads?.results || 0;
+  const tone = want && got < want * .8 ? 't-warn' : '';
+  return `<span class="${tone}">${int(r.ads?.results)}</span> <button class="exp-b" data-exp="${c.id}" title="คาดหวัง ${c.exp ? c.exp + ' ต่อวัน' : '(ยังไม่ตั้ง)'} · กดเพื่อแก้">/ ${want ? int(want) : 'ตั้ง'}</button>`;
 }
 
 // ---- dashboard -------------------------------------------------------
@@ -2482,7 +2498,7 @@ document.addEventListener('keydown', e => {
 function renderLog(){
   const d = logDay || TODAY, days = [];
   for (let x = TODAY; x >= LOG_START; x = shiftDay(x, -1)) days.push(x);
-  const done = x => db.clinics.filter(c => LOG_TOPICS.some(([t]) => rec(x, c.name)[t]?.status)).length;
+  const done = x => db.clinics.filter(c => rec(x, c.name).ads?.monitored || LOG_TOPICS.some(([t]) => rec(x, c.name)[t]?.status)).length;
   return `<div class="log">
     <div class="card"><div class="card-h"><b>วันที่บันทึก</b></div><nav class="log-days" aria-label="วันที่บันทึก">
       ${days.map(x => `<button data-logday="${x}" aria-current="${x === d}">${thLong(x, true)}${x === TODAY ? '<span class="tag">วันนี้</span>' : ''}<small>${done(x)}/${db.clinics.length}</small></button>`).join('')}
@@ -2493,7 +2509,8 @@ function renderLog(){
       <div class="scroll"><table class="logt"><thead><tr><th>คลินิก</th>${LOG_TOPICS.map(([,l]) => `<th>${l}</th>`).join('')}</tr></thead>
       <tbody>${visible().map(c => { const r = rec(d, c.name);
         return `<tr><td class="cn"><button class="link" data-open="${esc(c.name)}" data-day="${d}" style="font-size:13px;font-weight:500">${esc(c.name)}</button>
-          <small>${r.budget?.spend != null && r.budget.spend !== '' ? `ใช้ ${baht(r.budget.spend)} · ผลลัพธ์ ${int(r.ads?.results)}` : 'ยังไม่มียอด'}</small></td>
+          <small>${r.budget?.spend != null && r.budget.spend !== '' ? `ใช้ ${baht(r.budget.spend)} · ผลลัพธ์ ${int(r.ads?.results)}` : 'ยังไม่มียอด'}</small>
+          <button class="logmon" data-logmon="${esc(c.name)}" aria-pressed="${!!r.ads?.monitored}" title="สวิตช์เดียวกับในหน้ารายคลินิก">${r.ads?.monitored ? '✓ มอนิเตอร์แล้ว' : 'ยังไม่มอนิเตอร์'}</button></td>
           ${LOG_TOPICS.map(([t, l]) => `<td class="tp"><span class="lst" role="group" aria-label="สถานะ${l} ${esc(c.name)}">${Object.entries(ST).map(([v, lab]) =>
             `<button data-logst="${esc(c.name)}|${t}|${v}" aria-pressed="${r[t]?.status === v}" title="${lab}" aria-label="${lab}"><span class="dot d-${v}"></span></button>`).join('')}</span>
             <input data-log="${esc(c.name)}|${t}" value="${esc(r[t]?.note)}" placeholder="โน้ต${l}" aria-label="โน้ต${l} ${esc(c.name)}"></td>`).join('')}</tr>`; }).join('')}</tbody></table></div>
@@ -3235,6 +3252,7 @@ function summaryText(d){
 
 function field(t, [k, label, type, opts], v){
   const name = `${t}.${k}`;
+  if (type === 'range') return `<label class="rng" style="--c:${opts}">${label}<span class="rng-row"><input type="range" min="0" max="100" step="5" data-k="${name}" value="${+v || 0}" aria-valuetext="${v === '' ? 'ยังไม่กรอก' : v + '%'}"><output>${v === '' ? '–' : v + '%'}</output></span></label>`;
   if (type === 'select') return `<label>${label}<select data-k="${name}">${opts.map(o=>`<option ${o===v?'selected':''}>${esc(o)}</option>`).join('')}</select></label>`;
   return `<label>${label}<input type="number" inputmode="decimal" min="0" data-k="${name}" value="${esc(v)}"></label>`;
 }
@@ -3273,6 +3291,7 @@ function renderPanel(){
         ${t.id==='ads' && r._problems?.length ? `<details class="probs"><summary>ดูแอดที่มีปัญหา ${r._problems.length} ชิ้น</summary><ul>${r._problems.map(x => `<li>${esc(x)}</li>`).join('')}</ul></details>` : ''}
         ${kv}
         <div class="fields">${[...manual, ...t.fields].map(f => field(t.id, f, d[f[0]] ?? '')).join('')}</div>
+        ${t.id==='lead' ? `<p class="why" id="leadLvl">${leadLvlHTML(d)}</p>` : ''}
         ${t.id==='budget' && k.pct != null ? `<p class="why"><span>ใช้ ${k.pct.toFixed(0)}% ของเพดาน</span></p>` : ''}
         ${t.id==='budget' ? manualBalHTML(c) : ''}
         ${t.id === 'lead' ? `<button class="note-open" data-open-lead title="เปิดหน้าโน้ตแชท/ลีด พิมพ์ยาวๆ ได้">${d.note ? esc(d.note) : '<span class="muted">สิ่งที่เจอ / ต้องทำ: กดเพื่อเปิดหน้าโน้ตแชท/ลีด</span>'}</button>`
@@ -3334,6 +3353,8 @@ $('#panel').addEventListener('input', e => {
   const k = e.target.dataset.k; if (!k) return;
   const [t, f] = k.split('.');
   topic(cur, t)[f] = e.target.value;
+  if (t === 'lead' && INTENT.includes(f)) { const d = topic(cur, 'lead'); d.level = leadLevel(d);
+    e.target.nextElementSibling.textContent = e.target.value + '%'; e.target.setAttribute('aria-valuetext', e.target.value + '%'); $('#leadLvl').innerHTML = leadLvlHTML(d); }
   if (f === 'status') delete rec(day, cur)._auto?.['cleared_' + t];  // picked again by hand: auto may follow again later
   save(day, cur);
   if (view === 'today') $('#main').innerHTML = renderToday();
@@ -3470,6 +3491,8 @@ $('#main').addEventListener('click', e => {
   if (e.target.closest('[data-posts-reload]')) { const b = e.target.closest('button'); b.disabled = true; b.textContent = 'กำลังดึง…';
     sb.functions.invoke('page-posts', {body: {days: 2}}).then(({error}) => { if (error) alert('ดึงโพสต์ไม่ได้: ' + error.message); loadPosts(postsKey(), true); }); return; }
   const ld = e.target.closest('[data-logday]'); if (ld) { logDay = ld.dataset.logday === TODAY ? null : ld.dataset.logday; if (cur) { day = ld.dataset.logday; dayFrom = null; } render(); return; }
+  const lm = e.target.closest('[data-logmon]'); if (lm) { const c = lm.dataset.logmon, d = logDay || TODAY, o = (((db.days[d] ??= {})[c] ??= {}).ads ??= {});
+    o.monitored = !o.monitored; save(d, c); $('#main').innerHTML = mainHTML(); return; }
   const ls = e.target.closest('[data-logst]'); if (ls) {
     const [c, t, v] = ls.dataset.logst.split('|'), d = logDay || TODAY, o = (((db.days[d] ??= {})[c] ??= {})[t] ??= {});
     const was = (db.days[d][c]._auto ??= {});
@@ -3480,6 +3503,11 @@ $('#main').addEventListener('click', e => {
   const o = e.target.closest('[data-open]'); if (o) { if (o.dataset.day) { day = o.dataset.day; dayFrom = null; } return open(o.dataset.open); }
   if (e.target.closest('a.acct-link')) return;   // the name link opens Ads Manager, not the panel
   if (e.target.closest('[data-iss-x]')) return;   // ลบ on an issue must not open the clinic
+  const xb = e.target.closest('[data-exp]'); if (xb) { const c = db.clinics.find(x => x.id === +xb.dataset.exp); if (!c) return;
+    const v = prompt(`ผลลัพธ์ที่คาดหวังต่อวัน · ${c.name}\n(เว้นว่าง = ไม่ตั้ง)`, c.exp ?? ''); if (v === null) return;
+    const n = v.trim() === '' ? null : Math.round(+v); if (n != null && !(n >= 0)) { alert('ใส่ตัวเลข'); return; }
+    sb.from('clinics').update({expect_results: n}).eq('id', c.id).then(({error}) => { if (error) { alert('บันทึกไม่ได้: ' + error.message); return; }
+      c.exp = n; toast('บันทึกผลลัพธ์ที่คาดหวังแล้ว'); render(); }); return; }
   const tr = e.target.closest('tr[data-c]'); if (tr) open(tr.dataset.c);
 });
 function step(n){
