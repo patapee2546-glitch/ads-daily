@@ -80,11 +80,11 @@ header .seg[role=tablist] button{white-space:nowrap;flex:none}
 header .menu .pop{background:var(--pop);min-width:290px}
 .menu .acct{padding:8px 12px 4px;display:grid}.menu .acct small{font-size:11px;color:var(--text-3)}.menu .acct b{font-size:13px;font-weight:600;overflow-wrap:anywhere}
 .menu hr{border:0;border-top:1px solid var(--line);margin:4px 0}
-#pwDlg,#balDlg,#genDlg,#asanaDlg{border:1px solid var(--line);border-radius:14px;background:var(--pop);color:var(--text);padding:20px;width:min(380px,calc(100vw - 32px))}
+#pwDlg,#balDlg,#genDlg,#asanaDlg,#alertDlg{border:1px solid var(--line);border-radius:14px;background:var(--pop);color:var(--text);padding:20px;width:min(380px,calc(100vw - 32px))}
 #genDlg,#asanaDlg{border-radius:18px;padding:24px;box-shadow:0 24px 60px rgba(40,20,90,.35);outline:none}
 #genDlg h2,#asanaDlg h2{margin:0 0 4px;font-size:18px}
-#pwDlg::backdrop,#balDlg::backdrop,#genDlg::backdrop,#asanaDlg::backdrop{backdrop-filter:blur(3px);background:oklch(0% 0 0 / .4)}
-#pwDlg h2,#balDlg h2{font-size:16px;margin:0 0 12px}
+#pwDlg::backdrop,#balDlg::backdrop,#genDlg::backdrop,#asanaDlg::backdrop,#alertDlg::backdrop{backdrop-filter:blur(3px);background:oklch(0% 0 0 / .4)}
+#pwDlg h2,#balDlg h2,#alertDlg h2{font-size:16px;margin:0 0 12px}
 #pwDlg label,#balDlg label,#asanaDlg label{display:grid;gap:4px;font-size:12px;color:var(--text-3);margin-bottom:10px}
 #pwDlg input,#balDlg input,#asanaDlg input{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 10px;color:var(--text);font:inherit}
 .pw-actions{display:flex;gap:8px;justify-content:flex-end}
@@ -167,6 +167,9 @@ tbody tr[aria-selected=true]{background:var(--accent-tint);box-shadow:inset 2px 
 .rej-h{margin:0;font-size:12px;font-weight:500;color:var(--text-3)}.rej-cap{margin:0;white-space:pre-wrap;font:inherit;font-size:14px;line-height:1.6;max-height:260px;overflow:auto}.rej-why{border:1px solid var(--line-2);border-radius:14px;padding:12px 14px;background:var(--tint)}.rej-why h4{margin:0 0 6px;font-size:14px}.rej-why p{margin:0 0 6px;font-size:13px;color:var(--text-2);line-height:1.55}.rej-why ol{margin:0;padding-left:18px;display:grid;gap:8px;font-size:13px;line-height:1.5}.rej-why small{display:block;color:var(--text-3);font-size:12px}
 .rej-fb{font-size:13px;color:var(--text-2);line-height:1.6;max-height:200px;overflow:auto}.rej-fb p{margin:0 0 6px}.rej-fb b{color:var(--bad);font-weight:600}
 .rej-links{display:flex;gap:8px;flex-wrap:wrap}.rej-links a{text-decoration:none}
+.alert-list{list-style:none;margin:0 0 10px;padding:0;display:grid;gap:8px;max-height:55vh;overflow:auto}.alert-list li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center}.alert-list .al-t{font-size:14px;line-height:1.45}
+#alertDlg{width:min(620px,calc(100vw - 32px))}
+.svc-end{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--text-3)}.svc-end input{height:26px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--text);padding:0 6px;font:inherit;font-size:12px}
 .run-now{font-weight:500;color:var(--text-2)}
 .tr-h{display:block;font-size:11px;font-weight:400;color:var(--text-3);white-space:nowrap}
 .issue{min-width:300px;max-width:420px;white-space:normal;overflow:hidden;text-overflow:ellipsis;color:var(--text-2)}
@@ -835,6 +838,14 @@ tbody tr:active{background:var(--accent-tint-2)}
   </form>
 </dialog>
 <!-- opened from the header bell when a typed balance (card account, see manualBalHTML) is spent down to zero -->
+<dialog id="alertDlg" aria-labelledby="alertTitle">
+  <form method="dialog" id="alertForm">
+    <h2 id="alertTitle">แจ้งเตือน</h2>
+    <ul id="alertList" class="alert-list"></ul>
+    <p class="acc-hint" id="alertNote"></p>
+    <div class="pw-actions"><button type="button" class="ghost" id="alertClose">ปิด</button></div>
+  </form>
+</dialog>
 <dialog id="balDlg" aria-labelledby="balTitle">
   <form id="balForm">
     <h2 id="balTitle">ยอดเงินหมดแล้ว: <span id="balName"></span></h2>
@@ -962,11 +973,11 @@ async function loadMeta(){
   window.ADS_DATA = A;
 }
 async function loadAll(){
-  const {data: cl, error} = await sb.from('clinics').select('id,name,page_url,cap,sort,ad_account_id,manual_balance,manual_balance_at,manual_balance_limit,funnel,fb_page_ids').eq('active', true).eq('owner', OWNER).order('sort');
+  const {data: cl, error} = await sb.from('clinics').select('id,name,page_url,cap,sort,ad_account_id,manual_balance,manual_balance_at,manual_balance_limit,funnel,fb_page_ids,service_end').eq('active', true).eq('owner', OWNER).order('sort');
   if (error) throw error;
   // RLS returns no rows to non-members; an owner with every clinic switched off is still a member
   if (!cl.length && !(await sb.from('members').select('user_id').limit(1)).data?.length) throw new Error('notmember');
-  db.clinics = cl.map(c => ({id: c.id, name: c.name, act: c.ad_account_id || '', mbal: c.manual_balance == null ? null : +c.manual_balance, mbalAt: c.manual_balance_at, mbalLim: c.manual_balance_limit == null ? null : +c.manual_balance_limit, page: c.page_url || '', pages: c.fb_page_ids || [], cap: c.cap == null ? '' : +c.cap, funnel: c.funnel}));
+  db.clinics = cl.map(c => ({id: c.id, name: c.name, act: c.ad_account_id || '', mbal: c.manual_balance == null ? null : +c.manual_balance, mbalAt: c.manual_balance_at, mbalLim: c.manual_balance_limit == null ? null : +c.manual_balance_limit, page: c.page_url || '', pages: c.fb_page_ids || [], end: c.service_end || '', cap: c.cap == null ? '' : +c.cap, funnel: c.funnel}));
   const byId = Object.fromEntries(db.clinics.map(c => [c.id, c.name]));
   db.days = {};
   for (const r of await fetchAll('checks', 'day,clinic_id,data')) if (byId[r.clinic_id]) (db.days[r.day] ??= {})[byId[r.clinic_id]] = r.data;
@@ -2267,8 +2278,8 @@ function dropPoint(){
   return {x: Math.max(0, Math.min(p.x, el.clientWidth - 440)), y: p.y};   // keep a new box (max 420px wide) inside the board
 }
 // the same board on two pages: โน้ตแชท/ลีด (lead) and แอดที่ปรับ (adsb), stored per clinic per day under that key
-const BOARDS = {lead: 'โน้ตคุณภาพแชท/ลีด', adsb: 'แอดที่ปรับ'};
-const isBoardView = () => view === 'leadnote' || view === 'adsnote';
+const BOARDS = {lead: 'โน้ตคุณภาพแชท/ลีด', adsb: 'แอดที่ปรับ', brief: 'ประชุม / บรีฟจากลูกค้า'};   // brief = meeting notes + pasted chat screenshots as evidence, one board per clinic per day
+const isBoardView = () => view === 'leadnote' || view === 'adsnote' || view === 'briefnote';
 function renderLeadNote(k){
   const c = db.clinics.find(x => x.name === (leadClinic || cur)) || db.clinics[0];
   if (!c) return '<p class="muted">ยังไม่มีคลินิก</p>';
@@ -2284,7 +2295,7 @@ function renderLeadNote(k){
       <span class="bws" role="group" aria-label="ความหนาเส้น">${BWS.map(([w, n]) => `<button data-bw="${w}" aria-pressed="${w === bWidth}" title="เส้น${n}"><i style="height:${w}px"></i>${n}</button>`).join('')}</span>
       <span class="spacer"></span><span class="muted" id="bState"></span><span class="muted">วางรูป ⌘V · ลากย้าย · ลากมุมขวาล่างย่อ/ขยาย · Delete ลบ · ลากที่ว่างเพื่อเลือกหลายชิ้น · ⌘Z ย้อน · ⌘D ทำซ้ำ · ⌘C/⌘V คัดลอก · คลิกขวาเปิดเมนู · บันทึกอัตโนมัติ</span></div>
     <div class="board" data-key="${k}" tabindex="0" aria-label="กระดาน${BOARDS[k]} ${esc(c.name)} ${thDate(day)}" style="height:${boardH(leadBoard(c.name, k))}px">${boardHTML(k)}</div></div>
-  ${past.length ? `<div class="card"><div class="card-h"><b>โน้ตวันก่อนๆ</b><span>${past.length} วัน</span></div>
+  ${past.length ? `<div class="card"><div class="card-h"><b>${k === 'brief' ? 'ประวัติการประชุม / บรีฟ' : 'โน้ตวันก่อนๆ'}</b><span>${past.length} วัน</span></div>
     <ul class="leadpast">${past.map(d => `<li><button class="ghost" data-goday="${d}">${thLong(d, true)}</button><p>${esc(rec(d, c.name)[k].note)}</p></li>`).join('')}</ul></div>` : ''}`;
 }
 // multi-select: drag on empty board space draws a selection box; items it touches move and delete together
@@ -3129,7 +3140,7 @@ function renderReports(){
         ${j.log && j.status === 'failed' ? `<details><summary>ดู log</summary><pre>${esc(j.log)}</pre></details>` : ''}</div>`; }).join('')
       || `<div class="job muted">ยังไม่ได้สร้างรีพอร์ตจากเครื่องนี้ · กดงานในปฏิทินด้านบน</div>`}</div>`;
 }
-const mainHTML = () => view === 'dash' ? renderDash() : view === 'reports' ? renderReports() : view === 'posts' ? renderPosts() : view === 'angel' ? renderAngel() : view === 'media' ? `<iframe id="radar" src="radar/index.html" title="คลังสื่อคู่แข่ง (Competitor Ad Radar)"></iframe>` : view === 'log' ? renderLog() : view === 'today' ? renderToday() : view === 'leadnote' ? renderLeadNote('lead') : view === 'adsnote' ? renderLeadNote('adsb') : view === 'history' ? renderHistory() : view === 'brain' ? renderBrain() : view === 'policy' ? renderPolicy() : view === 'running' ? renderRunning() : view === 'tired' ? renderTired() : view === 'reject' ? renderReject() : view === 'listen' ? renderListen()
+const mainHTML = () => view === 'dash' ? renderDash() : view === 'reports' ? renderReports() : view === 'posts' ? renderPosts() : view === 'angel' ? renderAngel() : view === 'media' ? `<iframe id="radar" src="radar/index.html" title="คลังสื่อคู่แข่ง (Competitor Ad Radar)"></iframe>` : view === 'log' ? renderLog() : view === 'today' ? renderToday() : view === 'leadnote' ? renderLeadNote('lead') : view === 'adsnote' ? renderLeadNote('adsb') : view === 'briefnote' ? renderLeadNote('brief') : view === 'history' ? renderHistory() : view === 'brain' ? renderBrain() : view === 'policy' ? renderPolicy() : view === 'running' ? renderRunning() : view === 'tired' ? renderTired() : view === 'reject' ? renderReject() : view === 'listen' ? renderListen()
   : `<div class="card"><div class="card-h"><b>ข้อความสรุป ${thDate(day)}</b><span>วางใน LINE หรือ Obsidian ได้</span></div><pre>${esc(summaryText(day))}</pre></div>`;
 const typingInMain = () => /INPUT|TEXTAREA/.test(document.activeElement?.tagName) && document.activeElement.closest('#main');
 
@@ -3179,6 +3190,8 @@ function renderPanel(){
       <button class="ghost icon" data-step="1" aria-label="คลินิกถัดไป" title="ถัดไป (J)">↓</button>
       <button class="ghost icon" id="close" aria-label="ปิดแผง" title="ปิด (Esc)">×</button></div>
       <div class="meta"><span class="mono">${thDate(day)}</span>${c.page ? `<a href="${esc(c.page)}" target="_blank" rel="noopener">เปิดเพจ</a>` : ''}
+        <button class="link" data-open-brief title="บันทึกการประชุมและแปะรูปบรีฟจากลูกค้าเป็นหลักฐาน">ประชุม / บรีฟ${(n => n ? ` (${n})` : '')(Object.keys(db.days).filter(d => rec(d, c.name).brief?.note).length)}</button>
+        <label class="svc-end" title="วันสิ้นสุดบริการของลูกค้ารายนี้ ระบบเตือนที่กระดิ่งล่วงหน้า ${SVC_AHEAD} วัน">หมดบริการ <input type="date" id="svcEnd" value="${esc(c.end)}">${svcLeft(c) != null ? `<b class="${svcLeft(c) <= 7 ? 't-bad' : svcLeft(c) <= SVC_AHEAD ? 't-warn' : 'muted'}">${svcLeft(c) < 0 ? `เลยมา ${-svcLeft(c)} วัน` : svcLeft(c) === 0 ? 'วันนี้' : `อีก ${svcLeft(c)} วัน`}</b>` : ''}</label>
         <span>${err ? 'ดึงจาก Meta ไม่ได้: ' + esc(err) : r._history ? 'ย้อนหลังจาก Meta: มีแค่ยอดเงินและผลลัพธ์ ไม่มีสถานะแอดของวันนั้น' : fed ? `ดึงจาก Meta <span class="mono">${esc(meta.fetched)}</span>` : 'กรอกเอง'}</span>
         <span class="saved" id="saved">✓ บันทึกแล้ว</span></div></div>
     ${TOPICS.map(t => {
@@ -3274,11 +3287,34 @@ async function setManualBal(name, v){
 async function saveManualBal(){ const v = $('#mbalIn').value, m = await setManualBal(cur, v === '' ? NaN : +v); if (m) alert(m); }
 // typed balance spent down to 0 -> red bell in the header; clicking it asks for the new balance (one clinic at a time)
 const emptyBal = () => db.clinics.filter(c => { const w = runway(c.name); return w?.manual && w.balance <= 0; });
+// ---- bell: everything worth knowing early. money gone · contract ending within SVC_AHEAD days · report due within REP_AHEAD days
+const SVC_AHEAD = 14, REP_AHEAD = 3;
+const daysTo = d => Math.round((Date.parse(d + 'T00:00:00Z') - Date.parse(TODAY + 'T00:00:00Z')) / 864e5);
+const svcLeft = c => c.end ? daysTo(c.end) : null;
+console.assert(daysTo(TODAY) === 0 && daysTo(shiftDay(TODAY, 3)) === 3, 'daysTo');
+function alertList(){
+  const out = emptyBal().map(c => ({tone: 'bad', kind: 'เงินหมด', text: `${c.name}: ยอดเงินที่กรอกไว้ใช้หมดแล้ว`, act: 'bal', label: 'กรอกยอดใหม่'}));
+  for (const c of db.clinics) { const n = svcLeft(c); if (n == null || n > SVC_AHEAD) continue;
+    out.push({tone: n <= 7 ? 'bad' : 'warn', kind: 'หมดบริการ', text: `${c.name}: ${n < 0 ? `หมดบริการไปแล้ว ${-n} วัน` : n === 0 ? 'หมดบริการวันนี้' : `หมดบริการอีก ${n} วัน`} (${thShort(c.end, 1)})`, act: 'open:' + c.name, label: 'เปิดคลินิก'}); }
+  if (Array.isArray(REPT)) for (const t of REPT) { const n = daysTo(t.dueOn);
+    if (t.kind !== 'report' || isDone(t) || n > REP_AHEAD || n < -14) continue;
+    out.push({tone: n <= 0 ? 'bad' : 'warn', kind: 'ส่ง Report', text: `${taskParts(t.name).clinic || t.name}: ${n < 0 ? `เลยกำหนด ${-n} วัน` : n === 0 ? 'กำหนดส่งวันนี้' : `กำหนดส่งอีก ${n} วัน`} (${thShort(t.dueOn)})`, act: 'reports', label: 'ไปหน้ารีพอร์ต'}); }
+  return out.sort((x, y) => (x.tone === 'bad' ? 0 : 1) - (y.tone === 'bad' ? 0 : 1));
+}
 function checkEmptyBal(){
-  const n = emptyBal().length, b = $('#bell');
+  // report reminders need the Asana tasks: load them quietly once when this browser has a token
+  if (REPT === null && (() => { try { return !!localStorage.getItem(ASANA_KEY); } catch { return false; } })()) loadAsanaTasks().then(checkEmptyBal);
+  const xs = alertList(), n = xs.length, b = $('#bell');
   $('#bellN').textContent = n || ''; $('#bellN').hidden = !n;
-  b.title = n ? `ยอดเงินหมดแล้ว ${n} บัญชี: ${emptyBal().map(c => c.name).join(', ')} · กดเพื่อกรอกยอดใหม่` : 'ไม่มีแจ้งเตือน';
-  b.setAttribute('aria-label', n ? `แจ้งเตือน ${n} รายการ: ยอดเงินหมดแล้ว` : 'แจ้งเตือน (ไม่มี)');
+  b.title = n ? `แจ้งเตือน ${n} รายการ · กดเพื่อดู` : 'ไม่มีแจ้งเตือน';
+  b.setAttribute('aria-label', n ? `แจ้งเตือน ${n} รายการ` : 'แจ้งเตือน (ไม่มี)');
+}
+function openAlerts(){
+  const xs = alertList();
+  $('#alertList').innerHTML = xs.length ? xs.map(x => `<li><span class="pill ${x.tone}">${x.kind}</span><span class="al-t">${esc(x.text)}</span><button type="button" class="ghost" data-alert="${esc(x.act)}">${x.label}</button></li>`).join('')
+    : '<li class="muted">ยังไม่มีแจ้งเตือน</li>';
+  $('#alertNote').textContent = `เตือนหมดบริการล่วงหน้า ${SVC_AHEAD} วัน · เตือนส่ง Report ล่วงหน้า ${REP_AHEAD} วัน${Array.isArray(REPT) ? '' : ' (ยังไม่ได้ใส่ Asana token ในเมนู ⋯ เลยยังไม่มีแจ้งเตือน Report)'}`;
+  $('#alertDlg').showModal();
 }
 function openBalDlg(){
   const c = emptyBal()[0]; if (!c) return;
@@ -3287,7 +3323,15 @@ function openBalDlg(){
   $('#balHint').textContent = `กรอกไว้ ${baht(w.manual.typed)} ใช้ไปแล้ว ${baht(w.manual.used)} ตามยอดใช้จาก Meta ถ้าเติมเงินแล้วให้ใส่ยอดใหม่ ระบบจะเริ่มหักจากยอดนี้`;
   dlg.showModal(); $('#balIn').focus();
 }
-$('#bell').onclick = () => emptyBal().length ? openBalDlg() : alert('ยังไม่มีแจ้งเตือน');
+$('#bell').onclick = openAlerts;
+$('#alertClose').onclick = () => $('#alertDlg').close();
+$('#alertList').onclick = e => { const a = e.target.closest('[data-alert]')?.dataset.alert; if (!a) return; $('#alertDlg').close();
+  if (a === 'bal') openBalDlg(); else if (a === 'reports') { view = 'reports'; render(); } else if (a.startsWith('open:')) { view = 'today'; open(a.slice(5)); } };
+document.addEventListener('change', async e => { if (e.target.id !== 'svcEnd') return;
+  const c = db.clinics.find(x => x.name === cur); if (!c) return;
+  const v = e.target.value || null, {error} = await sb.from('clinics').update({service_end: v}).eq('id', c.id);
+  if (error) { alert('บันทึกวันหมดบริการไม่ได้: ' + error.message); return; }
+  c.end = v || ''; toast(v ? 'บันทึกวันหมดบริการแล้ว' : 'ลบวันหมดบริการแล้ว'); render(); });
 $('#balForm').onsubmit = async e => { e.preventDefault(); const d = $('#balDlg'), v = $('#balIn').value;
   const m = await setManualBal(d.dataset.c, v === '' ? NaN : +v); if (m) { $('#balErr').textContent = m; return; } d.close(); openBalDlg(); };
 $('#balLater').onclick = () => $('#balDlg').close();
@@ -3301,6 +3345,7 @@ $('#panel').addEventListener('click', e => {
       if (view === 'today') $('#main').innerHTML = renderToday(); renderPanel(); }
     return; }
   if (e.target.closest('#mbalSave')) { saveManualBal(); return; }
+  if (e.target.closest('[data-open-brief]')) { leadClinic = cur; view = 'briefnote'; dayFrom = null; boardSel = boardPt = null; render(); return; }
   if (e.target.closest('[data-open-lead]')) { leadClinic = cur; view = 'leadnote'; dayFrom = null; boardSel = boardPt = null; render(); return; }
   if (e.target.closest('#close')) { cur = null; render(); return; }
   const st = e.target.closest('[data-step]'); if (st) step(+st.dataset.step);
