@@ -573,6 +573,11 @@ pre{white-space:pre-wrap;font:12px/1.6 var(--sans);margin:0;padding:12px;color:v
   .seg.slid button[aria-selected=true]{background:none;box-shadow:none}
 }
 .seg button:active{transform:scale(.94)}
+/* left column: a rounded card with full-width rows, not a capsule (.seg rules above would make it one) */
+.seg.side{border-radius:16px;padding:6px;gap:2px;width:172px}
+.seg.side button,.seg.side .ind{border-radius:10px}
+.seg.side button{justify-content:flex-start;gap:8px;padding:0 12px;height:36px}
+@media (max-width:560px){.seg.side{width:auto;border-radius:999px}.seg.side button,.seg.side .ind{border-radius:999px}}
 .ghost{transition:background .15s,border-color .15s,color .15s,transform .12s,box-shadow .15s}
 .ghost:hover{border-color:var(--line-2);background:var(--hover);color:var(--text);transform:translateY(-1px)}
 .ghost:active{transform:translateY(0) scale(.95)}
