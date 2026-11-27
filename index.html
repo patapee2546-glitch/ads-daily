@@ -1317,8 +1317,8 @@ function cpmCell(name, r, m){
   return `<span class="${up >= 1.3 ? 't-warn' : up && up <= .8 ? 't-ok' : ''}" title="${base ? `เฉลี่ย 7 วันก่อนหน้า ${baht(base)} (${up >= 1 ? '+' : ''}${Math.round((up - 1) * 100)}%)` : 'ยังไม่มีค่าเฉลี่ย 7 วันก่อนหน้า'}">${baht(v)}</span>`;
 }
 console.assert(Math.abs(cpmOf(500, {reach: 5000, frequency: 2}) - 50) < 1e-9 && cpmOf(0, {reach: 1, frequency: 1}) === null, 'cpm');
-// clinic table order: most money spent in the shown day/range first; equal amounts keep the saved order
-const byMoney = () => [...visible()].sort((a, b) => (+sumRec(b.name).budget?.spend || 0) - (+sumRec(a.name).budget?.spend || 0));
+// clinic table order: biggest budget cap of the shown day/range first; equal caps keep the saved order
+const byMoney = () => { const cap = c => +capOf(sumRec(c.name), c.name) || 0; return [...visible()].sort((a, b) => cap(b) - cap(a)); };
 function renderToday(){
   if (!snaps) loadSnaps();   // the คอขวด 'no RE' rule reads the nightly ad snapshot
   const list = byMoney();
